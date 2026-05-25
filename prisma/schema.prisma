@@ -1,0 +1,167 @@
+// Portal de Reclamos ENCOSEP — modelo de datos MVP
+// SQLite en dev, Postgres en prod (ambos compatibles con Prisma).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────
+// Usuarios y roles
+// ─────────────────────────────────────────────
+
+enum Rol {
+  CIUDADANO
+  GESTOR_ENTE
+  OPERADOR_PRESTADORA
+  SUPER_ADMIN
+  AUDITOR
+}
+
+model Usuario {
+  id            String   @id @default(cuid())
+  dni           String   @unique
+  nombre        String
+  apellido      String
+  email         String?  @unique
+  telefono      String?
+  passwordHash  String
+  rol           Rol      @default(CIUDADANO)
+  prestadoraId  String?
+  prestadora    Prestadora? @relation(fields: [prestadoraId], references: [id])
+  reclamos      Reclamo[]   @relation("ReclamoCiudadano")
+  asignados     Reclamo[]   @relation("ReclamoAsignado")
+  eventos       ReclamoEvento[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  activo        Boolean  @default(true)
+}
+
+// ─────────────────────────────────────────────
+// Servicios y prestadoras
+// ─────────────────────────────────────────────
+
+enum ServicioKind {
+  RESIDUOS
+  ENERGIA
+  AGUA
+  TRANSPORTE
+}
+
+model Servicio {
+  id         String        @id @default(cuid())
+  kind       ServicioKind  @unique
+  nombre     String
+  nombreCorto String
+  prestadoras Prestadora[]
+  reclamos   Reclamo[]
+}
+
+model Prestadora {
+  id          String     @id @default(cuid())
+  razonSocial String
+  cuit        String?    @unique
+  servicios   Servicio[]
+  operadores  Usuario[]
+  reclamos    Reclamo[]
+  activa      Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+}
+
+// ─────────────────────────────────────────────
+// Reclamos
+// ─────────────────────────────────────────────
+
+enum ReclamoEstado {
+  RECIBIDO
+  EN_REVISION
+  DERIVADO
+  EN_PROCESO
+  RESUELTO
+  CERRADO_SIN_SOLUCION
+  RECHAZADO
+}
+
+enum TipoEvento {
+  CREACION
+  CAMBIO_ESTADO
+  ASIGNACION
+  COMENTARIO
+  ADJUNTO
+  NOTIFICACION
+}
+
+model Reclamo {
+  id           String        @id @default(cuid())
+  codigo       String        @unique           // visible al ciudadano: A-2418
+  ciudadanoId  String
+  ciudadano    Usuario       @relation("ReclamoCiudadano", fields: [ciudadanoId], references: [id])
+  servicioId   String
+  servicio     Servicio      @relation(fields: [servicioId], references: [id])
+  prestadoraId String?
+  prestadora   Prestadora?   @relation(fields: [prestadoraId], references: [id])
+  asignadoAId  String?
+  asignadoA    Usuario?      @relation("ReclamoAsignado", fields: [asignadoAId], references: [id])
+
+  titulo       String
+  descripcion  String
+  // Multimodal: foto/voz/opciones se persisten en Adjunto[]
+  // y en respuestas estructuradas (JSON) según el wizard del servicio.
+  respuestas   String?       // JSON con respuestas estructuradas del wizard
+
+  // Ubicación
+  direccion    String
+  barrio       String?
+  lat          Float?
+  lng          Float?
+
+  estado       ReclamoEstado @default(RECIBIDO)
+  slaHoras     Int           @default(72)
+  slaDeadline  DateTime?
+
+  adjuntos     Adjunto[]
+  eventos      ReclamoEvento[]
+
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  cerradoEn    DateTime?
+
+  @@index([estado, servicioId])
+  @@index([ciudadanoId])
+  @@index([prestadoraId, estado])
+}
+
+model ReclamoEvento {
+  id         String       @id @default(cuid())
+  reclamoId  String
+  reclamo    Reclamo      @relation(fields: [reclamoId], references: [id], onDelete: Cascade)
+  tipo       TipoEvento
+  estadoNuevo ReclamoEstado?
+  autorId    String?
+  autor      Usuario?     @relation(fields: [autorId], references: [id])
+  mensaje    String?
+  createdAt  DateTime     @default(now())
+
+  @@index([reclamoId, createdAt])
+}
+
+enum AdjuntoTipo {
+  FOTO
+  AUDIO
+  DOCUMENTO
+}
+
+model Adjunto {
+  id        String      @id @default(cuid())
+  reclamoId String
+  reclamo   Reclamo     @relation(fields: [reclamoId], references: [id], onDelete: Cascade)
+  tipo      AdjuntoTipo
+  url       String                       // ruta local en dev, S3 en prod
+  mimeType  String?
+  bytes     Int?
+  createdAt DateTime    @default(now())
+}

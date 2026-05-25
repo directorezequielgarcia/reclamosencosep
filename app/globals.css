@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+/* ============================================
+   EnCoSeP · Portal de Reclamos · Sistema visual
+   Tokens portados del prototipo en Claude Design.
+   ============================================ */
+
+:root {
+  /* Paleta institucional */
+  --navy:        #1d3550;
+  --navy-2:      #2b4a6b;
+  --navy-soft:   #5b6f8a;
+  --paper:       #ffffff;
+  --paper-2:     #f5f7fa;
+  --paper-3:     #eef1f5;
+  --line:        #dde2e9;
+  --line-strong: #c2cad6;
+  --muted:       #6c7a8c;
+
+  /* Acentos por servicio (logo EnCoSeP) */
+  --c-orange:    #e88a3c;   /* acento institucional */
+  --c-green:     #4a8b3a;   /* Residuos */
+  --c-blue-l:    #4ba8c2;   /* Agua */
+  --c-red:       #c4393c;   /* Transporte · CTA reclamo */
+  --c-yellow:    #f0bc40;   /* Electricidad */
+}
+
+@theme inline {
+  --color-navy:        var(--navy);
+  --color-navy-2:      var(--navy-2);
+  --color-navy-soft:   var(--navy-soft);
+  --color-paper:       var(--paper);
+  --color-paper-2:     var(--paper-2);
+  --color-paper-3:     var(--paper-3);
+  --color-line:        var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-muted:       var(--muted);
+  --color-svc-orange:  var(--c-orange);
+  --color-svc-green:   var(--c-green);
+  --color-svc-blue:    var(--c-blue-l);
+  --color-svc-red:     var(--c-red);
+  --color-svc-yellow:  var(--c-yellow);
+  --font-sans: "Open Sans", var(--font-geist-sans), system-ui, sans-serif;
+}
+
+html, body {
+  background: var(--paper);
+  color: var(--navy);
+  font-family: "Open Sans", system-ui, -apple-system, sans-serif;
+}
+
+/* Banda decorativa de marca */
+.brand-stripe {
+  display: flex;
+  height: 4px;
+  border-radius: 2px;
+  overflow: hidden;
+}
+.brand-stripe > * { flex: 1; }
