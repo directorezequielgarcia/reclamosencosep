@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { generarCodigo } from "@/lib/codigos";
 import { SVC_META, type SvcKey } from "@/lib/servicios";
+import { guardarFotoReclamo } from "@/lib/uploads";
 
 export const runtime = "nodejs";
 
@@ -13,6 +14,8 @@ const BodySchema = z.object({
   descripcion: z.string().min(5).max(2000),
   direccion: z.string().min(3).max(200),
   barrio: z.string().max(80).optional().nullable(),
+  lat: z.number().min(-90).max(90).optional().nullable(),
+  lng: z.number().min(-180).max(180).optional().nullable(),
 });
 
 export async function POST(req: Request) {
@@ -21,29 +24,65 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "no autenticado" }, { status: 401 });
   }
 
-  const raw = await req.json().catch(() => null);
-  const parsed = BodySchema.safeParse(raw);
-  if (!parsed.success) {
-    return NextResponse.json(
-      { error: "datos inválidos", detalle: parsed.error.flatten() },
-      { status: 400 },
-    );
+  // Aceptamos JSON puro o multipart/form-data (cuando viene con fotos)
+  const ct = req.headers.get("content-type") ?? "";
+  let datos: z.infer<typeof BodySchema>;
+  let fotos: File[] = [];
+
+  if (ct.includes("multipart/form-data")) {
+    const fd = await req.formData();
+    const obj: Record<string, unknown> = {
+      svc: fd.get("svc"),
+      titulo: fd.get("titulo"),
+      descripcion: fd.get("descripcion"),
+      direccion: fd.get("direccion"),
+      barrio: fd.get("barrio") || undefined,
+    };
+    const lat = fd.get("lat");
+    const lng = fd.get("lng");
+    if (typeof lat === "string" && lat !== "") obj.lat = Number(lat);
+    if (typeof lng === "string" && lng !== "") obj.lng = Number(lng);
+
+    const parsed = BodySchema.safeParse(obj);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "datos inválidos", detalle: parsed.error.flatten() },
+        { status: 400 },
+      );
+    }
+    datos = parsed.data;
+
+    for (const f of fd.getAll("foto")) {
+      if (f instanceof File && f.size > 0) fotos.push(f);
+    }
+    if (fotos.length > 5) fotos = fotos.slice(0, 5);
+  } else {
+    const raw = await req.json().catch(() => null);
+    const parsed = BodySchema.safeParse(raw);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "datos inválidos", detalle: parsed.error.flatten() },
+        { status: 400 },
+      );
+    }
+    datos = parsed.data;
   }
-  const data = parsed.data;
-  const svcKey = data.svc as SvcKey;
+
+  const svcKey = datos.svc as SvcKey;
   const kind = SVC_META[svcKey].kind;
 
   const servicio = await prisma.servicio.findUnique({ where: { kind } });
   if (!servicio) {
-    return NextResponse.json({ error: "servicio inexistente" }, { status: 500 });
+    return NextResponse.json(
+      { error: "servicio inexistente" },
+      { status: 500 },
+    );
   }
 
-  // Buscar primera prestadora con este servicio (auto-derivación)
   const prestadora = await prisma.prestadora.findFirst({
     where: { servicios: { some: { id: servicio.id } }, activa: true },
   });
 
-  // Generar código con reintentos por colisión
   let codigo = "";
   for (let i = 0; i < 5; i++) {
     const candidato = generarCodigo(kind);
@@ -71,22 +110,46 @@ export async function POST(req: Request) {
       ciudadanoId: session.user.id,
       servicioId: servicio.id,
       prestadoraId: prestadora?.id ?? null,
-      titulo: data.titulo,
-      descripcion: data.descripcion,
-      direccion: data.direccion,
-      barrio: data.barrio ?? null,
+      titulo: datos.titulo,
+      descripcion: datos.descripcion,
+      direccion: datos.direccion,
+      barrio: datos.barrio ?? null,
+      lat: datos.lat ?? null,
+      lng: datos.lng ?? null,
       slaHoras,
       slaDeadline,
       estado: "RECIBIDO",
       eventos: {
         create: {
           tipo: "CREACION",
-          mensaje: `Reclamo registrado por el ciudadano`,
+          mensaje: "Reclamo registrado por el ciudadano",
           autorId: session.user.id,
         },
       },
     },
   });
 
-  return NextResponse.json({ ok: true, codigo: reclamo.codigo, id: reclamo.id });
+  // Guardar fotos (si las hay) — no abortamos la creación si alguna falla
+  for (const f of fotos) {
+    try {
+      const saved = await guardarFotoReclamo(reclamo.id, f);
+      await prisma.adjunto.create({
+        data: {
+          reclamoId: reclamo.id,
+          tipo: "FOTO",
+          url: saved.url,
+          mimeType: saved.mimeType,
+          bytes: saved.bytes,
+        },
+      });
+    } catch (e) {
+      console.error("foto rechazada:", (e as Error).message);
+    }
+  }
+
+  return NextResponse.json({
+    ok: true,
+    codigo: reclamo.codigo,
+    id: reclamo.id,
+  });
 }

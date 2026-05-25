@@ -13,6 +13,9 @@ type State = {
   descripcion: string;
   direccion: string;
   barrio: string;
+  lat: number | null;
+  lng: number | null;
+  fotos: File[];
 };
 
 const INIT: State = {
@@ -20,6 +23,9 @@ const INIT: State = {
   descripcion: "",
   direccion: "",
   barrio: "",
+  lat: null,
+  lng: null,
+  fotos: [],
 };
 
 export function WizardReclamo({ svcInicial }: { svcInicial?: SvcKey }) {
@@ -43,17 +49,17 @@ export function WizardReclamo({ svcInicial }: { svcInicial?: SvcKey }) {
     setEnviando(true);
     setError(null);
     try {
-      const res = await fetch("/api/reclamos", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          svc: state.svc,
-          titulo: state.titulo,
-          descripcion: state.descripcion,
-          direccion: state.direccion,
-          barrio: state.barrio || undefined,
-        }),
-      });
+      const fd = new FormData();
+      fd.append("svc", state.svc);
+      fd.append("titulo", state.titulo);
+      fd.append("descripcion", state.descripcion);
+      fd.append("direccion", state.direccion);
+      if (state.barrio) fd.append("barrio", state.barrio);
+      if (state.lat !== null) fd.append("lat", String(state.lat));
+      if (state.lng !== null) fd.append("lng", String(state.lng));
+      for (const f of state.fotos) fd.append("foto", f);
+
+      const res = await fetch("/api/reclamos", { method: "POST", body: fd });
       const data = await res.json();
       if (!res.ok || !data.ok) {
         setError(data.error || "No pudimos registrar el reclamo.");
@@ -71,15 +77,12 @@ export function WizardReclamo({ svcInicial }: { svcInicial?: SvcKey }) {
     <main className="flex flex-1 flex-col gap-4 py-4">
       <ProgressBar paso={paso} />
 
-      {paso === "servicio" && (
-        <PasoServicio onElegir={elegirServicio} />
-      )}
+      {paso === "servicio" && <PasoServicio onElegir={elegirServicio} />}
 
       {paso === "ubicacion" && state.svc && (
         <PasoUbicacion
           svc={state.svc}
-          direccion={state.direccion}
-          barrio={state.barrio}
+          state={state}
           setField={setField}
           onAtras={() => setPaso("servicio")}
           onSiguiente={() => setPaso("detalle")}
@@ -89,8 +92,7 @@ export function WizardReclamo({ svcInicial }: { svcInicial?: SvcKey }) {
       {paso === "detalle" && state.svc && (
         <PasoDetalle
           svc={state.svc}
-          titulo={state.titulo}
-          descripcion={state.descripcion}
+          state={state}
           setField={setField}
           onAtras={() => setPaso("ubicacion")}
           onSiguiente={() => setPaso("revision")}
@@ -117,9 +119,7 @@ function ProgressBar({ paso }: { paso: Paso }) {
       {[0, 1, 2, 3].map((i) => (
         <div
           key={i}
-          className={`h-1 flex-1 rounded-full ${
-            i <= idx ? "bg-navy-2" : "bg-paper-3"
-          }`}
+          className={`h-1 flex-1 rounded-full ${i <= idx ? "bg-navy-2" : "bg-paper-3"}`}
         />
       ))}
     </div>
@@ -162,51 +162,116 @@ function PasoServicio({ onElegir }: { onElegir: (s: SvcKey) => void }) {
 
 function PasoUbicacion({
   svc,
-  direccion,
-  barrio,
+  state,
   setField,
   onAtras,
   onSiguiente,
 }: {
   svc: SvcKey;
-  direccion: string;
-  barrio: string;
+  state: State;
   setField: <K extends keyof State>(k: K, v: State[K]) => void;
   onAtras: () => void;
   onSiguiente: () => void;
 }) {
-  const puede = direccion.trim().length >= 3;
+  const [gpsState, setGpsState] = useState<"idle" | "asking" | "ok" | "error">(
+    state.lat !== null ? "ok" : "idle",
+  );
+
+  function pedirGPS() {
+    if (!navigator.geolocation) {
+      setGpsState("error");
+      return;
+    }
+    setGpsState("asking");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setField("lat", pos.coords.latitude);
+        setField("lng", pos.coords.longitude);
+        setGpsState("ok");
+      },
+      () => setGpsState("error"),
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
+  }
+
+  function limpiarGPS() {
+    setField("lat", null);
+    setField("lng", null);
+    setGpsState("idle");
+  }
+
+  const puede = state.direccion.trim().length >= 3;
+
   return (
     <>
       <CabeceraPaso
         svc={svc}
         titulo="¿Dónde está el problema?"
-        subtitulo="Indicá la dirección lo más precisa posible."
+        subtitulo="Indicá la dirección y, si querés, agregá tu ubicación GPS."
       />
+
       <label className="flex flex-col gap-1">
-        <span className="text-xs font-semibold text-navy">
-          Dirección
-        </span>
+        <span className="text-xs font-semibold text-navy">Dirección</span>
         <input
           type="text"
-          value={direccion}
+          value={state.direccion}
           onChange={(e) => setField("direccion", e.target.value)}
           placeholder="Av. Rivadavia 2200"
           className="w-full px-3 py-3 rounded-xl border border-line-strong bg-paper text-navy text-base focus:outline-none focus:border-navy-2 focus:ring-2 focus:ring-navy-2/20"
         />
       </label>
+
       <label className="flex flex-col gap-1">
         <span className="text-xs font-semibold text-navy">
           Barrio <span className="text-muted font-normal">(opcional)</span>
         </span>
         <input
           type="text"
-          value={barrio}
+          value={state.barrio}
           onChange={(e) => setField("barrio", e.target.value)}
           placeholder="Pueyrredón"
           className="w-full px-3 py-3 rounded-xl border border-line-strong bg-paper text-navy text-base focus:outline-none focus:border-navy-2 focus:ring-2 focus:ring-navy-2/20"
         />
       </label>
+
+      <div className="rounded-2xl border border-dashed border-line-strong bg-paper-2 p-3">
+        {gpsState === "ok" && state.lat !== null && state.lng !== null ? (
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-svc-green/15 border-2 border-svc-green flex items-center justify-center text-svc-green text-lg">
+              ●
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-xs font-bold text-navy">
+                Ubicación capturada
+              </div>
+              <div className="text-[11px] text-muted font-mono">
+                {state.lat.toFixed(5)}, {state.lng.toFixed(5)}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={limpiarGPS}
+              className="text-xs text-navy-2 underline underline-offset-4"
+            >
+              Quitar
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={pedirGPS}
+            disabled={gpsState === "asking"}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border border-line-strong bg-paper text-navy font-semibold text-sm disabled:opacity-50"
+          >
+            {gpsState === "asking" ? "Pidiendo permiso…" : "📍 Usar mi ubicación"}
+          </button>
+        )}
+        {gpsState === "error" && (
+          <div className="text-[11px] text-svc-red mt-2 text-center">
+            No pudimos obtener tu ubicación. Podés seguir con la dirección.
+          </div>
+        )}
+      </div>
 
       <BotoneraPaso onAtras={onAtras} onSiguiente={onSiguiente} puede={puede} />
     </>
@@ -215,21 +280,32 @@ function PasoUbicacion({
 
 function PasoDetalle({
   svc,
-  titulo,
-  descripcion,
+  state,
   setField,
   onAtras,
   onSiguiente,
 }: {
   svc: SvcKey;
-  titulo: string;
-  descripcion: string;
+  state: State;
   setField: <K extends keyof State>(k: K, v: State[K]) => void;
   onAtras: () => void;
   onSiguiente: () => void;
 }) {
   const m = SVC_META[svc];
-  const puede = titulo.trim().length >= 3 && descripcion.trim().length >= 5;
+  const puede =
+    state.titulo.trim().length >= 3 && state.descripcion.trim().length >= 5;
+
+  function onFotos(e: React.ChangeEvent<HTMLInputElement>) {
+    const arr = Array.from(e.target.files ?? []);
+    setField("fotos", arr.slice(0, 5));
+  }
+
+  function quitarFoto(i: number) {
+    setField(
+      "fotos",
+      state.fotos.filter((_, idx) => idx !== i),
+    );
+  }
 
   return (
     <>
@@ -248,7 +324,7 @@ function PasoDetalle({
               type="button"
               onClick={() => setField("titulo", ex)}
               className={`text-left px-3 py-2.5 rounded-xl border text-sm transition ${
-                titulo === ex
+                state.titulo === ex
                   ? "border-navy-2 bg-navy-2/5 text-navy font-semibold"
                   : "border-line bg-paper text-navy hover:bg-paper-2"
               }`}
@@ -258,11 +334,9 @@ function PasoDetalle({
           ))}
           <input
             type="text"
-            value={
-              m.examples.includes(titulo) ? "" : titulo
-            }
+            value={m.examples.includes(state.titulo) ? "" : state.titulo}
             onChange={(e) => setField("titulo", e.target.value)}
-            placeholder="O escribilo con tus palabras..."
+            placeholder="O escribilo con tus palabras…"
             className="mt-1 w-full px-3 py-2.5 rounded-xl border border-dashed border-line-strong bg-paper-2 text-navy text-sm focus:outline-none focus:border-navy-2 focus:bg-paper"
           />
         </div>
@@ -273,13 +347,59 @@ function PasoDetalle({
           Contanos más detalles
         </span>
         <textarea
-          value={descripcion}
+          value={state.descripcion}
           onChange={(e) => setField("descripcion", e.target.value)}
           rows={4}
-          placeholder="Hace cuánto está el problema, en qué horario, si afecta a más vecinos..."
+          placeholder="Hace cuánto está el problema, en qué horario, si afecta a más vecinos…"
           className="w-full px-3 py-3 rounded-xl border border-line-strong bg-paper text-navy text-sm focus:outline-none focus:border-navy-2 focus:ring-2 focus:ring-navy-2/20 resize-none"
         />
       </label>
+
+      <div className="flex flex-col gap-2">
+        <span className="text-xs font-semibold text-navy">
+          Fotos{" "}
+          <span className="text-muted font-normal">
+            (opcional, hasta 5)
+          </span>
+        </span>
+        <label className="flex items-center justify-center gap-2 px-3 py-3 rounded-xl border border-dashed border-line-strong bg-paper-2 text-navy text-sm font-semibold cursor-pointer hover:bg-paper">
+          📷 Sacar foto o subir desde galería
+          <input
+            type="file"
+            accept="image/*"
+            capture="environment"
+            multiple
+            onChange={onFotos}
+            className="hidden"
+          />
+        </label>
+
+        {state.fotos.length > 0 && (
+          <div className="grid grid-cols-3 gap-2 mt-1">
+            {state.fotos.map((f, i) => {
+              const url = URL.createObjectURL(f);
+              return (
+                <div key={i} className="relative aspect-square rounded-xl overflow-hidden border border-line">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={url}
+                    alt={`foto ${i + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => quitarFoto(i)}
+                    className="absolute top-1 right-1 w-6 h-6 rounded-full bg-navy/80 text-white text-xs font-bold"
+                    aria-label="Quitar foto"
+                  >
+                    ×
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       <BotoneraPaso onAtras={onAtras} onSiguiente={onSiguiente} puede={puede} />
     </>
@@ -312,7 +432,19 @@ function PasoRevision({
         <Fila label="Servicio" value={m.label} />
         <Fila label="Dirección" value={state.direccion} />
         {state.barrio && <Fila label="Barrio" value={state.barrio} />}
+        {state.lat !== null && state.lng !== null && (
+          <Fila
+            label="GPS"
+            value={`${state.lat.toFixed(5)}, ${state.lng.toFixed(5)}`}
+          />
+        )}
         <Fila label="Situación" value={state.titulo} />
+        {state.fotos.length > 0 && (
+          <Fila
+            label="Fotos"
+            value={`${state.fotos.length} adjunta${state.fotos.length === 1 ? "" : "s"}`}
+          />
+        )}
         <div className="border-t border-line pt-2 mt-1">
           <div className="text-[11px] uppercase tracking-wider text-muted font-semibold mb-1">
             Detalles

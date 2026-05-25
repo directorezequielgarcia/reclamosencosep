@@ -16,7 +16,7 @@ export default async function ListoPage({
   const session = await auth();
   const reclamo = await prisma.reclamo.findUnique({
     where: { codigo },
-    include: { servicio: true, prestadora: true },
+    include: { servicio: true, prestadora: true, adjuntos: true },
   });
 
   if (!reclamo || reclamo.ciudadanoId !== session!.user.id) notFound();
@@ -27,6 +27,7 @@ export default async function ListoPage({
     month: "long",
     year: "numeric",
   });
+  const fotos = reclamo.adjuntos.filter((a) => a.tipo === "FOTO");
 
   return (
     <main className="flex flex-1 flex-col gap-5 py-6 items-center text-center">
@@ -58,6 +59,21 @@ export default async function ListoPage({
             </div>
           </div>
         </div>
+
+        {fotos.length > 0 && (
+          <div className="grid grid-cols-3 gap-1.5 mt-2">
+            {fotos.map((f) => (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                key={f.id}
+                src={f.url}
+                alt="foto del reclamo"
+                className="w-full aspect-square object-cover rounded-lg border border-line"
+              />
+            ))}
+          </div>
+        )}
+
         <div className="border-t border-line pt-2 mt-1 grid grid-cols-2 gap-2 text-xs">
           <div>
             <div className="text-muted">Prestadora</div>

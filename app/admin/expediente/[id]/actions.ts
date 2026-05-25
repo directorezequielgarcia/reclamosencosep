@@ -1,0 +1,124 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { z } from "zod";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import type { ExpedienteEstado, TipoActo } from "@prisma/client";
+
+const ActoSchema = z.object({
+  expedienteId: z.string().min(1),
+  tipo: z.enum([
+    "NOTIFICACION",
+    "INTIMACION",
+    "RESOLUCION",
+    "CIERRE",
+    "NOTA",
+    "DESCARGO_PRESTADORA",
+  ]),
+  titulo: z.string().min(3).max(200),
+  cuerpo: z.string().min(5).max(20000),
+});
+
+export async function agregarActo(formData: FormData) {
+  const session = await auth();
+  if (!session) throw new Error("Sin sesión");
+
+  const parsed = ActoSchema.safeParse({
+    expedienteId: formData.get("expedienteId"),
+    tipo: formData.get("tipo"),
+    titulo: formData.get("titulo"),
+    cuerpo: formData.get("cuerpo"),
+  });
+  if (!parsed.success) throw new Error("Datos inválidos");
+
+  const exp = await prisma.expediente.findUnique({
+    where: { id: parsed.data.expedienteId },
+  });
+  if (!exp) throw new Error("Expediente inexistente");
+
+  // Validar permisos por tipo de acto y rol
+  const esEnte =
+    session.user.rol === "GESTOR_ENTE" ||
+    session.user.rol === "SUPER_ADMIN";
+  const esOperadorEstaPrestadora =
+    session.user.rol === "OPERADOR_PRESTADORA" &&
+    session.user.prestadoraId === exp.prestadoraId;
+
+  if (parsed.data.tipo === "DESCARGO_PRESTADORA") {
+    if (!esOperadorEstaPrestadora) {
+      throw new Error("El descargo solo lo puede labrar la prestadora");
+    }
+  } else {
+    if (!esEnte) {
+      throw new Error("Solo el Ente puede labrar este tipo de acto");
+    }
+  }
+
+  const esCierre = parsed.data.tipo === "CIERRE";
+  const actualizaciones: Promise<unknown>[] = [
+    prisma.actoAdministrativo.create({
+      data: {
+        expedienteId: parsed.data.expedienteId,
+        tipo: parsed.data.tipo as TipoActo,
+        titulo: parsed.data.titulo,
+        cuerpo: parsed.data.cuerpo,
+        autorId: session.user.id,
+      },
+    }),
+  ];
+  if (esCierre) {
+    actualizaciones.push(
+      prisma.expediente.update({
+        where: { id: parsed.data.expedienteId },
+        data: { estado: "RESUELTO", cerradoEn: new Date() },
+      }),
+    );
+  } else if (exp.estado === "ABIERTO") {
+    actualizaciones.push(
+      prisma.expediente.update({
+        where: { id: parsed.data.expedienteId },
+        data: { estado: "EN_TRAMITE" },
+      }),
+    );
+  }
+  await Promise.all(actualizaciones);
+
+  revalidatePath(`/admin/expediente/${parsed.data.expedienteId}`);
+  revalidatePath(`/admin/expedientes`);
+}
+
+const CambiarEstadoExpSchema = z.object({
+  expedienteId: z.string().min(1),
+  estado: z.enum(["ABIERTO", "EN_TRAMITE", "RESUELTO", "ARCHIVADO"]),
+});
+
+export async function cambiarEstadoExpediente(formData: FormData) {
+  const session = await auth();
+  if (
+    !session ||
+    (session.user.rol !== "GESTOR_ENTE" && session.user.rol !== "SUPER_ADMIN")
+  ) {
+    throw new Error("Sin permiso");
+  }
+
+  const parsed = CambiarEstadoExpSchema.safeParse({
+    expedienteId: formData.get("expedienteId"),
+    estado: formData.get("estado"),
+  });
+  if (!parsed.success) throw new Error("Datos inválidos");
+
+  const esCierre =
+    parsed.data.estado === "RESUELTO" || parsed.data.estado === "ARCHIVADO";
+
+  await prisma.expediente.update({
+    where: { id: parsed.data.expedienteId },
+    data: {
+      estado: parsed.data.estado as ExpedienteEstado,
+      cerradoEn: esCierre ? new Date() : null,
+    },
+  });
+
+  revalidatePath(`/admin/expediente/${parsed.data.expedienteId}`);
+  revalidatePath(`/admin/expedientes`);
+}

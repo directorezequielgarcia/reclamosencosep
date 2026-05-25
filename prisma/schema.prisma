@@ -33,12 +33,14 @@ model Usuario {
   rol           Rol      @default(CIUDADANO)
   prestadoraId  String?
   prestadora    Prestadora? @relation(fields: [prestadoraId], references: [id])
-  reclamos      Reclamo[]   @relation("ReclamoCiudadano")
-  asignados     Reclamo[]   @relation("ReclamoAsignado")
-  eventos       ReclamoEvento[]
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  activo        Boolean  @default(true)
+  reclamos        Reclamo[]            @relation("ReclamoCiudadano")
+  asignados       Reclamo[]            @relation("ReclamoAsignado")
+  eventos         ReclamoEvento[]
+  expedientesAbiertos Expediente[]     @relation("ExpIniciador")
+  actos           ActoAdministrativo[] @relation("ActoAutor")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  activo          Boolean  @default(true)
 }
 
 // ─────────────────────────────────────────────
@@ -68,6 +70,7 @@ model Prestadora {
   servicios   Servicio[]
   operadores  Usuario[]
   reclamos    Reclamo[]
+  expedientes Expediente[]
   activa      Boolean    @default(true)
   createdAt   DateTime   @default(now())
 }
@@ -123,6 +126,9 @@ model Reclamo {
   slaHoras     Int           @default(72)
   slaDeadline  DateTime?
 
+  expedienteId String?
+  expediente   Expediente?   @relation(fields: [expedienteId], references: [id])
+
   adjuntos     Adjunto[]
   eventos      ReclamoEvento[]
 
@@ -133,6 +139,65 @@ model Reclamo {
   @@index([estado, servicioId])
   @@index([ciudadanoId])
   @@index([prestadoraId, estado])
+  @@index([expedienteId])
+}
+
+// ─────────────────────────────────────────────
+// Expedientes administrativos
+// El Ente puede elevar uno o varios reclamos a un expediente formal
+// contra una prestadora, con actos administrativos (intimaciones,
+// resoluciones, descargos, notificaciones, etc.).
+// ─────────────────────────────────────────────
+
+enum ExpedienteEstado {
+  ABIERTO
+  EN_TRAMITE
+  RESUELTO
+  ARCHIVADO
+}
+
+enum TipoActo {
+  CARATULACION
+  NOTIFICACION
+  INTIMACION
+  DESCARGO_PRESTADORA
+  RESOLUCION
+  CIERRE
+  NOTA
+}
+
+model Expediente {
+  id           String           @id @default(cuid())
+  numero       String           @unique          // ej: EXP-2026-001
+  caratula     String                            // ej: "ENCOSEP c/ SCPL s/ servicio de agua"
+  asunto       String
+  prestadoraId String
+  prestadora   Prestadora       @relation(fields: [prestadoraId], references: [id])
+  estado       ExpedienteEstado @default(ABIERTO)
+  iniciadorId  String                            // usuario del Ente que abrió
+  iniciador    Usuario          @relation("ExpIniciador", fields: [iniciadorId], references: [id])
+  reclamos     Reclamo[]
+  actos        ActoAdministrativo[]
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  cerradoEn    DateTime?
+
+  @@index([prestadoraId, estado])
+  @@index([estado])
+}
+
+model ActoAdministrativo {
+  id           String     @id @default(cuid())
+  expedienteId String
+  expediente   Expediente @relation(fields: [expedienteId], references: [id], onDelete: Cascade)
+  tipo         TipoActo
+  titulo       String
+  cuerpo       String                             // texto del acto (puede ser extenso)
+  autorId      String
+  autor        Usuario    @relation("ActoAutor", fields: [autorId], references: [id])
+  createdAt    DateTime   @default(now())
+
+  @@index([expedienteId, createdAt])
 }
 
 model ReclamoEvento {

@@ -1,10 +1,12 @@
 "use server";
 
+import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ROLES_EDIT, TRANSICIONES } from "@/lib/admin";
+import { siguienteNumero } from "@/lib/expedientes";
 import type { ReclamoEstado } from "@prisma/client";
 
 const CambiarEstadoSchema = z.object({
@@ -165,4 +167,85 @@ export async function reasignarPrestadora(formData: FormData) {
   ]);
 
   revalidatePath(`/admin/reclamo/${parsed.data.reclamoId}`);
+}
+
+const ElevarSchema = z.object({
+  reclamoId: z.string().min(1),
+  asunto: z.string().min(5).max(200),
+  caratula: z.string().min(5).max(200).optional(),
+});
+
+export async function elevarAExpediente(formData: FormData) {
+  const session = await auth();
+  if (
+    !session ||
+    (session.user.rol !== "GESTOR_ENTE" && session.user.rol !== "SUPER_ADMIN")
+  ) {
+    throw new Error("Solo el Ente puede elevar a expediente");
+  }
+
+  const parsed = ElevarSchema.safeParse({
+    reclamoId: formData.get("reclamoId"),
+    asunto: formData.get("asunto"),
+    caratula: formData.get("caratula") || undefined,
+  });
+  if (!parsed.success) throw new Error("Datos inválidos");
+
+  const reclamo = await prisma.reclamo.findUnique({
+    where: { id: parsed.data.reclamoId },
+    include: { prestadora: true, servicio: true },
+  });
+  if (!reclamo) throw new Error("Reclamo inexistente");
+  if (!reclamo.prestadoraId || !reclamo.prestadora) {
+    throw new Error("El reclamo no tiene prestadora asignada");
+  }
+  if (reclamo.expedienteId) {
+    throw new Error("Este reclamo ya está en un expediente");
+  }
+
+  // Generar número consecutivo del año
+  const existentes = await prisma.expediente.findMany({
+    select: { numero: true },
+  });
+  const numero = siguienteNumero(existentes.map((e) => e.numero));
+
+  const caratula =
+    parsed.data.caratula ??
+    `ENCOSEP c/ ${reclamo.prestadora.razonSocial} s/ ${reclamo.servicio.nombreCorto} — reclamo #${reclamo.codigo}`;
+
+  const exp = await prisma.expediente.create({
+    data: {
+      numero,
+      caratula,
+      asunto: parsed.data.asunto,
+      prestadoraId: reclamo.prestadoraId,
+      iniciadorId: session.user.id,
+      reclamos: { connect: { id: reclamo.id } },
+      actos: {
+        create: {
+          tipo: "CARATULACION",
+          titulo: `Apertura del expediente ${numero}`,
+          cuerpo:
+            `Se da por iniciado el presente expediente con motivo del reclamo ` +
+            `#${reclamo.codigo} (${reclamo.titulo}) presentado por el ciudadano ` +
+            `con domicilio en ${reclamo.direccion}. Se intima a la prestadora ` +
+            `${reclamo.prestadora.razonSocial} a tomar conocimiento.`,
+          autorId: session.user.id,
+        },
+      },
+    },
+  });
+
+  await prisma.reclamoEvento.create({
+    data: {
+      reclamoId: reclamo.id,
+      tipo: "NOTIFICACION",
+      autorId: session.user.id,
+      mensaje: `Elevado a expediente ${numero}`,
+    },
+  });
+
+  revalidatePath(`/admin/reclamo/${reclamo.id}`);
+  revalidatePath(`/admin/expedientes`);
+  redirect(`/admin/expediente/${exp.id}`);
 }

@@ -10,10 +10,13 @@ import {
 } from "@/lib/admin";
 import { EstadoBadge } from "@/components/ui/EstadoBadge";
 import { SvcIcon } from "@/components/servicios/SvcIcon";
+import { MiniMapa } from "@/components/mapa/MiniMapa";
 import { svcFromKind } from "@/lib/servicios";
+import { EXPEDIENTE_ESTADO_META } from "@/lib/expedientes";
 import {
   agregarComentario,
   cambiarEstado,
+  elevarAExpediente,
   reasignarPrestadora,
 } from "./actions";
 
@@ -38,6 +41,8 @@ export default async function ReclamoDetallePage({
       servicio: true,
       prestadora: true,
       ciudadano: true,
+      adjuntos: true,
+      expediente: true,
       eventos: {
         orderBy: { createdAt: "asc" },
         include: { autor: true },
@@ -52,14 +57,23 @@ export default async function ReclamoDetallePage({
   const puedeReasignar =
     session!.user.rol === "GESTOR_ENTE" ||
     session!.user.rol === "SUPER_ADMIN";
+  const puedeElevar =
+    (session!.user.rol === "GESTOR_ENTE" ||
+      session!.user.rol === "SUPER_ADMIN") &&
+    !reclamo.expedienteId &&
+    reclamo.prestadoraId !== null;
 
   const prestadoras = puedeReasignar
     ? await prisma.prestadora.findMany({
-        where: { activa: true, servicios: { some: { id: reclamo.servicioId } } },
+        where: {
+          activa: true,
+          servicios: { some: { id: reclamo.servicioId } },
+        },
         orderBy: { razonSocial: "asc" },
       })
     : [];
 
+  const fotos = reclamo.adjuntos.filter((a) => a.tipo === "FOTO");
   const fechaLarga = reclamo.createdAt.toLocaleString("es-AR", {
     day: "2-digit",
     month: "long",
@@ -85,6 +99,14 @@ export default async function ReclamoDetallePage({
                 #{reclamo.codigo}
               </h1>
               <EstadoBadge estado={reclamo.estado} />
+              {reclamo.expediente && (
+                <Link
+                  href={`/admin/expediente/${reclamo.expediente.id}`}
+                  className="text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border border-svc-orange text-svc-orange hover:bg-svc-orange/10"
+                >
+                  {reclamo.expediente.numero}
+                </Link>
+              )}
             </div>
             <div className="text-base text-navy font-semibold mt-1">
               {reclamo.titulo}
@@ -104,6 +126,29 @@ export default async function ReclamoDetallePage({
             </p>
           </Card>
 
+          {fotos.length > 0 && (
+            <Card titulo={`Fotos · ${fotos.length}`}>
+              <div className="grid grid-cols-3 gap-2">
+                {fotos.map((f) => (
+                  <a
+                    key={f.id}
+                    href={f.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="block aspect-square rounded-xl overflow-hidden border border-line hover:border-navy-2"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={f.url}
+                      alt="foto del reclamo"
+                      className="w-full h-full object-cover"
+                    />
+                  </a>
+                ))}
+              </div>
+            </Card>
+          )}
+
           <Card titulo="Ubicación">
             <div className="text-sm text-navy">
               {reclamo.direccion}
@@ -111,10 +156,15 @@ export default async function ReclamoDetallePage({
                 <span className="text-muted"> · {reclamo.barrio}</span>
               )}
             </div>
-            {reclamo.lat && reclamo.lng && (
-              <div className="text-xs text-muted mt-1 font-mono">
-                {reclamo.lat.toFixed(5)}, {reclamo.lng.toFixed(5)}
-              </div>
+            {reclamo.lat !== null && reclamo.lng !== null && (
+              <>
+                <div className="text-xs text-muted mt-1 font-mono">
+                  {reclamo.lat.toFixed(5)}, {reclamo.lng.toFixed(5)}
+                </div>
+                <div className="mt-3">
+                  <MiniMapa lat={reclamo.lat} lng={reclamo.lng} alto={220} />
+                </div>
+              </>
             )}
           </Card>
 
@@ -129,7 +179,9 @@ export default async function ReclamoDetallePage({
             </div>
           </Card>
 
-          <Card titulo={`Historial · ${reclamo.eventos.length} evento${reclamo.eventos.length === 1 ? "" : "s"}`}>
+          <Card
+            titulo={`Historial · ${reclamo.eventos.length} evento${reclamo.eventos.length === 1 ? "" : "s"}`}
+          >
             <ol className="flex flex-col gap-3">
               {reclamo.eventos.map((ev) => (
                 <li key={ev.id} className="flex gap-3">
@@ -203,7 +255,10 @@ export default async function ReclamoDetallePage({
             )}
 
             {puedeReasignar && prestadoras.length > 1 && (
-              <form action={reasignarPrestadora} className="mt-3 flex flex-col gap-2">
+              <form
+                action={reasignarPrestadora}
+                className="mt-3 flex flex-col gap-2"
+              >
                 <input type="hidden" name="reclamoId" value={reclamo.id} />
                 <label className="text-[10px] uppercase tracking-wider text-muted font-semibold">
                   Reasignar
@@ -229,12 +284,67 @@ export default async function ReclamoDetallePage({
             )}
           </Card>
 
+          {reclamo.expediente && (
+            <Card titulo="Expediente">
+              <Link
+                href={`/admin/expediente/${reclamo.expediente.id}`}
+                className="block"
+              >
+                <div className="text-base font-bold text-svc-orange font-mono">
+                  {reclamo.expediente.numero}
+                </div>
+                <div className="text-xs text-navy mt-0.5">
+                  {reclamo.expediente.caratula}
+                </div>
+                <div className="text-[11px] mt-1 font-semibold">
+                  {EXPEDIENTE_ESTADO_META[reclamo.expediente.estado].label}
+                </div>
+              </Link>
+            </Card>
+          )}
+
+          {puedeElevar && (
+            <Card titulo="Elevar a expediente">
+              <form action={elevarAExpediente} className="flex flex-col gap-2">
+                <input type="hidden" name="reclamoId" value={reclamo.id} />
+                <p className="text-xs text-muted leading-relaxed">
+                  Abrí un expediente administrativo contra{" "}
+                  <strong className="text-navy">
+                    {reclamo.prestadora?.razonSocial}
+                  </strong>{" "}
+                  con este reclamo como antecedente.
+                </p>
+                <label className="text-[10px] uppercase tracking-wider text-muted font-semibold">
+                  Asunto
+                </label>
+                <input
+                  name="asunto"
+                  required
+                  defaultValue={`Reclamo por ${reclamo.servicio.nombreCorto.toLowerCase()} — ${reclamo.titulo}`}
+                  className="px-2 py-1.5 rounded-lg border border-line-strong text-sm bg-paper"
+                />
+                <label className="text-[10px] uppercase tracking-wider text-muted font-semibold">
+                  Carátula{" "}
+                  <span className="text-muted font-normal">(opcional)</span>
+                </label>
+                <input
+                  name="caratula"
+                  placeholder={`ENCOSEP c/ ${reclamo.prestadora?.razonSocial} s/ ${reclamo.servicio.nombreCorto}`}
+                  className="px-2 py-1.5 rounded-lg border border-line-strong text-sm bg-paper"
+                />
+                <button
+                  type="submit"
+                  className="px-3 py-2 rounded-lg bg-svc-orange text-white text-sm font-bold mt-1"
+                >
+                  📁 Abrir expediente
+                </button>
+              </form>
+            </Card>
+          )}
+
           <Card titulo="SLA">
             <div className="text-sm text-navy">
-              Plazo:{" "}
-              <span className="font-semibold">
-                {reclamo.slaHoras}h
-              </span>
+              Plazo: <span className="font-semibold">{reclamo.slaHoras}h</span>
             </div>
             {reclamo.slaDeadline && (
               <div className="text-xs text-muted mt-0.5">
