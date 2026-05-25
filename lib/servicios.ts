@@ -1,0 +1,79 @@
+import type { ServicioKind } from "@prisma/client";
+
+export type SvcKey = "residuos" | "energia" | "agua" | "transporte";
+
+export const SVC_META: Record<
+  SvcKey,
+  {
+    kind: ServicioKind;
+    label: string;
+    short: string;
+    ring: string;
+    bg: string;
+    sub: string;
+    examples: string[];
+  }
+> = {
+  residuos: {
+    kind: "RESIDUOS",
+    label: "Gestión de Residuos",
+    short: "Residuos",
+    ring: "var(--c-green)",
+    bg: "var(--c-green)",
+    sub: "basura · contenedores",
+    examples: [
+      "No pasó el camión recolector",
+      "Contenedor roto o desbordado",
+      "Basurales en la vía pública",
+      "Residuos voluminosos sin retirar",
+    ],
+  },
+  energia: {
+    kind: "ENERGIA",
+    label: "Electricidad e Iluminación",
+    short: "Electricidad",
+    ring: "var(--c-yellow)",
+    bg: "var(--c-yellow)",
+    sub: "cortes · postes",
+    examples: [
+      "Corte de luz en mi cuadra",
+      "Luminaria apagada o titilante",
+      "Cable caído o riesgo eléctrico",
+      "Reiteración de cortes en el sector",
+    ],
+  },
+  agua: {
+    kind: "AGUA",
+    label: "Agua y Saneamiento",
+    short: "Agua",
+    ring: "var(--c-blue-l)",
+    bg: "var(--c-blue-l)",
+    sub: "cortes · pérdidas",
+    examples: [
+      "No tengo agua",
+      "Pérdida en la calle",
+      "Baja presión",
+      "Cloaca tapada o desborde",
+    ],
+  },
+  transporte: {
+    kind: "TRANSPORTE",
+    label: "Transporte Público",
+    short: "Transporte",
+    ring: "var(--c-red)",
+    bg: "var(--c-red)",
+    sub: "líneas · paradas",
+    examples: [
+      "El colectivo no pasó",
+      "Frecuencia irregular",
+      "Mal estado de la unidad",
+      "Cartel o parada dañada",
+    ],
+  },
+};
+
+export const SVC_ORDER: SvcKey[] = ["residuos", "energia", "agua", "transporte"];
+
+export function svcFromKind(kind: ServicioKind): SvcKey {
+  return kind.toLowerCase() as SvcKey;
+}
