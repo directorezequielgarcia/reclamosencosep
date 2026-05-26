@@ -35,9 +35,7 @@ export function MapaCalor({
     let cancelled = false;
     (async () => {
       const leaflet = await import("leaflet");
-      // @ts-expect-error sin types limpios
-      const heatModule = await import("leaflet.heat");
-      void heatModule;
+      await import("leaflet.heat");
 
       if (cancelled || !containerRef.current) return;
 
@@ -75,20 +73,25 @@ export function MapaCalor({
       const heatPoints = puntos.map(
         (p) => [p.lat, p.lng, 1] as [number, number, number],
       );
-      // @ts-expect-error L.heatLayer está agregado por leaflet.heat
-      leaflet
-        .heatLayer(heatPoints, {
-          radius: 28,
-          blur: 22,
-          maxZoom: 17,
-          gradient: {
-            0.2: "#4a8b3a", // verde — pocos
-            0.5: "#f0bc40", // amarillo — intermedio
-            0.8: "#e88a3c", // naranja — alto
-            1.0: "#c4393c", // rojo — muy alto
-          },
-        })
-        .addTo(map);
+      const heatLayer = (
+        leaflet as unknown as {
+          heatLayer: (
+            points: Array<[number, number, number]>,
+            options: Record<string, unknown>,
+          ) => L.Layer;
+        }
+      ).heatLayer;
+      heatLayer(heatPoints, {
+        radius: 28,
+        blur: 22,
+        maxZoom: 17,
+        gradient: {
+          0.2: "#4a8b3a",
+          0.5: "#f0bc40",
+          0.8: "#e88a3c",
+          1.0: "#c4393c",
+        },
+      }).addTo(map);
 
       // Markers tenues encima — círculos chicos por servicio
       const COLOR_SVC: Record<string, string> = {
