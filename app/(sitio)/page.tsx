@@ -16,10 +16,9 @@ export default function HomeInstitucional() {
     <>
       {/* HERO INSTITUCIONAL — imagen compuesta foto + anillos + EnCoSeP */}
       <section
-        className="relative text-white overflow-hidden"
+        className="relative text-white overflow-hidden w-full"
         style={{
-          aspectRatio: "16 / 10",
-          maxHeight: "720px",
+          height: "min(72vh, 720px)",
           minHeight: "460px",
         }}
       >
