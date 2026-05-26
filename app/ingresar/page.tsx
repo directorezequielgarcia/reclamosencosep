@@ -16,13 +16,14 @@ const AREAS = [
 export default async function IngresarPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; callbackUrl?: string }>;
+  searchParams: Promise<{ error?: string; callbackUrl?: string; reset?: string }>;
 }) {
   const session = await auth();
   if (session) redirect("/inicio");
 
   const sp = await searchParams;
   const error = sp.error;
+  const resetOk = sp.reset === "ok";
   const callbackUrl = sp.callbackUrl ?? "/inicio";
 
   async function login(formData: FormData) {
@@ -136,6 +137,11 @@ export default async function IngresarPage({
                 />
               </label>
 
+              {resetOk ? (
+                <div className="text-sm text-svc-green bg-svc-green/10 border border-svc-green/30 rounded-lg px-3 py-2">
+                  Tu clave fue actualizada. Ingresá con la nueva.
+                </div>
+              ) : null}
               {error ? (
                 <div className="text-sm text-svc-red bg-svc-red/10 border border-svc-red/30 rounded-lg px-3 py-2">
                   No pudimos validarte. Revisá DNI y clave.
@@ -148,6 +154,21 @@ export default async function IngresarPage({
               >
                 Ingresar
               </button>
+
+              <div className="flex items-center justify-between text-xs pt-1">
+                <Link
+                  href="/olvide-clave"
+                  className="text-navy underline underline-offset-4"
+                >
+                  Olvidé mi clave
+                </Link>
+                <Link
+                  href="/crear-cuenta"
+                  className="text-navy font-semibold underline underline-offset-4"
+                >
+                  Crear mi cuenta →
+                </Link>
+              </div>
             </form>
 
             <div className="text-xs text-muted text-center pt-3 border-t border-line">

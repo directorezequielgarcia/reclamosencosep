@@ -41,6 +41,10 @@ export default async function AdminLayout({
             <NavLink href="/admin/vencimientos">Vencimientos</NavLink>
             <NavLink href="/admin/boletines">Boletines</NavLink>
             <NavLink href="/admin/audiencias">Audiencias</NavLink>
+            {(session.user.rol === "SUPER_ADMIN" ||
+              session.user.rol === "GESTOR_ENTE") && (
+              <NavLink href="/admin/usuarios">Usuarios</NavLink>
+            )}
           </nav>
 
           <div className="ml-auto flex items-center gap-3">
@@ -50,9 +54,13 @@ export default async function AdminLayout({
                 {ROL_LABEL[session.user.rol]}
               </div>
             </div>
-            <div className="w-9 h-9 rounded-full bg-white text-navy flex items-center justify-center font-bold">
+            <Link
+              href="/mi-cuenta"
+              className="w-9 h-9 rounded-full bg-white text-navy flex items-center justify-center font-bold hover:opacity-90"
+              title="Mi cuenta"
+            >
               {inicial}
-            </div>
+            </Link>
             <form action={logout}>
               <button
                 type="submit"

@@ -23,16 +23,25 @@ export default function ReclamosLanding() {
         <div className="flex flex-col gap-5">
           <div className="flex flex-col sm:flex-row gap-3">
             <Link
-              href="/ingresar?callbackUrl=/inicio"
+              href="/crear-cuenta"
               className="inline-flex items-center justify-center px-5 py-3 rounded-xl bg-svc-red text-white font-bold text-base shadow-md shadow-svc-red/30 hover:opacity-90"
             >
-              Ingresar con DNI y reclamar
+              Crear cuenta y reclamar
             </Link>
             <Link
-              href="/atencion-usuarios"
+              href="/ingresar?callbackUrl=/inicio"
               className="inline-flex items-center justify-center px-5 py-3 rounded-xl border border-line-strong text-navy font-semibold"
             >
-              Otras vías de atención
+              Ya tengo cuenta, ingresar
+            </Link>
+          </div>
+
+          <div className="text-xs text-muted">
+            <Link
+              href="/atencion-usuarios"
+              className="underline underline-offset-4 text-navy-2"
+            >
+              Otras vías de atención al usuario →
             </Link>
           </div>
 
