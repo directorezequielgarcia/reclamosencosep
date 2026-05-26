@@ -31,58 +31,44 @@ const FUNCIONES_DIRECTORIO = [
   "Coordinar con el Concejo Deliberante y el Departamento Ejecutivo.",
 ];
 
-// Áreas operativas que reportan al Directorio. Cada una con su responsable
-// actual y el detalle de funciones, según el organigrama institucional.
-const AREAS = [
+// Ciclo Operativo de la Gestión Pública — 4 etapas concatenadas
+// que recorren el circuito completo del control institucional.
+const CICLO = [
   {
-    rol: "Comunicación y Medios",
-    titular: "Marcos Barrionuevo",
-    cargo: "Analista Responsable",
-    funciones: [
-      "Planificación de medios: agendas mensuales, entrevistas",
-      "Monitoreo de información: redes, portales, carpetas Drive",
-      "Diseño de campañas semestrales (derechos, funciones, fiscalización)",
-      "Producción de contenidos: videos, fotos, notas, copys",
-    ],
-  },
-  {
-    rol: "Atención a Usuarios e Inspecciones",
+    n: "01",
+    titulo: "Servicios: Atención y Acercamiento",
     titular: "Julieta Palacios",
-    cargo: "Analista Responsable",
-    funciones: [
-      "Atención telefónica y registro (resumen-minuta)",
-      "Inspecciones oculares y recorridos semanales (basura, postes, desbordes, agua)",
-      "Carga de evidencia en Drive",
-      "Relevamiento diario del Boletín Oficial MCR (Excel)",
-      "Gestión de compras y recursos (presupuestos, comprobantes)",
-      "Informe mensual (hasta día 5)",
-    ],
+    area: "Área de Atención a Usuarios e Inspecciones",
+    icono: "👂",
+    cuerpo:
+      "El ciclo operativo se inicia en el territorio. Entendemos que atender al usuario cuando lo necesita es un servicio esencial, pero acercarse a cada barrio es otro servicio complementario e igual de crucial. A través de la atención primaria y las inspecciones oculares periódicas, constatamos en el lugar las fallas reales en las prestaciones cotidianas (agua, cloacas, energía o higiene urbana), humanizando el control estatal y brindando respuestas rápidas a pie de calle.",
   },
   {
-    rol: "Gestión de Expedientes y Trámites",
+    n: "02",
+    titulo: "Formalidad y Fuerza Legal",
     titular: "Yanina del Bono",
-    cargo: "Analista Responsable",
-    funciones: [
-      "Atención a usuarios: consultas, soporte inicial",
-      "Apertura y seguimiento de expedientes (trazabilidad, carátula)",
-      "Elaboración y presentación de notas por canales formales",
-      "Registro institucional en libros oficiales (reuniones Directorio, resoluciones)",
-      "Soporte a inspecciones y reclamos",
-      "Listado mensual (hasta día 5)",
-    ],
+    area: "Área de Gestión de Expedientes y Trámites",
+    icono: "⚖️",
+    cuerpo:
+      "Una vez detectada y constatada la problemática en los barrios, le damos el respaldo institucional que corresponde. Gestionar los expedientes y realizar un seguimiento estricto de los casos pendientes es lo que le otorga formalidad al reclamo y la fuerza legal necesaria. Mediante esta etapa garantizamos la trazabilidad absoluta de cada actuación, impidiendo que las quejas queden archivadas o sin respuesta, y obligando administrativamente a las empresas prestatarias a resolver los inconvenientes bajo el amparo de la normativa vigente.",
   },
   {
-    rol: "Control Documental y Certificaciones",
+    n: "03",
+    titulo: "Cuidado del Control Documental y Costos",
     titular: "Adriana Almonacid",
-    cargo: "Analista Responsable",
-    funciones: [
-      "Atención a prestadoras: consultas, procedimientos",
-      "Recepción documental: verificación y orden",
-      "Análisis y control técnico (certificaciones, informes, contratos, obras)",
-      "Elaboración de checklists (Urbana, SCPL, Patagonia, otras)",
-      "Emisión de informes de certificación: cumplimiento / incumplimiento",
-      "Elevar a Directivos",
-    ],
+    area: "Área de Control Documental y Certificaciones",
+    icono: "🛡️",
+    cuerpo:
+      "Con el reclamo formalizado y las pruebas del territorio, el ciclo pasa a una rigurosa auditoría de fondo. El control de los costos contractuales y de la documentación técnica es el mecanismo clave para cuidar los impuestos del contribuyente y darle un sentido real al monitoreo de la gestión pública. Al auditar minuciosamente que cada gasto declarado por las empresas esté estrictamente acorde a las obras y contratos de concesión, logramos dictámenes técnicos mucho más sólidos. Esto se traduce de forma directa en un menor costo de erogación para la Municipalidad, protegiendo el bolsillo de toda la comunidad frente a tarifas o inversiones injustificadas.",
+  },
+  {
+    n: "04",
+    titulo: "Gestión de Comunicación y Visibilidad",
+    titular: "Marcos Barrionuevo",
+    area: "Área de Comunicación y Medios",
+    icono: "📣",
+    cuerpo:
+      "El circuito no termina puertas adentro del organismo, sino devolviéndole el protagonismo a la ciudadanía. Gestionar la comunicación de manera abierta y transparente permite que conozcas tus derechos, transmitir información clara y hacer visible tu reclamo. A través de campañas institucionales bajo la premisa de «Alza tu voz», difundimos las herramientas de participación, transparentamos las correcciones exigidas a las prestadoras y rendimos cuentas públicas de todo lo actuado.",
   },
 ];
 
@@ -243,47 +229,109 @@ export default function Nosotros() {
         </ol>
       </section>
 
-      {/* AREAS / COLABORADORES */}
+      {/* CICLO OPERATIVO DE LA GESTIÓN PÚBLICA */}
       <section className="mt-14">
         <div className="text-xs font-bold tracking-widest uppercase text-muted">
-          Equipo
+          Cómo trabajamos
+        </div>
+        <h2 className="text-2xl md:text-3xl font-extrabold text-navy mt-1">
+          Ciclo Operativo de la Gestión Pública:
+          <br className="hidden sm:block" /> El Control es Gestión
+        </h2>
+        <p className="text-sm text-navy mt-3 max-w-3xl leading-relaxed">
+          En el ENCOSEP no trabajamos con tareas aisladas ni burocráticas; nos
+          movemos a través de un <strong>circuito continuo</strong> diseñado
+          para transformar la fiscalización técnica en valor y soluciones
+          concretas para cada habitante de Comodoro Rivadavia. Cada área
+          interviene estratégicamente en una etapa clave del proceso para
+          cuidar tus recursos y hacer valer tus derechos.
+        </p>
+
+        <ol className="mt-8 flex flex-col gap-4 relative">
+          {/* Línea vertical conectora */}
+          <div
+            aria-hidden
+            className="hidden md:block absolute left-[44px] top-12 bottom-12 w-0.5 bg-gradient-to-b from-svc-orange via-svc-blue to-svc-green opacity-40"
+          />
+
+          {CICLO.map((c) => (
+            <li
+              key={c.n}
+              className="grid md:grid-cols-[88px_1fr] gap-4 items-start"
+            >
+              <div className="flex md:flex-col items-center gap-2 relative z-10">
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-svc-orange to-svc-red flex items-center justify-center text-white font-extrabold text-2xl shadow-lg">
+                  {c.n}
+                </div>
+                <div className="text-3xl md:mt-1">{c.icono}</div>
+              </div>
+              <div className="rounded-2xl border border-line bg-paper p-5">
+                <h3 className="text-lg font-extrabold text-navy leading-tight">
+                  {c.titulo}
+                </h3>
+                <div className="text-xs text-muted mt-1">
+                  <strong className="text-navy-2">{c.titular}</strong> · {c.area}
+                </div>
+                <p className="text-sm text-navy mt-3 leading-relaxed">
+                  {c.cuerpo}
+                </p>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      {/* DIRECCIÓN ESTRATÉGICA Y SOPORTE TÉCNICO */}
+      <section className="mt-14">
+        <div className="text-xs font-bold tracking-widest uppercase text-muted">
+          Conducción y soporte
         </div>
         <h2 className="text-2xl font-extrabold text-navy mt-1">
-          Áreas y colaboradores
+          Dirección Estratégica y Soporte Técnico
         </h2>
         <p className="text-sm text-muted mt-2 max-w-3xl">
-          El Ente trabaja con un equipo profesional organizado en cuatro áreas
-          operativas que reportan al Directorio, con responsable y funciones
-          definidas.
+          Para asegurar que este ciclo de valor público gire de manera
+          ininterrumpida y eficiente, la estructura cuenta con dos pilares de
+          conducción y asistencia:
         </p>
 
         <div className="grid md:grid-cols-2 gap-4 mt-5">
-          {AREAS.map((a) => (
-            <div
-              key={a.rol}
-              className="rounded-2xl border border-line bg-paper p-5 flex flex-col gap-3"
-            >
-              <header>
-                <div className="text-[11px] uppercase tracking-widest text-svc-orange font-bold">
-                  {a.cargo}
-                </div>
-                <h3 className="text-lg font-extrabold text-navy mt-0.5">
-                  {a.titular}
-                </h3>
-                <div className="text-sm font-semibold text-navy-2 mt-1">
-                  {a.rol}
-                </div>
-              </header>
-              <ul className="text-sm text-navy space-y-1.5 list-disc list-inside leading-snug">
-                {a.funciones.map((f, i) => (
-                  <li key={i}>{f}</li>
-                ))}
-              </ul>
+          <div className="rounded-2xl border-2 border-navy/30 bg-gradient-to-br from-navy/5 to-paper p-5">
+            <div className="text-[11px] font-bold uppercase tracking-widest text-navy">
+              El Directorio
             </div>
-          ))}
+            <h3 className="text-lg font-extrabold text-navy mt-1">
+              Cristian, Ezequiel y Maximiliano
+            </h3>
+            <p className="text-sm text-navy mt-2 leading-relaxed">
+              Conducen al equipo para llevar adelante la gestión del control.
+              Se encargan de velar por el norte institucional del organismo,
+              coordinar las políticas del mandato, elaborar los informes
+              mensuales técnicos, mantener reuniones clave con las secretarías
+              de aplicación u otros poderes, y proponer formalmente las
+              sanciones correspondientes ante los incumplimientos detectados.
+            </p>
+          </div>
+
+          <div className="rounded-2xl border-2 border-svc-orange/30 bg-gradient-to-br from-svc-orange/5 to-paper p-5">
+            <div className="text-[11px] font-bold uppercase tracking-widest text-svc-orange">
+              Asesores externos y soporte IT
+            </div>
+            <h3 className="text-lg font-extrabold text-navy mt-1">
+              Equipo técnico especializado
+            </h3>
+            <p className="text-sm text-navy mt-2 leading-relaxed">
+              El ciclo operativo se nutre continuamente de la colaboración de
+              ambientalistas, técnicos eléctricos y otros oficios
+              especializados para dotar de rigurosidad la confección de
+              dictámenes e informes complejos, sumado a un soporte informático
+              estratégico enfocado en mejorar la performance, los sistemas de
+              reclamos y la eficiencia de la gestión pública.
+            </p>
+          </div>
         </div>
 
-        <div className="mt-5 rounded-xl border border-dashed border-line-strong bg-paper-2 p-4 text-xs text-muted leading-relaxed">
+        <div className="mt-6 rounded-xl border border-dashed border-line-strong bg-paper-2 p-4 text-xs text-muted leading-relaxed">
           <strong className="text-navy">Aspectos cubiertos:</strong> Claridad,
           transparencia, trazabilidad, rigor técnico, cumplimiento normativo,
           atención ciudadana y fiscalización efectiva.
