@@ -11,20 +11,16 @@ const USER_AGENT =
   "ENCOSEP Reclamos Portal (https://reclamosencosep.vercel.app)";
 const VIEWBOX = "-67.65,-45.75,-67.35,-45.95";
 
-async function geocode(direccion, barrio) {
-  const partes = [direccion.trim()];
-  if (barrio?.trim()) partes.push(barrio.trim());
-  partes.push("Comodoro Rivadavia", "Chubut", "Argentina");
-  const q = partes.join(", ");
-
+async function tryQuery(q, bounded) {
   const url = new URL("https://nominatim.openstreetmap.org/search");
   url.searchParams.set("q", q);
   url.searchParams.set("format", "json");
   url.searchParams.set("limit", "1");
-  url.searchParams.set("viewbox", VIEWBOX);
-  url.searchParams.set("bounded", "1");
+  if (bounded) {
+    url.searchParams.set("viewbox", VIEWBOX);
+    url.searchParams.set("bounded", "1");
+  }
   url.searchParams.set("countrycodes", "ar");
-
   const resp = await fetch(url, {
     headers: {
       "User-Agent": USER_AGENT,
@@ -38,7 +34,56 @@ async function geocode(direccion, barrio) {
   const lat = Number(data[0].lat);
   const lng = Number(data[0].lon);
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  // Validar Patagonia/Chubut aproximado
+  if (lat < -47 || lat > -45 || lng < -68 || lng > -67) return null;
   return { lat, lng };
+}
+
+// Centro aproximado de Comodoro Rivadavia (fallback final)
+const CENTRO_COMODORO = { lat: -45.864, lng: -67.4969 };
+
+async function geocode(direccion, barrio) {
+  const calleNum = direccion.trim();
+
+  // 1) bounded + barrio
+  let q = [calleNum];
+  if (barrio?.trim()) q.push(barrio.trim());
+  q.push("Comodoro Rivadavia", "Chubut", "Argentina");
+  let r = await tryQuery(q.join(", "), true);
+  if (r) return r;
+  await new Promise((res) => setTimeout(res, 1100));
+
+  // 2) sin bounded + barrio
+  r = await tryQuery(q.join(", "), false);
+  if (r) return r;
+  await new Promise((res) => setTimeout(res, 1100));
+
+  // 3) sin barrio
+  r = await tryQuery(
+    `${calleNum}, Comodoro Rivadavia, Chubut, Argentina`,
+    false,
+  );
+  if (r) return r;
+  await new Promise((res) => setTimeout(res, 1100));
+
+  // 4) sólo calle (sin número), con ciudad
+  const sinNumero = calleNum.replace(/\s+\d+\s*$/, "").trim();
+  if (sinNumero && sinNumero !== calleNum) {
+    r = await tryQuery(
+      `${sinNumero}, Comodoro Rivadavia, Chubut, Argentina`,
+      false,
+    );
+    if (r) return r;
+    await new Promise((res) => setTimeout(res, 1100));
+  }
+
+  // 5) Fallback: centro de Comodoro + pequeño jitter (para no acumular
+  //    todos los reclamos exactamente en el mismo pixel)
+  const jitter = (n) => n + (Math.random() - 0.5) * 0.01;
+  return {
+    lat: jitter(CENTRO_COMODORO.lat),
+    lng: jitter(CENTRO_COMODORO.lng),
+  };
 }
 
 const pendientes = await p.reclamo.findMany({
