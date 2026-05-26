@@ -200,18 +200,25 @@ function PasoUbicacion({
     setGpsState("idle");
   }
 
-  const puede = state.direccion.trim().length >= 3;
+  const tieneGps = state.lat !== null && state.lng !== null;
+  const tieneDireccion = state.direccion.trim().length >= 3;
+  const puede = tieneGps || tieneDireccion;
 
   return (
     <>
       <CabeceraPaso
         svc={svc}
         titulo="¿Dónde está el problema?"
-        subtitulo="Indicá la dirección y, si querés, agregá tu ubicación GPS."
+        subtitulo="Usá GPS, escribí la dirección, o las dos juntas."
       />
 
       <label className="flex flex-col gap-1">
-        <span className="text-xs font-semibold text-navy">Dirección</span>
+        <span className="text-xs font-semibold text-navy">
+          Dirección{" "}
+          <span className="text-muted font-normal">
+            {tieneGps ? "(opcional · ya capturaste GPS)" : "(si no usás GPS)"}
+          </span>
+        </span>
         <input
           type="text"
           value={state.direccion}

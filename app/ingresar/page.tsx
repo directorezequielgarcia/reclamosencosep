@@ -47,14 +47,19 @@ export default async function IngresarPage({
 
         <form action={login} className="flex flex-col gap-4">
           <label className="flex flex-col gap-1">
-            <span className="text-xs font-semibold text-navy">DNI</span>
+            <span className="text-xs font-semibold text-navy">
+              DNI{" "}
+              <span className="text-muted font-normal">
+                (o CUIT, si sos prestadora)
+              </span>
+            </span>
             <input
               name="dni"
               type="text"
               inputMode="numeric"
               autoComplete="username"
               required
-              placeholder="27345678"
+              placeholder="27345678 · ó 30528775409"
               className="w-full px-3 py-3 rounded-xl border border-line-strong bg-paper text-navy text-base focus:outline-none focus:border-navy-2 focus:ring-2 focus:ring-navy-2/20"
             />
           </label>

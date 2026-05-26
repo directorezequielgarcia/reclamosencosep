@@ -63,38 +63,41 @@ export default async function MisReclamosPage() {
               month: "short",
             });
             return (
-              <li
-                key={r.id}
-                className="flex items-start gap-3 p-3 rounded-xl border border-line bg-paper"
-              >
-                <SvcIcon kind={svc} size={44} />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-mono font-bold text-navy text-sm">
-                      #{r.codigo}
-                    </span>
-                    <span
-                      className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full ${ESTADO_COLOR[r.estado]}`}
-                    >
-                      {ESTADO_LABEL[r.estado]}
-                    </span>
-                    <span className="text-[11px] text-muted ml-auto">
-                      {fecha}
-                    </span>
-                  </div>
-                  <div className="text-sm font-semibold text-navy mt-0.5 truncate">
-                    {r.titulo}
-                  </div>
-                  <div className="text-xs text-muted truncate">
-                    {r.direccion}
-                    {r.barrio ? ` · ${r.barrio}` : ""}
-                  </div>
-                  {r.prestadora && (
-                    <div className="text-[11px] text-muted mt-1">
-                      Derivado a {r.prestadora.razonSocial}
+              <li key={r.id}>
+                <Link
+                  href={`/mis-reclamos/${r.codigo}`}
+                  className="flex items-start gap-3 p-3 rounded-xl border border-line bg-paper hover:bg-paper-2 transition"
+                >
+                  <SvcIcon kind={svc} size={44} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-mono font-bold text-navy text-sm">
+                        #{r.codigo}
+                      </span>
+                      <span
+                        className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full ${ESTADO_COLOR[r.estado]}`}
+                      >
+                        {ESTADO_LABEL[r.estado]}
+                      </span>
+                      <span className="text-[11px] text-muted ml-auto">
+                        {fecha}
+                      </span>
                     </div>
-                  )}
-                </div>
+                    <div className="text-sm font-semibold text-navy mt-0.5 truncate">
+                      {r.titulo}
+                    </div>
+                    <div className="text-xs text-muted truncate">
+                      {r.direccion}
+                      {r.barrio ? ` · ${r.barrio}` : ""}
+                    </div>
+                    {r.prestadora && (
+                      <div className="text-[11px] text-muted mt-1">
+                        Derivado a {r.prestadora.razonSocial}
+                      </div>
+                    )}
+                  </div>
+                  <span className="text-muted text-lg self-center">›</span>
+                </Link>
               </li>
             );
           })}

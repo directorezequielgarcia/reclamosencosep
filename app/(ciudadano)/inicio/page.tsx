@@ -71,7 +71,7 @@ export default async function InicioPage() {
               return (
                 <li key={r.id}>
                   <Link
-                    href={`/mis-reclamos`}
+                    href={`/mis-reclamos/${r.codigo}`}
                     className="flex items-center gap-3 p-2.5 rounded-xl border border-line bg-paper hover:bg-paper-2"
                   >
                     <SvcIcon kind={kind} size={40} />

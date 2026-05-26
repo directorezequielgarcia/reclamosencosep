@@ -8,15 +8,22 @@ import { guardarFotoReclamo } from "@/lib/uploads";
 
 export const runtime = "nodejs";
 
-const BodySchema = z.object({
-  svc: z.enum(["residuos", "energia", "agua", "transporte"]),
-  titulo: z.string().min(3).max(120),
-  descripcion: z.string().min(5).max(2000),
-  direccion: z.string().min(3).max(200),
-  barrio: z.string().max(80).optional().nullable(),
-  lat: z.number().min(-90).max(90).optional().nullable(),
-  lng: z.number().min(-180).max(180).optional().nullable(),
-});
+const BodySchema = z
+  .object({
+    svc: z.enum(["residuos", "energia", "agua", "transporte"]),
+    titulo: z.string().min(3).max(120),
+    descripcion: z.string().min(5).max(2000),
+    direccion: z.string().max(200).optional().nullable(),
+    barrio: z.string().max(80).optional().nullable(),
+    lat: z.number().min(-90).max(90).optional().nullable(),
+    lng: z.number().min(-180).max(180).optional().nullable(),
+  })
+  .refine(
+    (d) =>
+      (typeof d.direccion === "string" && d.direccion.trim().length >= 3) ||
+      (d.lat !== null && d.lat !== undefined && d.lng !== null && d.lng !== undefined),
+    { message: "Se requiere dirección o coordenadas GPS" },
+  );
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -104,6 +111,12 @@ export async function POST(req: Request) {
   const slaHoras = 72;
   const slaDeadline = new Date(Date.now() + slaHoras * 60 * 60 * 1000);
 
+  const direccionPersistida =
+    (datos.direccion && datos.direccion.trim()) ||
+    (datos.lat !== null && datos.lat !== undefined
+      ? `Coordenadas GPS ${datos.lat?.toFixed(5)}, ${datos.lng?.toFixed(5)}`
+      : "Sin dirección");
+
   const reclamo = await prisma.reclamo.create({
     data: {
       codigo,
@@ -112,7 +125,7 @@ export async function POST(req: Request) {
       prestadoraId: prestadora?.id ?? null,
       titulo: datos.titulo,
       descripcion: datos.descripcion,
-      direccion: datos.direccion,
+      direccion: direccionPersistida,
       barrio: datos.barrio ?? null,
       lat: datos.lat ?? null,
       lng: datos.lng ?? null,
