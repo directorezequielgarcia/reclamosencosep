@@ -10,7 +10,6 @@ const NAV = [
   { href: "/boletines", label: "Boletines" },
   { href: "/audiencias", label: "Audiencias" },
   { href: "/indicadores", label: "Indicadores" },
-  { href: "/mapa-calor", label: "Mapa de calor" },
   { href: "/contacto", label: "Contacto" },
 ];
 

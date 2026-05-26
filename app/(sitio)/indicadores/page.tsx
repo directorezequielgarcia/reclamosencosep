@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { SeccionHeader } from "@/components/ui/SeccionHeader";
 import { SVC_META, SVC_ORDER, svcFromKind } from "@/lib/servicios";
 import { ESTADO_META, TONE_CLASS } from "@/lib/admin";
+import { MapaCalor, type PuntoCalor } from "@/components/mapa/MapaCalor";
 import type { ReclamoEstado } from "@prisma/client";
 
 export const metadata = { title: "Indicadores · ENCOSEP" };
@@ -19,35 +20,64 @@ export default async function IndicadoresPage() {
   const anoActual = ahora.getFullYear();
   const desdeAno = new Date(anoActual, 0, 1);
 
-  const [total, totalAno, porEstado, porServicio, porPrestadora, encuesta, reclamosCerrados] =
-    await Promise.all([
-      prisma.reclamo.count(),
-      prisma.reclamo.count({ where: { createdAt: { gte: desdeAno } } }),
-      prisma.reclamo.groupBy({ by: ["estado"], _count: { _all: true } }),
-      prisma.reclamo.groupBy({
-        by: ["servicioId"],
-        where: { createdAt: { gte: desdeAno } },
-        _count: { _all: true },
-      }),
-      prisma.reclamo.groupBy({
-        by: ["prestadoraId", "estado"],
-        _count: { _all: true },
-        where: { prestadoraId: { not: null } },
-      }),
-      prisma.encuestaServicios.aggregate({
-        _avg: {
-          puntajeAgua: true,
-          puntajeEnergia: true,
-          puntajeResiduos: true,
-          puntajeTransporte: true,
-        },
-        _count: { _all: true },
-      }),
-      prisma.reclamo.findMany({
-        where: { cerradoEn: { not: null } },
-        select: { createdAt: true, cerradoEn: true },
-      }),
-    ]);
+  const [
+    total,
+    totalAno,
+    porEstado,
+    porServicio,
+    porPrestadora,
+    encuesta,
+    reclamosCerrados,
+    reclamosConGps,
+  ] = await Promise.all([
+    prisma.reclamo.count(),
+    prisma.reclamo.count({ where: { createdAt: { gte: desdeAno } } }),
+    prisma.reclamo.groupBy({ by: ["estado"], _count: { _all: true } }),
+    prisma.reclamo.groupBy({
+      by: ["servicioId"],
+      where: { createdAt: { gte: desdeAno } },
+      _count: { _all: true },
+    }),
+    prisma.reclamo.groupBy({
+      by: ["prestadoraId", "estado"],
+      _count: { _all: true },
+      where: { prestadoraId: { not: null } },
+    }),
+    prisma.encuestaServicios.aggregate({
+      _avg: {
+        puntajeAgua: true,
+        puntajeEnergia: true,
+        puntajeResiduos: true,
+        puntajeTransporte: true,
+      },
+      _count: { _all: true },
+    }),
+    prisma.reclamo.findMany({
+      where: { cerradoEn: { not: null } },
+      select: { createdAt: true, cerradoEn: true },
+    }),
+    prisma.reclamo.findMany({
+      where: { lat: { not: null }, lng: { not: null } },
+      select: {
+        codigo: true,
+        lat: true,
+        lng: true,
+        estado: true,
+        servicio: { select: { kind: true } },
+      },
+      take: 5000,
+    }),
+  ]);
+
+  const puntos: PuntoCalor[] = reclamosConGps
+    .filter((r) => r.lat !== null && r.lng !== null)
+    .map((r) => ({
+      lat: r.lat as number,
+      lng: r.lng as number,
+      estado: r.estado,
+      codigo: r.codigo,
+      servicio: r.servicio.kind as PuntoCalor["servicio"],
+    }));
 
   const servicios = await prisma.servicio.findMany();
   const prestadoras = await prisma.prestadora.findMany();
@@ -157,6 +187,61 @@ export default async function IndicadoresPage() {
             value={tiempoMedioHoras ? `${tiempoMedioHoras}h` : "—"}
             tone="neutral"
           />
+        </section>
+
+        {/* MAPA DE CALOR */}
+        <section className="rounded-2xl border border-line bg-paper p-6">
+          <div className="flex items-baseline justify-between mb-3 flex-wrap gap-2">
+            <h2 className="text-base font-extrabold text-navy uppercase tracking-wider">
+              Mapa de calor de reclamos
+            </h2>
+            <span className="text-xs text-muted">
+              {puntos.length} reclamo{puntos.length === 1 ? "" : "s"} con
+              ubicación GPS
+            </span>
+          </div>
+          {puntos.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-line-strong bg-paper-2 p-8 text-center text-muted text-sm">
+              Aún no hay reclamos con ubicación GPS cargada.
+            </div>
+          ) : (
+            <>
+              <MapaCalor puntos={puntos} alto={460} />
+              <div className="grid sm:grid-cols-2 gap-3 mt-4">
+                <div className="rounded-xl border border-line bg-paper-2 p-3">
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-muted mb-1">
+                    Intensidad
+                  </div>
+                  <div
+                    className="h-3 rounded-full"
+                    style={{
+                      background:
+                        "linear-gradient(90deg, #4a8b3a 0%, #f0bc40 33%, #e88a3c 66%, #c4393c 100%)",
+                    }}
+                  />
+                  <div className="flex justify-between text-[10px] text-muted mt-1">
+                    <span>Pocos reclamos</span>
+                    <span>Muchos reclamos</span>
+                  </div>
+                </div>
+                <div className="rounded-xl border border-line bg-paper-2 p-3">
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-muted mb-1">
+                    Color del punto = servicio
+                  </div>
+                  <div className="grid grid-cols-2 gap-1 text-[11px]">
+                    <Leyenda color="#4ba8c2" label="Agua y Saneamiento" />
+                    <Leyenda color="#f0bc40" label="Energía" />
+                    <Leyenda color="#4a8b3a" label="Residuos" />
+                    <Leyenda color="#7e57c2" label="Transporte" />
+                  </div>
+                </div>
+              </div>
+              <p className="text-[11px] text-muted mt-3 leading-relaxed">
+                Datos anonimizados: el mapa muestra ubicación y servicio, sin
+                nombre ni DNI. Click en un punto para ver el código del reclamo.
+              </p>
+            </>
+          )}
         </section>
 
         {/* POR ESTADO */}
@@ -283,6 +368,18 @@ export default async function IndicadoresPage() {
         </section>
       </main>
     </>
+  );
+}
+
+function Leyenda({ color, label }: { color: string; label: string }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <span
+        className="inline-block w-2.5 h-2.5 rounded-full"
+        style={{ background: color }}
+      />
+      <span className="text-navy">{label}</span>
+    </div>
   );
 }
 
