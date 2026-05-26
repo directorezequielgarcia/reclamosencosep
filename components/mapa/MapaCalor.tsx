@@ -108,12 +108,12 @@ export function MapaCalor({
       };
       for (const p of puntos) {
         const c = leaflet.circleMarker([p.lat, p.lng], {
-          radius: 4,
-          color: COLOR_SVC[p.servicio] ?? "#1d3550",
-          weight: 1.5,
+          radius: 9,
+          color: "#ffffff",
+          weight: 2.5,
           fillColor: COLOR_SVC[p.servicio] ?? "#1d3550",
-          fillOpacity: 0.85,
-          opacity: 0.9,
+          fillOpacity: 1,
+          opacity: 1,
         }).addTo(map);
         c.bindPopup(
           `<div style="font-family: Inter, system-ui, sans-serif; font-size: 12px;">
