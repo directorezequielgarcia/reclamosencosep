@@ -29,6 +29,8 @@ export default async function IndicadoresPage() {
     encuesta,
     reclamosCerrados,
     reclamosConGps,
+    todosReclamos,
+    encuestaReclamos,
   ] = await Promise.all([
     prisma.reclamo.count(),
     prisma.reclamo.count({ where: { createdAt: { gte: desdeAno } } }),
@@ -67,6 +69,22 @@ export default async function IndicadoresPage() {
       },
       take: 5000,
     }),
+    prisma.reclamo.findMany({
+      select: {
+        barrio: true,
+        titulo: true,
+        lat: true,
+        lng: true,
+        createdAt: true,
+        servicio: { select: { kind: true } },
+        adjuntos: { select: { id: true }, take: 1 },
+      },
+    }),
+    prisma.reclamo.aggregate({
+      where: { encuestaEn: { not: null } },
+      _avg: { puntajeEnte: true, puntajePrestadora: true },
+      _count: { _all: true },
+    }),
   ]);
 
   const puntos: PuntoCalor[] = reclamosConGps
@@ -78,6 +96,90 @@ export default async function IndicadoresPage() {
       codigo: r.codigo,
       servicio: r.servicio.kind as PuntoCalor["servicio"],
     }));
+
+  // ==== INDICADORES DE ZONIFICACIÓN Y TIPIFICACIÓN ====
+
+  // Top barrios
+  const porBarrio = new Map<string, number>();
+  // Top tipos de reclamo (título)
+  const porTitulo = new Map<string, { count: number; svc: string }>();
+  // Cruce barrio × servicio
+  const barrioPorSvc = new Map<string, Map<string, number>>();
+  // Tendencia mensual (últimos 6 meses)
+  const mesLabel = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  const ultimos6Meses: string[] = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(ahora.getFullYear(), ahora.getMonth() - i, 1);
+    ultimos6Meses.push(mesLabel(d));
+  }
+  const porMes = new Map<string, number>(ultimos6Meses.map((m) => [m, 0]));
+  // Día de la semana (0 = Domingo)
+  const porDiaSem: number[] = [0, 0, 0, 0, 0, 0, 0];
+  // Calidad del reporte
+  let conFoto = 0;
+  let conGps = 0;
+  let conBarrio = 0;
+
+  for (const r of todosReclamos) {
+    const b = (r.barrio ?? "").trim() || "Sin barrio especificado";
+    porBarrio.set(b, (porBarrio.get(b) ?? 0) + 1);
+    if (b !== "Sin barrio especificado") conBarrio++;
+
+    const t = (r.titulo ?? "").trim();
+    if (t) {
+      const cur = porTitulo.get(t);
+      if (cur) cur.count++;
+      else
+        porTitulo.set(t, {
+          count: 1,
+          svc: (r.servicio.kind as string).toLowerCase(),
+        });
+    }
+
+    if (b !== "Sin barrio especificado") {
+      if (!barrioPorSvc.has(b)) barrioPorSvc.set(b, new Map());
+      const sm = barrioPorSvc.get(b)!;
+      const sk = r.servicio.kind as string;
+      sm.set(sk, (sm.get(sk) ?? 0) + 1);
+    }
+
+    const mes = mesLabel(r.createdAt);
+    if (porMes.has(mes)) porMes.set(mes, (porMes.get(mes) ?? 0) + 1);
+
+    porDiaSem[r.createdAt.getDay()]++;
+
+    if (r.adjuntos.length > 0) conFoto++;
+    if (r.lat !== null && r.lng !== null) conGps++;
+  }
+
+  const topBarrios = [...porBarrio.entries()]
+    .filter(([nombre]) => nombre !== "Sin barrio especificado")
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10);
+  const maxBarrios = Math.max(1, ...topBarrios.map(([, n]) => n));
+
+  const topTitulos = [...porTitulo.entries()]
+    .sort((a, b) => b[1].count - a[1].count)
+    .slice(0, 10);
+  const maxTitulos = Math.max(1, ...topTitulos.map(([, v]) => v.count));
+
+  const topBarriosConSvc = topBarrios.slice(0, 5).map(([nombre, count]) => {
+    const sm = barrioPorSvc.get(nombre);
+    if (!sm) return { nombre, count, top: [] as Array<{ svc: string; n: number }> };
+    const top = [...sm.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 4)
+      .map(([svc, n]) => ({ svc, n }));
+    return { nombre, count, top };
+  });
+
+  const maxPorMes = Math.max(1, ...[...porMes.values()]);
+  const maxPorDia = Math.max(1, ...porDiaSem);
+  const totalRec = Math.max(1, todosReclamos.length);
+  const pctFoto = Math.round((conFoto / totalRec) * 100);
+  const pctGps = Math.round((conGps / totalRec) * 100);
+  const pctBarrio = Math.round((conBarrio / totalRec) * 100);
 
   const servicios = await prisma.servicio.findMany();
   const prestadoras = await prisma.prestadora.findMany();
@@ -314,7 +416,280 @@ export default async function IndicadoresPage() {
           </p>
         </section>
 
-        {/* SATISFACCIÓN */}
+        {/* TOP BARRIOS */}
+        <section className="rounded-2xl border border-line bg-paper p-6">
+          <h2 className="text-base font-extrabold text-navy uppercase tracking-wider mb-1">
+            Top 10 barrios con más reclamos
+          </h2>
+          <p className="text-xs text-muted mb-4">
+            Zonificación: dónde se concentran los problemas. Útil para
+            priorizar inspecciones territoriales.
+          </p>
+          {topBarrios.length === 0 ? (
+            <div className="text-sm text-muted">
+              Aún no hay reclamos con barrio cargado.
+            </div>
+          ) : (
+            <ul className="flex flex-col gap-2">
+              {topBarrios.map(([nombre, count], i) => {
+                const pct = Math.round((count / maxBarrios) * 100);
+                return (
+                  <li
+                    key={nombre}
+                    className="grid grid-cols-[24px_1fr_60px] items-center gap-3"
+                  >
+                    <span className="text-[11px] text-muted font-mono">
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <div className="grid grid-cols-[1fr_auto] gap-2 items-center">
+                      <div className="h-7 bg-paper-2 rounded-full overflow-hidden relative">
+                        <div
+                          className="h-full bg-gradient-to-r from-svc-orange to-svc-red rounded-full"
+                          style={{ width: `${pct}%` }}
+                        />
+                        <span className="absolute inset-0 flex items-center px-3 text-sm font-bold text-white drop-shadow">
+                          {nombre}
+                        </span>
+                      </div>
+                    </div>
+                    <span className="text-right font-mono font-bold text-navy">
+                      {count}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+
+        {/* TOP TIPOS DE RECLAMO */}
+        <section className="rounded-2xl border border-line bg-paper p-6">
+          <h2 className="text-base font-extrabold text-navy uppercase tracking-wider mb-1">
+            Top 10 tipos de reclamo
+          </h2>
+          <p className="text-xs text-muted mb-4">
+            Tipificación: qué problemas son los más reportados por los vecinos.
+            Cada barra está coloreada según el servicio al que pertenece.
+          </p>
+          {topTitulos.length === 0 ? (
+            <div className="text-sm text-muted">
+              Aún no hay reclamos cargados.
+            </div>
+          ) : (
+            <ul className="flex flex-col gap-2">
+              {topTitulos.map(([titulo, v], i) => {
+                const pct = Math.round((v.count / maxTitulos) * 100);
+                const color = SVC_COLORS_HEX[v.svc] ?? "#1d3550";
+                return (
+                  <li
+                    key={titulo}
+                    className="grid grid-cols-[24px_1fr_60px] items-center gap-3"
+                  >
+                    <span className="text-[11px] text-muted font-mono">
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <div className="grid grid-cols-[1fr_auto] gap-2 items-center">
+                      <div className="h-7 bg-paper-2 rounded-full overflow-hidden relative">
+                        <div
+                          className="h-full rounded-full"
+                          style={{ width: `${pct}%`, background: color }}
+                        />
+                        <span className="absolute inset-0 flex items-center px-3 text-xs font-bold text-white drop-shadow truncate">
+                          {titulo}
+                        </span>
+                      </div>
+                    </div>
+                    <span className="text-right font-mono font-bold text-navy">
+                      {v.count}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+
+        {/* CRUCE BARRIO × SERVICIO */}
+        {topBarriosConSvc.length > 0 && (
+          <section className="rounded-2xl border border-line bg-paper p-6">
+            <h2 className="text-base font-extrabold text-navy uppercase tracking-wider mb-1">
+              Top 5 barrios — qué servicio falla más en cada uno
+            </h2>
+            <p className="text-xs text-muted mb-4">
+              Cruce zonificación × tipificación: el servicio principal que
+              genera reclamos en cada barrio crítico.
+            </p>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {topBarriosConSvc.map((b) => (
+                <div
+                  key={b.nombre}
+                  className="rounded-xl border border-line bg-paper-2 p-3"
+                >
+                  <div className="flex items-baseline justify-between mb-2">
+                    <h3 className="text-sm font-bold text-navy">{b.nombre}</h3>
+                    <span className="text-xs font-mono text-muted">
+                      {b.count} reclamos
+                    </span>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    {b.top.map((s) => {
+                      const color =
+                        SVC_COLORS_HEX[s.svc.toLowerCase()] ?? "#1d3550";
+                      const pct = Math.round((s.n / b.count) * 100);
+                      const label =
+                        s.svc === "AGUA"
+                          ? "Agua"
+                          : s.svc === "ENERGIA"
+                            ? "Energía"
+                            : s.svc === "RESIDUOS"
+                              ? "Residuos"
+                              : "Transporte";
+                      return (
+                        <div
+                          key={s.svc}
+                          className="grid grid-cols-[80px_1fr_36px] items-center gap-2 text-xs"
+                        >
+                          <span className="text-navy">{label}</span>
+                          <div className="h-2.5 bg-paper-3 rounded-full overflow-hidden">
+                            <div
+                              className="h-full rounded-full"
+                              style={{ width: `${pct}%`, background: color }}
+                            />
+                          </div>
+                          <span className="text-right font-mono text-navy">
+                            {s.n}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* TENDENCIA MENSUAL */}
+        <section className="rounded-2xl border border-line bg-paper p-6">
+          <h2 className="text-base font-extrabold text-navy uppercase tracking-wider mb-1">
+            Tendencia · Últimos 6 meses
+          </h2>
+          <p className="text-xs text-muted mb-4">
+            Reclamos cargados por mes. Sirve para ver estacionalidad
+            (verano vs invierno) y detectar picos.
+          </p>
+          <div className="flex items-end gap-2 h-40">
+            {[...porMes.entries()].map(([mes, n]) => {
+              const pct = (n / maxPorMes) * 100;
+              const [a, m] = mes.split("-").map(Number);
+              const fecha = new Date(a, m - 1, 1);
+              const lbl = fecha.toLocaleDateString("es-AR", {
+                month: "short",
+              });
+              return (
+                <div
+                  key={mes}
+                  className="flex-1 flex flex-col items-center gap-1"
+                >
+                  <div className="text-xs font-mono font-bold text-navy">
+                    {n}
+                  </div>
+                  <div className="w-full flex-1 bg-paper-2 rounded-t-lg overflow-hidden flex items-end">
+                    <div
+                      className="w-full bg-gradient-to-t from-navy to-navy-2 rounded-t-lg transition-all"
+                      style={{ height: `${pct}%` }}
+                    />
+                  </div>
+                  <div className="text-[10px] uppercase tracking-wider text-muted">
+                    {lbl}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* DÍA DE LA SEMANA */}
+        <section className="rounded-2xl border border-line bg-paper p-6">
+          <h2 className="text-base font-extrabold text-navy uppercase tracking-wider mb-1">
+            Reclamos por día de la semana
+          </h2>
+          <p className="text-xs text-muted mb-4">
+            En qué día se concentra más la carga. Útil para planificar guardias
+            y disponibilidad del equipo.
+          </p>
+          <div className="flex items-end gap-2 h-32">
+            {["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"].map(
+              (d, i) => {
+                const n = porDiaSem[i];
+                const pct = (n / maxPorDia) * 100;
+                return (
+                  <div
+                    key={d}
+                    className="flex-1 flex flex-col items-center gap-1"
+                  >
+                    <div className="text-xs font-mono font-bold text-navy">
+                      {n}
+                    </div>
+                    <div className="w-full flex-1 bg-paper-2 rounded-t-lg overflow-hidden flex items-end">
+                      <div
+                        className="w-full bg-svc-blue rounded-t-lg"
+                        style={{ height: `${pct}%` }}
+                      />
+                    </div>
+                    <div className="text-[10px] uppercase tracking-wider text-muted">
+                      {d}
+                    </div>
+                  </div>
+                );
+              },
+            )}
+          </div>
+        </section>
+
+        {/* SATISFACCIÓN ENTE vs PRESTADORA (encuesta de cierre) */}
+        {encuestaReclamos._count._all > 0 && (
+          <section className="rounded-2xl border border-line bg-paper p-6">
+            <h2 className="text-base font-extrabold text-navy uppercase tracking-wider mb-1">
+              Satisfacción post-reclamo · Ente vs Prestadora
+            </h2>
+            <p className="text-xs text-muted mb-4">
+              Calificaciones que dejaron los vecinos al cerrarse su reclamo
+              ({encuestaReclamos._count._all} respuesta
+              {encuestaReclamos._count._all === 1 ? "" : "s"}).
+            </p>
+            <div className="grid sm:grid-cols-2 gap-3">
+              <PuntajeCard
+                label="Atención del Ente"
+                valor={encuestaReclamos._avg.puntajeEnte}
+                color="navy-2"
+              />
+              <PuntajeCard
+                label="Atención de la prestadora"
+                valor={encuestaReclamos._avg.puntajePrestadora}
+                color="orange"
+              />
+            </div>
+          </section>
+        )}
+
+        {/* CALIDAD DEL REPORTE */}
+        <section className="rounded-2xl border border-line bg-paper p-6">
+          <h2 className="text-base font-extrabold text-navy uppercase tracking-wider mb-1">
+            Calidad del reporte
+          </h2>
+          <p className="text-xs text-muted mb-4">
+            Qué porcentaje de los reclamos tiene cada elemento de respaldo. A
+            mayor calidad, mayor capacidad de gestión y de auditoría.
+          </p>
+          <div className="grid sm:grid-cols-3 gap-3">
+            <CalidadCard label="Con foto adjunta" pct={pctFoto} />
+            <CalidadCard label="Con GPS o geolocalización" pct={pctGps} />
+            <CalidadCard label="Con barrio especificado" pct={pctBarrio} />
+          </div>
+        </section>
+
+        {/* SATISFACCIÓN GENERAL (encuesta /encuesta) */}
         <section className="rounded-2xl border border-line bg-paper-2 p-6">
           <h2 className="text-base font-extrabold text-navy uppercase tracking-wider mb-3">
             Satisfacción del usuario
@@ -368,6 +743,64 @@ export default async function IndicadoresPage() {
         </section>
       </main>
     </>
+  );
+}
+
+function PuntajeCard({
+  label,
+  valor,
+  color,
+}: {
+  label: string;
+  valor: number | null;
+  color: "navy-2" | "orange";
+}) {
+  const bg = color === "navy-2" ? "bg-navy-2" : "bg-svc-orange";
+  return (
+    <div className="rounded-xl border border-line bg-paper-2 p-4">
+      <div className="text-[11px] uppercase tracking-wider text-muted font-semibold">
+        {label}
+      </div>
+      <div className="flex items-baseline gap-2 mt-2">
+        <span className="text-3xl font-extrabold text-navy">
+          {valor ? valor.toFixed(1) : "—"}
+        </span>
+        <span className="text-sm text-muted">/ 5</span>
+      </div>
+      <div className="mt-2 h-2 bg-paper-3 rounded-full overflow-hidden">
+        <div
+          className={`h-full ${bg} rounded-full`}
+          style={{ width: `${((valor ?? 0) / 5) * 100}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function CalidadCard({ label, pct }: { label: string; pct: number }) {
+  const tone =
+    pct >= 70
+      ? "text-svc-green border-svc-green/40"
+      : pct >= 40
+        ? "text-svc-orange border-svc-orange/40"
+        : "text-svc-red border-svc-red/40";
+  return (
+    <div className={`rounded-xl border-2 ${tone} bg-paper p-4`}>
+      <div className="text-[11px] uppercase tracking-wider text-muted font-semibold">
+        {label}
+      </div>
+      <div className="text-3xl font-extrabold mt-1">{pct}%</div>
+      <div className="mt-2 h-2 bg-paper-3 rounded-full overflow-hidden">
+        <div
+          className="h-full rounded-full"
+          style={{
+            width: `${pct}%`,
+            background:
+              pct >= 70 ? "#4a8b3a" : pct >= 40 ? "#e88a3c" : "#c4393c",
+          }}
+        />
+      </div>
+    </div>
   );
 }
 
