@@ -15,19 +15,10 @@ export function SitioHeader() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-4">
         <Link
           href="/"
-          className="flex items-center gap-2 shrink-0 bg-paper border border-line rounded-2xl px-3 py-2 -ml-1 hover:shadow transition"
+          className="flex items-center shrink-0 -ml-1 rounded-2xl hover:opacity-90 transition"
+          aria-label="EnCoSeP — Ir al inicio"
         >
-          <LogoEncosep size={56} conTexto={false} />
-          <div className="leading-[1.05] hidden sm:block">
-            <div className="text-lg font-extrabold text-navy tracking-tight">
-              EnCoSeP
-            </div>
-            <div className="text-[8px] text-muted font-semibold uppercase tracking-[0.18em]">
-              Ente de Control
-              <br />
-              de Servicios Públicos
-            </div>
-          </div>
+          <LogoEncosep size={72} />
         </Link>
 
         <nav className="hidden lg:flex items-center gap-1 ml-2">

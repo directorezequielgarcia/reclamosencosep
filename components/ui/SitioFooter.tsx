@@ -6,16 +6,8 @@ export function SitioFooter() {
     <footer className="bg-navy text-white mt-12">
       <div className="max-w-6xl mx-auto px-6 py-10 grid md:grid-cols-3 gap-8">
         <div>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="bg-white rounded-full p-0.5">
-              <LogoEncosep size={42} conTexto={false} />
-            </div>
-            <div className="leading-tight">
-              <div className="text-base font-extrabold">EnCoSeP</div>
-              <div className="text-[10px] opacity-70 font-semibold uppercase tracking-widest">
-                Ente · Comodoro Rivadavia
-              </div>
-            </div>
+          <div className="bg-white rounded-2xl p-3 inline-block mb-3">
+            <LogoEncosep size={120} />
           </div>
           <p className="text-sm opacity-80 leading-relaxed">
             Ente de Control de los Servicios Públicos de Comodoro Rivadavia,
