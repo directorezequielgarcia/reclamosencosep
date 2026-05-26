@@ -6,8 +6,13 @@ export function SitioFooter() {
     <footer className="bg-navy text-white mt-12">
       <div className="max-w-6xl mx-auto px-6 py-10 grid md:grid-cols-3 gap-8">
         <div>
-          <div className="bg-white rounded-2xl p-3 inline-block mb-3">
-            <LogoEncosep size={120} />
+          <div className="bg-white rounded-2xl p-4 inline-block mb-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/imagenes/logo-encosep-municipalidad.png"
+              alt="EnCoSeP · Municipalidad de Comodoro Rivadavia"
+              className="block h-16 w-auto"
+            />
           </div>
           <p className="text-sm opacity-80 leading-relaxed">
             Ente de Control de los Servicios Públicos de Comodoro Rivadavia,
