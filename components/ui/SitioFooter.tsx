@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { LogoEncosep } from "./LogoEncosep";
 
 export function SitioFooter() {
   return (
@@ -6,8 +7,8 @@ export function SitioFooter() {
       <div className="max-w-6xl mx-auto px-6 py-10 grid md:grid-cols-3 gap-8">
         <div>
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-11 h-11 rounded-full border-2 border-white flex items-center justify-center text-white font-extrabold text-lg leading-none">
-              E
+            <div className="bg-white rounded-full p-0.5">
+              <LogoEncosep size={42} conTexto={false} />
             </div>
             <div className="leading-tight">
               <div className="text-base font-extrabold">EnCoSeP</div>

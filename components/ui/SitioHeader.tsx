@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BrandStripe } from "./BrandStripe";
+import { LogoEncosep } from "./LogoEncosep";
 
 const NAV = [
   { href: "/", label: "Inicio" },
@@ -14,9 +15,7 @@ export function SitioHeader({ activo }: { activo?: string }) {
     <header className="bg-paper border-b border-line sticky top-0 z-30">
       <div className="max-w-6xl mx-auto px-6 py-3 flex items-center gap-6">
         <Link href="/" className="flex items-center gap-3 shrink-0">
-          <div className="w-11 h-11 rounded-full border-2 border-navy-2 flex items-center justify-center text-navy-2 font-extrabold text-lg leading-none">
-            E
-          </div>
+          <LogoEncosep size={44} conTexto={false} />
           <div className="leading-tight hidden sm:block">
             <div className="text-base font-extrabold text-navy">EnCoSeP</div>
             <div className="text-[10px] text-muted font-semibold uppercase tracking-widest">

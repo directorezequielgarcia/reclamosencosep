@@ -45,10 +45,10 @@ export const SVC_META: Record<
   agua: {
     kind: "AGUA",
     label: "Agua y Saneamiento",
-    short: "Agua",
+    short: "Agua y Saneamiento",
     ring: "var(--c-blue-l)",
     bg: "var(--c-blue-l)",
-    sub: "cortes · pérdidas",
+    sub: "cortes · pérdidas · cloacas",
     examples: [
       "No tengo agua",
       "Pérdida en la calle",
