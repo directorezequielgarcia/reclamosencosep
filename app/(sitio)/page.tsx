@@ -8,8 +8,12 @@ export const metadata = {
     "Control y fiscalización de los servicios públicos bajo control municipal: residuos, electricidad, agua y transporte.",
 };
 
+// Mientras no tengamos la foto panorámica oficial de Comodoro Rivadavia,
+// un gradient que evoca el atardecer sobre el mar argentino.
+// TODO: reemplazar por <img src="/imagenes/comodoro-panoramica.jpg" /> cuando
+// el usuario suba la foto a /public/imagenes/.
 const HERO_CIUDAD =
-  "linear-gradient(135deg, rgba(29,53,80,0.78) 0%, rgba(43,74,107,0.65) 60%, rgba(75,168,194,0.55) 100%), radial-gradient(ellipse at 20% 80%, #c4393c 0%, transparent 40%), radial-gradient(ellipse at 80% 20%, #f0bc40 0%, transparent 40%), linear-gradient(180deg, #1d3550 0%, #2b4a6b 50%, #c4393c 100%)";
+  "linear-gradient(180deg, rgba(29,53,80,0.55) 0%, rgba(29,53,80,0.35) 50%, rgba(75,168,194,0.45) 100%), radial-gradient(ellipse at 15% 70%, #8b6f4a 0%, transparent 35%), radial-gradient(ellipse at 85% 30%, #f0bc40 0%, transparent 45%), linear-gradient(180deg, #f0bc40 0%, #e88a3c 25%, #c4393c 45%, #2b4a6b 70%, #1d3550 100%)";
 
 export default function HomeInstitucional() {
   return (
@@ -21,31 +25,20 @@ export default function HomeInstitucional() {
       >
         <div className="max-w-6xl mx-auto px-6 py-20 md:py-28 grid md:grid-cols-[1.4fr_1fr] gap-10 items-center">
           <div>
-            <div className="text-[11px] font-bold tracking-[0.2em] uppercase opacity-80">
+            <div className="text-[11px] font-bold tracking-[0.2em] uppercase opacity-90">
               Ente de Control de Servicios Públicos
             </div>
-            <h1 className="text-4xl md:text-5xl font-extrabold leading-[1.05] mt-2">
-              Control y Fiscalización
+            <h1 className="text-5xl md:text-6xl font-extrabold leading-[1.05] mt-3 drop-shadow-lg">
+              Control de los
               <br />
-              de Servicios Públicos
+              Servicios Públicos
             </h1>
-            <p className="mt-4 text-base md:text-lg opacity-90 leading-relaxed max-w-xl">
-              Velamos por la continuidad, regularidad y calidad de los servicios
-              públicos en Comodoro Rivadavia. Somos el organismo de control
-              independiente entre los vecinos, las prestadoras y el Municipio.
-            </p>
-            <div className="flex flex-wrap gap-3 mt-7">
-              <Link
-                href="/reclamos"
-                className="inline-flex items-center justify-center px-5 py-3 rounded-xl bg-svc-red text-white font-bold text-base shadow-lg shadow-svc-red/30"
-              >
-                Hacer un reclamo
-              </Link>
+            <div className="flex flex-wrap gap-3 mt-8">
               <Link
                 href="/nosotros"
-                className="inline-flex items-center justify-center px-5 py-3 rounded-xl border-2 border-white/60 text-white font-semibold backdrop-blur-sm"
+                className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-svc-red text-white font-bold text-sm uppercase tracking-wider shadow-lg shadow-svc-red/40"
               >
-                Conocé nuestras acciones
+                Conoce nuestras acciones <span aria-hidden>›</span>
               </Link>
             </div>
           </div>

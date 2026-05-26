@@ -1,5 +1,6 @@
 import { SitioHeader } from "@/components/ui/SitioHeader";
 import { SitioFooter } from "@/components/ui/SitioFooter";
+import { FabReclamos } from "@/components/ui/FabReclamos";
 
 export default function SitioLayout({
   children,
@@ -11,6 +12,7 @@ export default function SitioLayout({
       <SitioHeader />
       <div className="flex-1">{children}</div>
       <SitioFooter />
+      <FabReclamos />
     </div>
   );
 }

@@ -1,92 +1,142 @@
 /**
- * Logo institucional del EnCoSeP — círculo con 4 cuartos de color
- * (verde-residuos, amarillo-electricidad, azul-agua, rojo-transporte)
- * con el nombre del Ente en el centro.
+ * Logo institucional EnCoSeP — versión "Vigilancia Orbital".
  *
- * Replicado en SVG para no depender de un archivo de imagen.
+ * Anillos orbitales con segmentos de color (naranja, verde, navy, azul,
+ * celeste, rojo) que rodean el nombre del Ente en tipografía bold.
+ * Reemplaza al logo previo de "engranajes con íconos".
+ *
+ * Replicado en SVG para escalar sin pérdida desde favicon (16px)
+ * hasta cartel de vía pública.
  */
 type Props = {
   size?: number;
   conTexto?: boolean;
 };
 
+// Paleta institucional
+const NARANJA = "#e88a3c";
+const VERDE = "#4a8b3a";
+const NAVY = "#1d3550";
+const NAVY_2 = "#2b4a6b";
+const CELESTE = "#4ba8c2";
+const ROJO = "#c4393c";
+
+/** Devuelve `d` de una arc SVG entre dos ángulos (en grados) sobre un círculo. */
+function arcPath(
+  cx: number,
+  cy: number,
+  r: number,
+  startDeg: number,
+  endDeg: number,
+): string {
+  const toRad = (d: number) => ((d - 90) * Math.PI) / 180; // 0° apunta arriba
+  const sx = cx + r * Math.cos(toRad(startDeg));
+  const sy = cy + r * Math.sin(toRad(startDeg));
+  const ex = cx + r * Math.cos(toRad(endDeg));
+  const ey = cy + r * Math.sin(toRad(endDeg));
+  const largeArc = endDeg - startDeg > 180 ? 1 : 0;
+  return `M ${sx.toFixed(2)} ${sy.toFixed(2)} A ${r} ${r} 0 ${largeArc} 1 ${ex.toFixed(2)} ${ey.toFixed(2)}`;
+}
+
 export function LogoEncosep({ size = 56, conTexto = true }: Props) {
-  // viewBox 100x100. Centro 50,50, radio 48.
-  // 4 cuartos arrancando arriba-izquierda en sentido horario.
+  const C = 100; // centro
+  const SW = 4.5; // ancho de stroke
+
+  // 3 anillos concéntricos con segmentos
+  // R = 90 (outer), 82 (middle), 74 (inner)
+  // Cada anillo dividido en arcos con gaps entre ellos
+  const segmentos: Array<{
+    r: number;
+    arcos: Array<{ from: number; to: number; color: string }>;
+  }> = [
+    {
+      r: 90,
+      arcos: [
+        { from: 200, to: 350, color: NARANJA },
+        { from: 10, to: 80, color: NAVY },
+        { from: 100, to: 180, color: CELESTE },
+      ],
+    },
+    {
+      r: 82,
+      arcos: [
+        { from: 220, to: 320, color: VERDE },
+        { from: 340, to: 70, color: NAVY_2 },
+        { from: 90, to: 200, color: NAVY },
+      ],
+    },
+    {
+      r: 74,
+      arcos: [
+        { from: 195, to: 285, color: ROJO },
+        { from: 300, to: 60, color: CELESTE },
+        { from: 80, to: 175, color: NARANJA },
+      ],
+    },
+  ];
+
   return (
     <svg
-      viewBox="0 0 100 100"
+      viewBox="0 0 200 200"
       width={size}
       height={size}
       role="img"
       aria-label="EnCoSeP — Ente de Control de Servicios Públicos"
       style={{ display: "block" }}
     >
-      <defs>
-        <clipPath id="logo-clip-circle">
-          <circle cx="50" cy="50" r="46" />
-        </clipPath>
-      </defs>
+      {/* Fondo transparente, los anillos quedan sobre lo que esté detrás */}
+      {segmentos.flatMap((seg, i) =>
+        seg.arcos.map((a, j) => (
+          <path
+            key={`${i}-${j}`}
+            d={arcPath(C, C, seg.r, a.from, a.to)}
+            fill="none"
+            stroke={a.color}
+            strokeWidth={SW}
+            strokeLinecap="round"
+          />
+        )),
+      )}
 
-      {/* Fondo blanco con borde */}
-      <circle cx="50" cy="50" r="48" fill="white" />
-
-      {/* Banda multicolor curva (anillo) */}
-      <g clipPath="url(#logo-clip-circle)">
-        {/* arriba-izq: verde */}
-        <path d="M 50 4 A 46 46 0 0 0 4 50 L 12 50 A 38 38 0 0 1 50 12 Z" fill="#4a8b3a" />
-        {/* arriba-der: amarillo */}
-        <path d="M 50 4 A 46 46 0 0 1 96 50 L 88 50 A 38 38 0 0 0 50 12 Z" fill="#f0bc40" />
-        {/* abajo-der: azul */}
-        <path d="M 96 50 A 46 46 0 0 1 50 96 L 50 88 A 38 38 0 0 0 88 50 Z" fill="#4ba8c2" />
-        {/* abajo-izq: rojo */}
-        <path d="M 4 50 A 46 46 0 0 0 50 96 L 50 88 A 38 38 0 0 1 12 50 Z" fill="#c4393c" />
-        {/* acento naranja entre verde y amarillo (arriba) */}
-        <path
-          d="M 47 4 A 46 46 0 0 1 53 4 L 53 12 A 38 38 0 0 0 47 12 Z"
-          fill="#e88a3c"
-        />
-      </g>
-
-      {/* Borde sutil del círculo */}
-      <circle
-        cx="50"
-        cy="50"
-        r="46"
-        fill="none"
-        stroke="#1d3550"
-        strokeOpacity="0.08"
-        strokeWidth="0.6"
-      />
-
-      {/* Texto central — solo si el tamaño lo justifica */}
+      {/* Texto central */}
       {conTexto && size >= 40 && (
         <>
           <text
-            x="50"
-            y="55"
+            x="100"
+            y={size >= 80 ? 102 : 108}
             textAnchor="middle"
-            fontFamily="'Open Sans', system-ui, sans-serif"
+            fontFamily="'Open Sans', 'Helvetica Neue', system-ui, sans-serif"
             fontWeight="800"
-            fontSize="18"
-            fill="#1d3550"
-            letterSpacing="-0.5"
+            fontSize={size >= 80 ? 30 : 28}
+            fill={NAVY}
+            letterSpacing="-1"
           >
             EnCoSeP
           </text>
           {size >= 80 && (
-            <text
-              x="50"
-              y="68"
-              textAnchor="middle"
-              fontFamily="'Open Sans', system-ui, sans-serif"
-              fontWeight="600"
-              fontSize="4.5"
-              fill="#6c7a8c"
-              letterSpacing="0.5"
-            >
-              ENTE DE CONTROL DE SERVICIOS PÚBLICOS
-            </text>
+            <>
+              <line
+                x1="46"
+                y1="112"
+                x2="154"
+                y2="112"
+                stroke={NAVY}
+                strokeWidth="0.8"
+                opacity="0.5"
+              />
+              <text
+                x="100"
+                y="123"
+                textAnchor="middle"
+                fontFamily="'Open Sans', 'Helvetica Neue', system-ui, sans-serif"
+                fontWeight="600"
+                fontSize="5.5"
+                fill={NAVY}
+                letterSpacing="0.8"
+              >
+                ENTE DE CONTROL DE SERVICIOS PÚBLICOS
+              </text>
+            </>
           )}
         </>
       )}
