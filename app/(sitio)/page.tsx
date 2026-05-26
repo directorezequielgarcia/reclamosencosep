@@ -7,27 +7,40 @@ export const metadata = {
     "Control y fiscalización de los servicios públicos bajo control municipal: residuos, electricidad, agua y transporte.",
 };
 
-// Hero con la foto panorámica de Comodoro Rivadavia (vista aérea con el
-// cerro, la costanera y el muelle al atardecer). Overlay degrade navy
-// mantiene la legibilidad del título y el CTA rojo.
-const HERO_CIUDAD =
-  "linear-gradient(180deg, rgba(29,53,80,0.45) 0%, rgba(29,53,80,0.25) 40%, rgba(29,53,80,0.75) 100%), url('/imagenes/comodoro-panoramica.png')";
+// Hero institucional con la imagen compuesta (foto Comodoro + anillos
+// orbitales + nombre EnCoSeP). Se renderiza como <img> con object-cover
+// para que llene todo el ancho del viewport sin dejar bandas blancas.
 
 export default function HomeInstitucional() {
   return (
     <>
-      {/* HERO INSTITUCIONAL — imagen compuesta (foto Comodoro + logo EnCoSeP) */}
+      {/* HERO INSTITUCIONAL — imagen compuesta foto + anillos + EnCoSeP */}
       <section
-        className="relative text-white"
+        className="relative text-white overflow-hidden"
         style={{
-          backgroundImage: HERO_CIUDAD,
-          backgroundSize: "cover",
-          backgroundPosition: "center center",
-          aspectRatio: "16 / 11",
-          maxHeight: "780px",
-          minHeight: "480px",
+          aspectRatio: "16 / 10",
+          maxHeight: "720px",
+          minHeight: "460px",
         }}
       >
+        {/* Imagen de fondo que cubre todo el ancho (recorta el centro
+            vertical si la imagen es más cuadrada que el contenedor) */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/imagenes/hero-encosep.png"
+          alt="EnCoSeP — Ente de Control de Servicios Públicos de Comodoro Rivadavia"
+          className="absolute inset-0 w-full h-full object-cover object-center"
+          loading="eager"
+        />
+        {/* Overlay degradé navy en la parte inferior para legibilidad del CTA */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(180deg, transparent 0%, transparent 55%, rgba(29,53,80,0.65) 85%, rgba(29,53,80,0.9) 100%)",
+          }}
+        />
+
         {/* Bloque inferior izquierdo — título secundario + CTA */}
         <div className="absolute bottom-0 left-0 right-0">
           <div className="max-w-6xl mx-auto px-6 pb-8 md:pb-12">
