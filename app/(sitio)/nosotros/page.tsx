@@ -165,50 +165,20 @@ export default function Nosotros() {
           Estructura institucional
         </div>
         <h2 className="text-2xl font-extrabold text-navy mt-1">Organigrama</h2>
+        <p className="text-sm text-muted mt-2 max-w-3xl">
+          Estructura organizativa del Ente, con el Directorio como cuerpo
+          colegiado de 3 miembros y cuatro áreas operativas a cargo de los
+          responsables actuales.
+        </p>
 
-        <div className="mt-6 flex flex-col items-center gap-3">
-          {/* Nivel superior: Directorio + Asesoría externa */}
-          <div className="w-full grid md:grid-cols-[1fr_320px] gap-4 items-center max-w-3xl">
-            <CajaOrg
-              color="navy"
-              titulo="DIRECTORIO"
-              subtitulo="Cuerpo Colegiado · 3 miembros"
-            />
-            <CajaOrg
-              color="paper"
-              titulo="Asesoría Externa Técnica"
-              subtitulo="Soporte especializado"
-            />
-          </div>
-
-          {/* Conector vertical */}
-          <div className="h-6 w-px bg-line-strong" />
-          <div className="text-[10px] uppercase tracking-widest text-muted font-bold">
-            4 áreas operativas
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 w-full mt-2">
-            <CajaOrg
-              color="paper"
-              titulo="Comunicación y Medios"
-              subtitulo="Marcos Barrionuevo"
-            />
-            <CajaOrg
-              color="paper"
-              titulo="Atención a Usuarios e Inspecciones"
-              subtitulo="Julieta Palacios"
-            />
-            <CajaOrg
-              color="paper"
-              titulo="Gestión de Expedientes y Trámites"
-              subtitulo="Yanina del Bono"
-            />
-            <CajaOrg
-              color="paper"
-              titulo="Control Documental y Certificaciones"
-              subtitulo="Adriana Almonacid"
-            />
-          </div>
+        <div className="mt-6 rounded-2xl border border-line bg-paper p-4 md:p-6">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/imagenes/organigrama.png"
+            alt="Organigrama del ENCOSEP: Directorio (cuerpo colegiado, 3 miembros) y 4 áreas operativas — Comunicación y Medios (Marcos Barrionuevo), Atención a Usuarios e Inspecciones (Julieta Palacios), Gestión de Expedientes y Trámites (Yanina del Bono), Control Documental y Certificaciones (Adriana Almonacid)."
+            className="block w-full h-auto"
+            loading="lazy"
+          />
         </div>
       </section>
 
