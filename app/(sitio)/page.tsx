@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { BotoneraServicios } from "@/components/servicios/BotoneraServicios";
-import { AnillosOrbital } from "@/components/ui/AnillosOrbital";
 
 export const metadata = {
   title: "EnCoSeP · Ente de Control de Servicios Públicos · Comodoro Rivadavia",
@@ -8,71 +7,44 @@ export const metadata = {
     "Control y fiscalización de los servicios públicos bajo control municipal: residuos, electricidad, agua y transporte.",
 };
 
-// Hero con foto panorámica real de Comodoro Rivadavia más anillos orbitales
-// gigantes superpuestos y el nombre EnCoSeP como watermark.
+// Hero institucional: imagen compuesta (foto Comodoro + anillos + nombre
+// EnCoSeP) preparada externamente. Overlay degradé navy solo en la parte
+// inferior, para mantener legibilidad del título "Control de los servicios
+// públicos" y el CTA rojo.
 const HERO_CIUDAD =
-  "linear-gradient(180deg, rgba(29,53,80,0.65) 0%, rgba(29,53,80,0.45) 35%, rgba(29,53,80,0.75) 100%), url('/imagenes/comodoro-panoramica.png')";
+  "linear-gradient(180deg, transparent 0%, transparent 55%, rgba(29,53,80,0.55) 80%, rgba(29,53,80,0.85) 100%), url('/imagenes/hero-encosep.png')";
 
 export default function HomeInstitucional() {
   return (
     <>
-      {/* HERO INSTITUCIONAL — foto Comodoro + anillos orbitales + watermark EnCoSeP */}
+      {/* HERO INSTITUCIONAL — imagen compuesta (foto Comodoro + logo EnCoSeP) */}
       <section
-        className="relative text-white overflow-hidden"
+        className="relative text-white"
         style={{
           backgroundImage: HERO_CIUDAD,
           backgroundSize: "cover",
           backgroundPosition: "center center",
-          minHeight: "640px",
+          aspectRatio: "16 / 11",
+          maxHeight: "780px",
+          minHeight: "480px",
         }}
       >
-        {/* Anillos orbitales gigantes envolviendo el hero */}
-        <div
-          className="absolute pointer-events-none"
-          style={{
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -48%)",
-            width: "min(120vh, 1200px)",
-            height: "min(120vh, 1200px)",
-          }}
-        >
-          <AnillosOrbital opacity={1} strokeWidth={6} />
-        </div>
-
-        {/* Watermark "EnCoSeP" gigante centrado */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center px-6">
-          <div
-            className="font-extrabold tracking-tight leading-none text-white drop-shadow-2xl"
-            style={{
-              fontSize: "clamp(80px, 14vw, 220px)",
-              letterSpacing: "-0.04em",
-            }}
-          >
-            EnCoSeP
-          </div>
-          <div
-            className="font-bold tracking-[0.18em] uppercase text-white/95 mt-2 drop-shadow"
-            style={{ fontSize: "clamp(11px, 1.6vw, 22px)" }}
-          >
-            Ente de Control de Servicios Públicos
-          </div>
-        </div>
-
         {/* Bloque inferior izquierdo — título secundario + CTA */}
-        <div className="relative max-w-6xl mx-auto px-6 pt-[420px] pb-12 md:pt-[460px] md:pb-16">
-          <h1 className="text-3xl md:text-4xl font-extrabold leading-[1.05] text-white drop-shadow-xl max-w-md">
-            Control de los
-            <br />
-            Servicios Públicos
-          </h1>
-          <div className="flex flex-wrap gap-3 mt-5">
-            <Link
-              href="/nosotros"
-              className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-svc-red text-white font-bold text-sm uppercase tracking-wider shadow-lg shadow-svc-red/40"
-            >
-              Conoce nuestras acciones <span aria-hidden>›</span>
-            </Link>
+        <div className="absolute bottom-0 left-0 right-0">
+          <div className="max-w-6xl mx-auto px-6 pb-8 md:pb-12">
+            <h1 className="text-3xl md:text-4xl font-extrabold leading-[1.05] text-white drop-shadow-xl max-w-md">
+              Control de los
+              <br />
+              Servicios Públicos
+            </h1>
+            <div className="flex flex-wrap gap-3 mt-5">
+              <Link
+                href="/nosotros"
+                className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-svc-red text-white font-bold text-sm uppercase tracking-wider shadow-lg shadow-svc-red/40"
+              >
+                Conoce nuestras acciones <span aria-hidden>›</span>
+              </Link>
+            </div>
           </div>
         </div>
       </section>
