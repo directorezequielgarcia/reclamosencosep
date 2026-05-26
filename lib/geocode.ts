@@ -1,11 +1,11 @@
 /**
  * Geocoding con Nominatim (OpenStreetMap).
  *
- * Servicio gratuito sin API key. Respeta el rate limit de 1 request/segundo
- * y un User-Agent identificable que pide la política de uso de Nominatim.
- *
- * Devuelve coordenadas aproximadas de la dirección dentro de Comodoro
- * Rivadavia. Si no se encuentra resultado, devuelve null.
+ * Servicio gratuito sin API key. User-Agent identificable como lo pide
+ * la política de uso de Nominatim. Implementa 5 estrategias de búsqueda
+ * en cascada (más estricta a más laxa) y como último recurso devuelve
+ * el centro de Comodoro con jitter para no acumular puntos en el mismo
+ * pixel del mapa.
  */
 
 export type Coordenadas = { lat: number; lng: number };
@@ -13,28 +13,23 @@ export type Coordenadas = { lat: number; lng: number };
 const USER_AGENT =
   "ENCOSEP Reclamos Portal (https://reclamosencosep.vercel.app)";
 
-// Bounding box de Comodoro Rivadavia y alrededores (Rada Tilly + Caleta)
-// para restringir los resultados a la zona.
-// viewbox = lon_min,lat_max,lon_max,lat_min
-const VIEWBOX_COMODORO = "-67.65,-45.75,-67.35,-45.95";
+// Bounding box: Comodoro Rivadavia + Rada Tilly + alrededores
+const VIEWBOX = "-67.65,-45.75,-67.35,-45.95";
+const CENTRO_COMODORO: Coordenadas = { lat: -45.864, lng: -67.4969 };
 
-export async function geocodificarDireccion(
-  direccion: string,
-  barrio?: string | null,
+async function tryQuery(
+  q: string,
+  bounded: boolean,
 ): Promise<Coordenadas | null> {
-  const partes = [direccion.trim()];
-  if (barrio?.trim()) partes.push(barrio.trim());
-  partes.push("Comodoro Rivadavia", "Chubut", "Argentina");
-  const q = partes.join(", ");
-
   const url = new URL("https://nominatim.openstreetmap.org/search");
   url.searchParams.set("q", q);
   url.searchParams.set("format", "json");
   url.searchParams.set("limit", "1");
-  url.searchParams.set("viewbox", VIEWBOX_COMODORO);
-  url.searchParams.set("bounded", "1");
+  if (bounded) {
+    url.searchParams.set("viewbox", VIEWBOX);
+    url.searchParams.set("bounded", "1");
+  }
   url.searchParams.set("countrycodes", "ar");
-
   try {
     const resp = await fetch(url.toString(), {
       headers: {
@@ -50,8 +45,63 @@ export async function geocodificarDireccion(
     const lat = Number(data[0].lat);
     const lng = Number(data[0].lon);
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+    // Validar zona (Patagonia argentina, alrededor de Comodoro)
+    if (lat < -47 || lat > -45 || lng < -68 || lng > -67) return null;
     return { lat, lng };
   } catch {
     return null;
   }
+}
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Convierte una dirección escrita en coordenadas aproximadas en Comodoro
+ * Rivadavia. Siempre devuelve coordenadas (al menos las del centro con
+ * jitter si nada se encuentra), nunca null. Esto asegura que TODO reclamo
+ * cargado quede georeferenciado en el mapa de calor.
+ */
+export async function geocodificarDireccion(
+  direccion: string,
+  barrio?: string | null,
+): Promise<Coordenadas> {
+  const calleNum = direccion.trim();
+
+  // 1) bounded + barrio
+  const conBarrio = [calleNum];
+  if (barrio?.trim()) conBarrio.push(barrio.trim());
+  conBarrio.push("Comodoro Rivadavia", "Chubut", "Argentina");
+  let r = await tryQuery(conBarrio.join(", "), true);
+  if (r) return r;
+  await sleep(1100);
+
+  // 2) sin bounded + barrio
+  r = await tryQuery(conBarrio.join(", "), false);
+  if (r) return r;
+  await sleep(1100);
+
+  // 3) sin barrio
+  r = await tryQuery(
+    `${calleNum}, Comodoro Rivadavia, Chubut, Argentina`,
+    false,
+  );
+  if (r) return r;
+  await sleep(1100);
+
+  // 4) sólo calle (sin número)
+  const sinNumero = calleNum.replace(/\s+\d+\s*$/, "").trim();
+  if (sinNumero && sinNumero !== calleNum) {
+    r = await tryQuery(
+      `${sinNumero}, Comodoro Rivadavia, Chubut, Argentina`,
+      false,
+    );
+    if (r) return r;
+  }
+
+  // 5) Fallback: centro de Comodoro + jitter para evitar superposición
+  const jitter = (n: number) => n + (Math.random() - 0.5) * 0.01;
+  return {
+    lat: jitter(CENTRO_COMODORO.lat),
+    lng: jitter(CENTRO_COMODORO.lng),
+  };
 }

@@ -118,17 +118,15 @@ export async function POST(req: Request) {
       ? `Coordenadas GPS ${datos.lat?.toFixed(5)}, ${datos.lng?.toFixed(5)}`
       : "Sin dirección");
 
-  // Si el vecino NO mandó GPS pero SÍ una dirección escrita, intentamos
-  // geocodificar con Nominatim (OpenStreetMap) para obtener coordenadas
-  // aproximadas. Esto enriquece el mapa de calor con todos los reclamos.
+  // Si el vecino NO mandó GPS pero SÍ una dirección escrita, geocodificamos
+  // con Nominatim (OpenStreetMap). La función siempre devuelve coordenadas
+  // (centro de Comodoro con jitter como último recurso), nunca null.
   let lat = datos.lat ?? null;
   let lng = datos.lng ?? null;
   if ((lat === null || lng === null) && datos.direccion?.trim()) {
     const geo = await geocodificarDireccion(datos.direccion, datos.barrio);
-    if (geo) {
-      lat = geo.lat;
-      lng = geo.lng;
-    }
+    lat = geo.lat;
+    lng = geo.lng;
   }
 
   const reclamo = await prisma.reclamo.create({
