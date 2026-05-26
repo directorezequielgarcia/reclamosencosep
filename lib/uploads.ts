@@ -1,6 +1,7 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
+import { put } from "@vercel/blob";
 
 const UPLOAD_ROOT = path.join(process.cwd(), "public", "uploads");
 
@@ -13,33 +14,56 @@ const ALLOWED_IMAGE = new Set([
 ]);
 
 export type UploadedFile = {
-  url: string;       // ruta pública servida por Next desde /public
+  url: string;
   mimeType: string;
   bytes: number;
 };
 
+/**
+ * Guarda una foto del reclamo.
+ *
+ * Estrategia:
+ * - Si BLOB_READ_WRITE_TOKEN está definida (entorno Vercel con Blob
+ *   conectado), sube a Vercel Blob — almacenamiento persistente vía CDN.
+ * - Si no, fallback a filesystem local en /public/uploads/ — útil para
+ *   desarrollo y para entornos sin Blob configurado.
+ */
 export async function guardarFotoReclamo(
   reclamoId: string,
   file: File,
 ): Promise<UploadedFile> {
   if (file.size === 0) throw new Error("Archivo vacío");
-  if (file.size > MAX_BYTES) throw new Error("Imagen demasiado grande (máx 8 MB)");
+  if (file.size > MAX_BYTES) {
+    throw new Error("Imagen demasiado grande (máx 8 MB)");
+  }
   if (!ALLOWED_IMAGE.has(file.type)) {
     throw new Error(`Tipo de imagen no soportado: ${file.type}`);
   }
 
+  const ext = extFromMime(file.type);
+  const nombre = `${randomUUID()}${ext}`;
+
+  if (process.env.BLOB_READ_WRITE_TOKEN) {
+    const key = `reclamos/${reclamoId}/${nombre}`;
+    const blob = await put(key, file, {
+      access: "public",
+      contentType: file.type,
+    });
+    return {
+      url: blob.url,
+      mimeType: file.type,
+      bytes: file.size,
+    };
+  }
+
+  // Fallback: filesystem local
   const dir = path.join(UPLOAD_ROOT, "reclamos", reclamoId);
   await fs.mkdir(dir, { recursive: true });
-
-  const ext = extFromMime(file.type);
-  const name = `${randomUUID()}${ext}`;
-  const dest = path.join(dir, name);
-
+  const dest = path.join(dir, nombre);
   const buf = Buffer.from(await file.arrayBuffer());
   await fs.writeFile(dest, buf);
-
   return {
-    url: `/uploads/reclamos/${reclamoId}/${name}`,
+    url: `/uploads/reclamos/${reclamoId}/${nombre}`,
     mimeType: file.type,
     bytes: file.size,
   };
