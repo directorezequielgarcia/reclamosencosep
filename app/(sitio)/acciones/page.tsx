@@ -35,7 +35,7 @@ const FOTOS = Array.from(
 );
 
 const VIDEOS = Array.from(
-  { length: 3 },
+  { length: 2 },
   (_, i) => `/acciones/video-${String(i + 1).padStart(2, "0")}.mp4`,
 );
 
