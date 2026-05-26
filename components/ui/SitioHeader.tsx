@@ -4,6 +4,7 @@ import { LogoEncosep } from "./LogoEncosep";
 const NAV = [
   { href: "/", label: "Inicio" },
   { href: "/nosotros", label: "Nosotros" },
+  { href: "/acciones", label: "Acciones" },
   { href: "/atencion-usuarios", label: "Atención al Usuario" },
   { href: "/control-prestadoras", label: "Control a Prestadoras" },
   { href: "/contacto", label: "Contacto" },
