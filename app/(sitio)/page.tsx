@@ -7,12 +7,11 @@ export const metadata = {
     "Control y fiscalización de los servicios públicos bajo control municipal: residuos, electricidad, agua y transporte.",
 };
 
-// Hero institucional: imagen compuesta (foto Comodoro + anillos + nombre
-// EnCoSeP) preparada externamente. Overlay degradé navy solo en la parte
-// inferior, para mantener legibilidad del título "Control de los servicios
-// públicos" y el CTA rojo.
+// Hero con la foto panorámica de Comodoro Rivadavia (vista aérea con el
+// cerro, la costanera y el muelle al atardecer). Overlay degrade navy
+// mantiene la legibilidad del título y el CTA rojo.
 const HERO_CIUDAD =
-  "linear-gradient(180deg, transparent 0%, transparent 55%, rgba(29,53,80,0.55) 80%, rgba(29,53,80,0.85) 100%), url('/imagenes/hero-encosep.png')";
+  "linear-gradient(180deg, rgba(29,53,80,0.45) 0%, rgba(29,53,80,0.25) 40%, rgba(29,53,80,0.75) 100%), url('/imagenes/comodoro-panoramica.png')";
 
 export default function HomeInstitucional() {
   return (
