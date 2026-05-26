@@ -1,25 +1,18 @@
+import { SeccionHeader } from "@/components/ui/SeccionHeader";
+
 export const metadata = { title: "Contacto · ENCOSEP" };
 
 export default function Contacto() {
   return (
-    <main className="max-w-3xl mx-auto px-6 py-12">
-      <div className="text-xs font-bold tracking-widest uppercase text-muted">
-        Información institucional
-      </div>
-      <h1 className="text-4xl font-extrabold text-navy mt-2 leading-tight">
-        Contacto
-      </h1>
-      <p className="text-base text-navy mt-3 leading-relaxed">
-        El Ente de Control de Servicios Públicos atiende al público en horario
-        administrativo de lunes a viernes. Para los reclamos sobre servicios
-        públicos, la vía oficial es el{" "}
-        <a className="text-navy-2 underline" href="/reclamos">
-          Portal de Reclamos
-        </a>
-        .
-      </p>
+    <>
+      <SeccionHeader
+        kicker="Información institucional"
+        titulo="Contacto"
+        descripcion="El Ente atiende al público en horario administrativo de lunes a viernes. Para reclamos sobre servicios públicos, la vía oficial es el Portal de Reclamos."
+      />
+      <main className="max-w-3xl mx-auto px-6 py-10">
 
-      <div className="mt-8 grid md:grid-cols-2 gap-5">
+      <div className="grid md:grid-cols-2 gap-5">
         <Bloque titulo="📍 Dirección">
           Pasaje Valdivia 435
           <br />
@@ -55,7 +48,8 @@ export default function Contacto() {
           </li>
         </ul>
       </section>
-    </main>
+      </main>
+    </>
   );
 }
 

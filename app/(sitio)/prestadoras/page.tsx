@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SeccionHeader } from "@/components/ui/SeccionHeader";
 
 export const metadata = { title: "Portal de Prestadoras · ENCOSEP" };
 
@@ -11,21 +12,15 @@ const PRESTADORAS = [
 
 export default function PortalPrestadorasLanding() {
   return (
-    <main className="max-w-5xl mx-auto px-6 py-12">
-      <div className="text-xs font-bold tracking-widest uppercase text-muted">
-        Acceso institucional
-      </div>
-      <h1 className="text-4xl font-extrabold text-navy mt-2 leading-tight">
-        Portal de Prestadoras
-      </h1>
-      <p className="text-base text-navy mt-3 leading-relaxed max-w-3xl">
-        Espacio digital para las empresas que prestan servicios públicos bajo
-        control del Ente. Acá las prestadoras gestionan los reclamos
-        asignados, presentan descargos en expedientes y consultan la normativa
-        y los vencimientos de documentación.
-      </p>
+    <>
+      <SeccionHeader
+        kicker="Acceso institucional"
+        titulo="Portal de Prestadoras"
+        descripcion="Espacio digital para las empresas que prestan servicios públicos bajo control del Ente. Gestión de reclamos asignados, descargos en expedientes, normativa vigente y vencimientos de documentación."
+      />
+      <main className="max-w-5xl mx-auto px-6 py-10">
 
-      <div className="grid md:grid-cols-[1fr_360px] gap-6 mt-10 items-start">
+      <div className="grid md:grid-cols-[1fr_360px] gap-6 items-start">
         <section>
           <h2 className="text-xl font-extrabold text-navy">¿Qué podés hacer?</h2>
           <ul className="mt-3 space-y-3 text-sm text-navy">
@@ -93,7 +88,8 @@ export default function PortalPrestadorasLanding() {
           ))}
         </div>
       </section>
-    </main>
+      </main>
+    </>
   );
 }
 

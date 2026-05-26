@@ -1,23 +1,19 @@
 import Link from "next/link";
+import { SeccionHeader } from "@/components/ui/SeccionHeader";
 
 export const metadata = { title: "Atención al Usuario · ENCOSEP" };
 
 export default function AtencionUsuarios() {
   return (
-    <main className="max-w-5xl mx-auto px-6 py-12">
-      <div className="text-xs font-bold tracking-widest uppercase text-muted">
-        Servicios al vecino
-      </div>
-      <h1 className="text-4xl font-extrabold text-navy mt-2 leading-tight">
-        Atención al Usuario
-      </h1>
-      <p className="text-base text-navy mt-3 leading-relaxed max-w-3xl">
-        Si tenés un problema con la prestación de un servicio público bajo
-        control del Ente, podés hacer un reclamo, una consulta o una denuncia
-        formal. Te respondemos en plazos establecidos por la normativa.
-      </p>
+    <>
+      <SeccionHeader
+        kicker="Servicios al vecino"
+        titulo="Atención al Usuario"
+        descripcion="Si tenés un problema con la prestación de un servicio público bajo control del Ente, podés hacer un reclamo, una consulta o una denuncia formal. Te respondemos en plazos establecidos por la normativa."
+      />
+      <main className="max-w-5xl mx-auto px-6 py-10">
 
-      <div className="grid md:grid-cols-2 gap-5 mt-10">
+      <div className="grid md:grid-cols-2 gap-5">
         <Tarjeta
           destacado
           titulo="📋 Hacer un reclamo"
@@ -71,7 +67,8 @@ export default function AtencionUsuarios() {
           <li>Recibir el servicio bajo condiciones de seguridad</li>
         </ul>
       </section>
-    </main>
+      </main>
+    </>
   );
 }
 

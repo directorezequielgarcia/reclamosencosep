@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BrandStripe } from "@/components/ui/BrandStripe";
+import { SeccionHeader } from "@/components/ui/SeccionHeader";
 
 export const metadata = { title: "Nosotros · ENCOSEP" };
 
@@ -67,17 +67,15 @@ const PRINCIPIOS = [
 
 export default function Nosotros() {
   return (
-    <main className="max-w-5xl mx-auto px-6 py-12">
-      <div className="text-xs font-bold tracking-widest uppercase text-muted">
-        Quiénes somos
-      </div>
-      <h1 className="text-4xl font-extrabold text-navy mt-2 leading-tight">
-        El Ente de Control de Servicios Públicos
-      </h1>
-      <BrandStripe className="mt-4 max-w-[240px]" />
-
+    <>
+      <SeccionHeader
+        kicker="Quiénes somos"
+        titulo="El Ente de Control de Servicios Públicos"
+        descripcion="Organismo municipal con autonomía funcional, creado por Ordenanza 13.189/17 para fiscalizar la prestación de los servicios públicos en Comodoro Rivadavia."
+      />
+      <main className="max-w-5xl mx-auto px-6 py-10">
       {/* INTRO */}
-      <section className="mt-8 grid md:grid-cols-2 gap-10">
+      <section className="grid md:grid-cols-2 gap-10">
         <div className="space-y-4 text-navy leading-relaxed">
           <p>
             El <strong>EnCoSeP</strong> es el organismo de la Municipalidad de
@@ -451,7 +449,8 @@ export default function Nosotros() {
           —contratos prorrogados por el Poder Ejecutivo Municipal—.
         </p>
       </section>
-    </main>
+      </main>
+    </>
   );
 }
 

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { SvcIcon } from "@/components/servicios/SvcIcon";
 import { SVC_ORDER, SVC_META } from "@/lib/servicios";
+import { SeccionHeader } from "@/components/ui/SeccionHeader";
 
 export const metadata = {
   title: "Portal de Reclamos · ENCOSEP",
@@ -10,22 +11,17 @@ export const metadata = {
 
 export default function ReclamosLanding() {
   return (
-    <main className="max-w-5xl mx-auto px-6 py-12">
+    <>
+      <SeccionHeader
+        kicker="Atención al Usuario"
+        titulo="Portal de Reclamos"
+        descripcion="Registrá tu reclamo sobre los servicios públicos bajo control del Ente. Vas a tener un número de seguimiento, podés adjuntar fotos y ubicación, y vas a ver en tiempo real cómo va el trámite."
+        variante="naranja"
+      />
+      <main className="max-w-5xl mx-auto px-6 py-10">
       <div className="grid md:grid-cols-2 gap-10 items-start">
         <div className="flex flex-col gap-5">
-          <div className="text-xs font-bold tracking-widest uppercase text-muted">
-            Atención al Usuario
-          </div>
-          <h1 className="text-4xl font-extrabold text-navy leading-tight">
-            Portal de Reclamos
-          </h1>
-          <p className="text-base text-navy leading-relaxed">
-            Registrá tu reclamo sobre los servicios públicos bajo control del
-            Ente. Vas a tener un número de seguimiento, vas a poder adjuntar
-            fotos y ubicación, y vas a ver en tiempo real cómo va el trámite.
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-3 mt-2">
+          <div className="flex flex-col sm:flex-row gap-3">
             <Link
               href="/ingresar?callbackUrl=/inicio"
               className="inline-flex items-center justify-center px-5 py-3 rounded-xl bg-svc-red text-white font-bold text-base shadow-md shadow-svc-red/30 hover:opacity-90"
@@ -79,6 +75,7 @@ export default function ReclamosLanding() {
           </div>
         </div>
       </div>
-    </main>
+      </main>
+    </>
   );
 }

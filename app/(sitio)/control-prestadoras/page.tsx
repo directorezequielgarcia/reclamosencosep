@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SeccionHeader } from "@/components/ui/SeccionHeader";
 
 export const metadata = { title: "Control a Prestadoras · ENCOSEP" };
 
@@ -68,20 +69,15 @@ const NORMATIVA_POR_SERVICIO: Record<
 
 export default function ControlPrestadoras() {
   return (
-    <main className="max-w-5xl mx-auto px-6 py-12">
-      <div className="text-xs font-bold tracking-widest uppercase text-muted">
-        Marco regulatorio
-      </div>
-      <h1 className="text-4xl font-extrabold text-navy mt-2 leading-tight">
-        Control a Prestadoras
-      </h1>
-      <p className="text-base text-navy mt-3 leading-relaxed max-w-3xl">
-        Acá vas a encontrar la normativa vigente, los pliegos licitatorios y
-        los contratos de concesión de las empresas que prestan servicios
-        públicos en Comodoro Rivadavia bajo control del Ente.
-      </p>
+    <>
+      <SeccionHeader
+        kicker="Marco regulatorio"
+        titulo="Control a Prestadoras"
+        descripcion="Normativa vigente, pliegos licitatorios y contratos de concesión de las empresas que prestan servicios públicos en Comodoro Rivadavia bajo control del Ente."
+      />
+      <main className="max-w-5xl mx-auto px-6 py-10">
 
-      <section className="mt-10 rounded-2xl border border-navy-2/40 bg-navy-2/5 p-6">
+      <section className="rounded-2xl border border-navy-2/40 bg-navy-2/5 p-6">
         <div className="text-xs font-bold tracking-widest uppercase text-navy-2">
           ¿Sos una prestadora controlada?
         </div>
@@ -142,7 +138,8 @@ export default function ControlPrestadoras() {
           (sector "Ente de Control de Servicios Públicos").
         </p>
       </section>
-    </main>
+      </main>
+    </>
   );
 }
 
