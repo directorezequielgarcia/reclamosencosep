@@ -46,44 +46,27 @@ export default function HomeInstitucional() {
             </div>
           </div>
 
-          <div className="hidden md:flex flex-col items-end gap-3">
-            <div className="text-[10px] font-bold tracking-widest uppercase opacity-70">
-              4 servicios bajo control
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              {SVC_ORDER.map((k) => (
-                <div
-                  key={k}
-                  className="bg-white/95 rounded-2xl p-4 flex flex-col items-center gap-2 shadow-2xl"
-                >
-                  <SvcIcon kind={k} size={64} />
-                  <div className="text-[11px] font-bold uppercase tracking-wider text-navy text-center leading-tight">
-                    {SVC_META[k].short}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
       </section>
 
-      {/* SERVICIOS EN MOBILE */}
-      <section className="md:hidden bg-paper-2 py-8 px-6">
-        <div className="text-center text-[10px] font-bold tracking-widest uppercase text-muted">
-          4 servicios bajo control
-        </div>
-        <div className="grid grid-cols-2 gap-3 mt-4 max-w-md mx-auto">
-          {SVC_ORDER.map((k) => (
-            <div
-              key={k}
-              className="bg-paper rounded-2xl border border-line p-3 flex flex-col items-center gap-2"
-            >
-              <SvcIcon kind={k} size={60} />
-              <div className="text-xs font-bold uppercase tracking-wider text-navy text-center leading-tight">
-                {SVC_META[k].short}
-              </div>
+      {/* SERVICIOS BAJO CONTROL — banner oficial */}
+      <section className="bg-paper py-12 px-6 border-b border-line">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-6">
+            <div className="text-xs font-bold tracking-[0.18em] uppercase text-muted">
+              Servicios bajo control del Ente
             </div>
-          ))}
+            <h2 className="text-2xl md:text-3xl font-extrabold text-navy mt-2">
+              Las 4 áreas que fiscalizamos
+            </h2>
+          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/imagenes/servicios-banner.png"
+            alt="Agua y Saneamiento · Energía Eléctrica y Alumbrado Público · Gestión de Residuos · Transporte Público Interurbano"
+            className="block w-full h-auto rounded-2xl"
+            loading="eager"
+          />
         </div>
       </section>
 

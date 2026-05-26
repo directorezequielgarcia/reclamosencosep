@@ -40,13 +40,15 @@
   --color-svc-blue:    var(--c-blue-l);
   --color-svc-red:     var(--c-red);
   --color-svc-yellow:  var(--c-yellow);
-  --font-sans: "Open Sans", var(--font-geist-sans), system-ui, sans-serif;
+  --font-sans-display: var(--font-sans-display), "Inter", system-ui, sans-serif;
 }
 
 html, body {
   background: var(--paper);
   color: var(--navy);
-  font-family: "Open Sans", system-ui, -apple-system, sans-serif;
+  font-family: var(--font-sans-display), "Inter", system-ui, -apple-system, sans-serif;
+  font-feature-settings: "cv11", "ss01", "ss03";
+  letter-spacing: -0.005em;
 }
 
 /* Banda decorativa de marca */
