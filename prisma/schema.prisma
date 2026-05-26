@@ -39,6 +39,8 @@ model Usuario {
   eventos         ReclamoEvento[]
   expedientesAbiertos Expediente[]     @relation("ExpIniciador")
   actos           ActoAdministrativo[] @relation("ActoAutor")
+  documentosSubidos Documento[]        @relation("DocSubeUsuario")
+  documentosRevisados Documento[]      @relation("DocRevisor")
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   activo          Boolean  @default(true)
@@ -72,8 +74,64 @@ model Prestadora {
   operadores  Usuario[]
   reclamos    Reclamo[]
   expedientes Expediente[]
+  documentos  Documento[]
   activa      Boolean    @default(true)
   createdAt   DateTime   @default(now())
+}
+
+// ─────────────────────────────────────────────
+// Documentación de las prestadoras
+// La prestadora sube documentación (balance anual, certificación mensual,
+// etc.) y el Ente la revisa: aprueba, observa o rechaza.
+// ─────────────────────────────────────────────
+
+enum TipoDocumento {
+  ANUAL              // balance anual, plan anual, memoria
+  MENSUAL            // certificación mensual, informe operativo mensual
+  CERTIFICACION      // certificación técnica puntual
+  CONTRATO           // contrato, addenda, pliego firmado
+  OTRO               // otros (notas, descargos formales no en expediente)
+}
+
+enum EstadoDocumento {
+  PENDIENTE          // recién subido, esperando revisión
+  EN_REVISION        // un gestor lo está revisando
+  APROBADO           // OK, queda en el archivo
+  OBSERVADO          // hay objeciones, la prestadora debe corregir
+  RECHAZADO          // rechazado definitivamente
+}
+
+model Documento {
+  id            String          @id @default(cuid())
+  prestadoraId  String
+  prestadora    Prestadora      @relation(fields: [prestadoraId], references: [id])
+
+  tipo          TipoDocumento
+  periodo       String          // "2026" para anual; "2026-05" para mensual
+  titulo        String
+  descripcion   String?
+
+  // Archivo (un solo PDF/archivo por documento; permite re-uploads via
+  // un Documento nuevo si el actual queda OBSERVADO)
+  archivoUrl    String
+  mimeType      String?
+  bytes         Int?
+
+  estado        EstadoDocumento @default(PENDIENTE)
+  comentarioRevision String?
+
+  subidoPorId   String
+  subidoPor     Usuario         @relation("DocSubeUsuario", fields: [subidoPorId], references: [id])
+  revisorId     String?
+  revisor       Usuario?        @relation("DocRevisor", fields: [revisorId], references: [id])
+
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  revisadoEn    DateTime?
+
+  @@index([prestadoraId, estado])
+  @@index([tipo, periodo])
+  @@index([estado])
 }
 
 // ─────────────────────────────────────────────

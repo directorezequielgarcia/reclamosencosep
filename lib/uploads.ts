@@ -19,6 +19,81 @@ export type UploadedFile = {
   bytes: number;
 };
 
+const MAX_DOC_BYTES = 25 * 1024 * 1024; // 25 MB para documentos
+const ALLOWED_DOC = new Set([
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "image/jpeg",
+  "image/png",
+]);
+
+/**
+ * Guarda un documento de prestadora (PDF u oficina). Sube a Vercel Blob si
+ * BLOB_READ_WRITE_TOKEN está definido; si no, fallback a filesystem local.
+ */
+export async function guardarDocumentoPrestadora(
+  prestadoraId: string,
+  documentoId: string,
+  file: File,
+): Promise<UploadedFile> {
+  if (file.size === 0) throw new Error("Archivo vacío");
+  if (file.size > MAX_DOC_BYTES) {
+    throw new Error(
+      `Archivo demasiado grande (máx ${MAX_DOC_BYTES / 1024 / 1024} MB)`,
+    );
+  }
+  if (file.type && !ALLOWED_DOC.has(file.type)) {
+    throw new Error(`Tipo de archivo no soportado: ${file.type}`);
+  }
+
+  const ext = extDocFromMime(file.type);
+  const nombre = `${documentoId}${ext}`;
+
+  if (process.env.BLOB_READ_WRITE_TOKEN) {
+    const key = `documentos/${prestadoraId}/${nombre}`;
+    const blob = await put(key, file, {
+      access: "public",
+      contentType: file.type || "application/octet-stream",
+    });
+    return { url: blob.url, mimeType: file.type, bytes: file.size };
+  }
+
+  const dir = path.join(UPLOAD_ROOT, "documentos", prestadoraId);
+  await fs.mkdir(dir, { recursive: true });
+  const dest = path.join(dir, nombre);
+  const buf = Buffer.from(await file.arrayBuffer());
+  await fs.writeFile(dest, buf);
+  return {
+    url: `/uploads/documentos/${prestadoraId}/${nombre}`,
+    mimeType: file.type,
+    bytes: file.size,
+  };
+}
+
+function extDocFromMime(mime: string): string {
+  switch (mime) {
+    case "application/pdf":
+      return ".pdf";
+    case "application/msword":
+      return ".doc";
+    case "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+      return ".docx";
+    case "application/vnd.ms-excel":
+      return ".xls";
+    case "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+      return ".xlsx";
+    case "image/jpeg":
+      return ".jpg";
+    case "image/png":
+      return ".png";
+    default:
+      return "";
+  }
+}
+
 /**
  * Guarda una foto del reclamo.
  *
