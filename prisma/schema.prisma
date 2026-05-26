@@ -366,6 +366,25 @@ model AudienciaPublica {
   modalidad     ModalidadAudiencia
   estado        EstadoAudiencia     @default(PROGRAMADA)
   capacidad     Int?
+
+  // Expediente al que refiere la audiencia
+  expedienteNumero String?
+  expedienteTitulo String?
+  expedienteUrl    String?  // PDF del expediente para "vista del expediente"
+
+  // Convocatoria (texto completo + fecha de publicación + cierre de inscripción)
+  convocatoriaTexto      String?
+  convocatoriaPublicadaEn DateTime?
+  inscripcionCierra      DateTime?
+
+  // Orden del día (PDF)
+  ordenDiaUrl  String?
+
+  // Resultado / acta posterior
+  actaTexto    String?
+  actaUrl      String?
+  realizadaEn  DateTime?
+
   inscripciones InscripcionAudiencia[]
   autorId       String
   autor         Usuario             @relation(fields: [autorId], references: [id])
