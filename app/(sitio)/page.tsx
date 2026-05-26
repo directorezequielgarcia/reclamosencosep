@@ -8,12 +8,11 @@ export const metadata = {
     "Control y fiscalización de los servicios públicos bajo control municipal: residuos, electricidad, agua y transporte.",
 };
 
-// Mientras no tengamos la foto panorámica oficial de Comodoro Rivadavia,
-// un gradient que evoca el atardecer sobre el mar argentino.
-// TODO: reemplazar por <img src="/imagenes/comodoro-panoramica.jpg" /> cuando
-// el usuario suba la foto a /public/imagenes/.
+// Hero con foto panorámica real de Comodoro Rivadavia (vista aérea con
+// el cerro, la costanera y el muelle al atardecer).
+// El overlay degrade en navy mantiene la legibilidad del título.
 const HERO_CIUDAD =
-  "linear-gradient(180deg, rgba(29,53,80,0.55) 0%, rgba(29,53,80,0.35) 50%, rgba(75,168,194,0.45) 100%), radial-gradient(ellipse at 15% 70%, #8b6f4a 0%, transparent 35%), radial-gradient(ellipse at 85% 30%, #f0bc40 0%, transparent 45%), linear-gradient(180deg, #f0bc40 0%, #e88a3c 25%, #c4393c 45%, #2b4a6b 70%, #1d3550 100%)";
+  "linear-gradient(180deg, rgba(29,53,80,0.55) 0%, rgba(29,53,80,0.25) 35%, rgba(29,53,80,0.55) 100%), url('/imagenes/comodoro-panoramica.png')";
 
 export default function HomeInstitucional() {
   return (
@@ -21,7 +20,11 @@ export default function HomeInstitucional() {
       {/* HERO */}
       <section
         className="relative text-white"
-        style={{ backgroundImage: HERO_CIUDAD, backgroundBlendMode: "multiply" }}
+        style={{
+          backgroundImage: HERO_CIUDAD,
+          backgroundSize: "cover",
+          backgroundPosition: "center center",
+        }}
       >
         <div className="max-w-6xl mx-auto px-6 py-20 md:py-28 grid md:grid-cols-[1.4fr_1fr] gap-10 items-center">
           <div>
