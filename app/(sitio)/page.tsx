@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { SvcIcon } from "@/components/servicios/SvcIcon";
-import { SVC_ORDER, SVC_META } from "@/lib/servicios";
+import { BotoneraServicios } from "@/components/servicios/BotoneraServicios";
 
 export const metadata = {
   title: "EnCoSeP · Ente de Control de Servicios Públicos · Comodoro Rivadavia",
@@ -49,24 +48,22 @@ export default function HomeInstitucional() {
         </div>
       </section>
 
-      {/* SERVICIOS BAJO CONTROL — banner oficial */}
+      {/* ÁREAS FISCALIZADAS — botonera interactiva */}
       <section className="bg-paper py-12 px-6 border-b border-line">
         <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-6">
+          <div className="text-center mb-8">
             <div className="text-xs font-bold tracking-[0.18em] uppercase text-muted">
-              Servicios bajo control del Ente
+              Áreas bajo control del Ente
             </div>
             <h2 className="text-2xl md:text-3xl font-extrabold text-navy mt-2">
-              Las 4 áreas que fiscalizamos
+              Entrá al área y conocé qué fiscalizamos
             </h2>
+            <p className="text-sm text-muted mt-2 max-w-xl mx-auto">
+              Cada área tiene su normativa, su prestadora controlada y la lista
+              de situaciones que podés reclamar.
+            </p>
           </div>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/imagenes/servicios-banner.png"
-            alt="Agua y Saneamiento · Energía Eléctrica y Alumbrado Público · Gestión de Residuos · Transporte Público Interurbano"
-            className="block w-full h-auto rounded-2xl"
-            loading="eager"
-          />
+          <BotoneraServicios />
         </div>
       </section>
 
