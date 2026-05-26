@@ -25,20 +25,18 @@ export default function AtencionUsuarios() {
 
         <Tarjeta
           titulo="⭐ Encuesta de satisfacción"
-          subtitulo="Próximamente"
-          descripcion="Cuando se cierre un reclamo, vas a poder calificar la atención del Ente y de la prestadora. Esa información alimenta el Informe Mensual y las decisiones del Directorio."
-          cta="Próximamente"
-          href="#"
-          deshabilitado
+          subtitulo="Tu opinión"
+          descripcion="Calificá del 1 al 5 cómo está cada servicio público. Si cerraste un reclamo, también podés calificar la atención del Ente y de la prestadora."
+          cta="Responder encuesta"
+          href="/encuesta"
         />
 
         <Tarjeta
           titulo="📊 Indicadores públicos"
-          subtitulo="Próximamente"
-          descripcion="Panel público con métricas anonimizadas: cantidad de reclamos por servicio, tiempo medio de resolución, porcentaje de cumplimiento por prestadora."
-          cta="Próximamente"
-          href="#"
-          deshabilitado
+          subtitulo="Datos en tiempo real"
+          descripcion="Panel con métricas anonimizadas: reclamos por servicio, tiempo medio de resolución, cumplimiento por prestadora y satisfacción del usuario."
+          cta="Ver indicadores"
+          href="/indicadores"
         />
 
         <Tarjeta

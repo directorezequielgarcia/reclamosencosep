@@ -41,6 +41,8 @@ model Usuario {
   actos           ActoAdministrativo[] @relation("ActoAutor")
   documentosSubidos Documento[]        @relation("DocSubeUsuario")
   documentosRevisados Documento[]      @relation("DocRevisor")
+  boletines       Boletin[]
+  audienciasPublicas AudienciaPublica[]
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   activo          Boolean  @default(true)
@@ -75,6 +77,7 @@ model Prestadora {
   reclamos    Reclamo[]
   expedientes Expediente[]
   documentos  Documento[]
+  vencimientos Vencimiento[]
   activa      Boolean    @default(true)
   createdAt   DateTime   @default(now())
 }
@@ -188,6 +191,16 @@ model Reclamo {
   expedienteId String?
   expediente   Expediente?   @relation(fields: [expedienteId], references: [id])
 
+  recursoDirecto         Boolean  @default(false)
+  recursoDirectoEn       DateTime?
+  copiaExpedienteSolicitada Boolean @default(false)
+  copiaExpedienteEn      DateTime?
+
+  puntajeEnte            Int?     // 1-5 — encuesta de cierre de reclamo
+  puntajePrestadora      Int?     // 1-5
+  comentarioEncuesta     String?
+  encuestaEn             DateTime?
+
   adjuntos     Adjunto[]
   eventos      ReclamoEvento[]
 
@@ -288,4 +301,145 @@ model Adjunto {
   mimeType  String?
   bytes     Int?
   createdAt DateTime    @default(now())
+}
+
+// ─────────────────────────────────────────────
+// Boletines y comunicaciones del Ente
+// El Ente publica boletines oficiales, comunicados y notas de prensa
+// (también clippings de menciones en medios y redes).
+// ─────────────────────────────────────────────
+
+enum TipoBoletin {
+  BOLETIN_OFICIAL
+  COMUNICADO
+  NOTA_PRENSA
+  CLIPPING       // mención en medio externo / red social
+}
+
+model Boletin {
+  id              String      @id @default(cuid())
+  tipo            TipoBoletin
+  numero          String?
+  titulo          String
+  resumen         String?
+  cuerpo          String?     // texto largo opcional
+  archivoUrl      String?     // PDF / imagen adjunta opcional
+  enlaceExterno   String?     // link a medio externo (para CLIPPING)
+  fuente          String?     // p.ej. "Diario Crónica", "Twitter / X"
+  fechaPublicacion DateTime
+  publicado       Boolean     @default(true)
+  autorId         String
+  autor           Usuario     @relation(fields: [autorId], references: [id])
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([tipo, fechaPublicacion])
+  @@index([publicado, fechaPublicacion])
+}
+
+// ─────────────────────────────────────────────
+// Audiencias Públicas
+// El Ente convoca audiencias públicas. Los vecinos se inscriben online.
+// ─────────────────────────────────────────────
+
+enum ModalidadAudiencia {
+  PRESENCIAL
+  VIRTUAL
+  HIBRIDA
+}
+
+enum EstadoAudiencia {
+  PROGRAMADA
+  ABIERTA_INSCRIPCION
+  CERRADA_INSCRIPCION
+  REALIZADA
+  CANCELADA
+}
+
+model AudienciaPublica {
+  id            String              @id @default(cuid())
+  titulo        String
+  descripcion   String
+  fecha         DateTime
+  lugar         String?
+  enlaceVirtual String?
+  modalidad     ModalidadAudiencia
+  estado        EstadoAudiencia     @default(PROGRAMADA)
+  capacidad     Int?
+  inscripciones InscripcionAudiencia[]
+  autorId       String
+  autor         Usuario             @relation(fields: [autorId], references: [id])
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  @@index([estado, fecha])
+}
+
+model InscripcionAudiencia {
+  id          String           @id @default(cuid())
+  audienciaId String
+  audiencia   AudienciaPublica @relation(fields: [audienciaId], references: [id], onDelete: Cascade)
+  nombre      String
+  apellido    String
+  dni         String
+  email       String
+  telefono    String?
+  comentario  String?
+  createdAt   DateTime         @default(now())
+
+  @@unique([audienciaId, dni])
+  @@index([audienciaId])
+}
+
+// ─────────────────────────────────────────────
+// Vencimientos de documentación de prestadoras
+// El Ente define qué documentos debe presentar cada prestadora y cuándo.
+// El sistema marca como VENCIDO los pendientes que pasaron la fecha.
+// ─────────────────────────────────────────────
+
+enum EstadoVencimiento {
+  PENDIENTE
+  CUMPLIDO
+  VENCIDO
+  PRORROGADO
+  EXCEPTUADO
+}
+
+model Vencimiento {
+  id           String            @id @default(cuid())
+  prestadoraId String
+  prestadora   Prestadora        @relation(fields: [prestadoraId], references: [id])
+  tipo         TipoDocumento
+  periodo      String            // "2026" o "2026-05"
+  titulo       String            // ej "Balance anual", "Certificación mensual"
+  fechaLimite  DateTime
+  estado       EstadoVencimiento @default(PENDIENTE)
+  observacion  String?
+  documentoId  String?           // se vincula cuando se cumple
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@index([prestadoraId, estado])
+  @@index([estado, fechaLimite])
+}
+
+// ─────────────────────────────────────────────
+// Encuesta general de satisfacción
+// Cualquier vecino (anónimo o logueado) puede responder cómo evalúa cada
+// servicio público bajo control del Ente. Alimenta los indicadores.
+// ─────────────────────────────────────────────
+
+model EncuestaServicios {
+  id               String   @id @default(cuid())
+  puntajeAgua      Int?     // 1-5
+  puntajeEnergia   Int?
+  puntajeResiduos  Int?
+  puntajeTransporte Int?
+  comentario       String?
+  barrio           String?
+  // Identificación opcional para evitar spam — no se muestra públicamente
+  dniHash          String?  // hash del DNI si el vecino se identifica
+  createdAt        DateTime @default(now())
+
+  @@index([createdAt])
 }

@@ -33,11 +33,14 @@ export default async function AdminLayout({
             </div>
           </Link>
 
-          <nav className="flex items-center gap-1 ml-4">
+          <nav className="flex items-center gap-1 ml-4 flex-wrap">
             <NavLink href="/admin">Dashboard</NavLink>
             <NavLink href="/admin/bandeja">Bandeja</NavLink>
             <NavLink href="/admin/expedientes">Expedientes</NavLink>
             <NavLink href="/admin/documentacion">Documentación</NavLink>
+            <NavLink href="/admin/vencimientos">Vencimientos</NavLink>
+            <NavLink href="/admin/boletines">Boletines</NavLink>
+            <NavLink href="/admin/audiencias">Audiencias</NavLink>
           </nav>
 
           <div className="ml-auto flex items-center gap-3">

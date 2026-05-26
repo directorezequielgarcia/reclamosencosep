@@ -7,6 +7,11 @@ import { MiniMapa } from "@/components/mapa/MiniMapa";
 import { EstadoBadge } from "@/components/ui/EstadoBadge";
 import { svcFromKind } from "@/lib/servicios";
 import { ESTADO_META } from "@/lib/admin";
+import {
+  habilitarRecursoDirecto,
+  solicitarCopiaExpediente,
+  calificarReclamo,
+} from "./actions";
 
 export const metadata = { title: "Mi reclamo · ENCOSEP" };
 
@@ -217,7 +222,148 @@ export default async function DetalleMiReclamoPage({
           </div>
         </section>
       )}
+
+      {/* ACCIONES DEL VECINO — recurso directo / copia expediente */}
+      {!reclamo.recursoDirecto && (
+        <section className="rounded-2xl border-2 border-svc-orange/40 bg-svc-orange/5 p-4">
+          <div className="text-[11px] font-bold text-svc-orange uppercase tracking-wider mb-1">
+            ¿Querés reclamar directo a la prestadora?
+          </div>
+          <p className="text-sm text-navy mt-1 leading-relaxed">
+            Podés habilitar el <strong>recurso directo</strong> a la
+            prestadora. La empresa tiene 5 días hábiles para responderte por
+            escrito sin pasar por el Ente. El Ente sigue siendo notificado.
+          </p>
+          <form
+            action={habilitarRecursoDirecto}
+            className="mt-2"
+          >
+            <input type="hidden" name="codigo" value={reclamo.codigo} />
+            <button
+              type="submit"
+              className="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-svc-orange text-white font-bold text-sm"
+            >
+              Habilitar recurso directo
+            </button>
+          </form>
+        </section>
+      )}
+
+      {reclamo.recursoDirecto && (
+        <section className="rounded-2xl border border-svc-orange bg-svc-orange/10 p-4 text-sm text-navy">
+          <strong>Recurso directo habilitado</strong>{" "}
+          {reclamo.recursoDirectoEn && (
+            <span className="text-muted">
+              el {reclamo.recursoDirectoEn.toLocaleDateString("es-AR")}
+            </span>
+          )}
+          . La prestadora tiene 5 días hábiles para responderte por escrito.
+        </section>
+      )}
+
+      {(reclamo.estado === "CERRADO_SIN_SOLUCION" ||
+        reclamo.estado === "RECHAZADO") &&
+        !reclamo.copiaExpedienteSolicitada && (
+          <section className="rounded-2xl border-2 border-svc-red/40 bg-svc-red/5 p-4">
+            <div className="text-[11px] font-bold text-svc-red uppercase tracking-wider mb-1">
+              Vía administrativa agotada
+            </div>
+            <p className="text-sm text-navy mt-1 leading-relaxed">
+              Si querés llevar el caso a la Defensoría del Pueblo o a la vía
+              judicial, podés <strong>solicitar copia digital del
+              expediente</strong> con todos los antecedentes.
+            </p>
+            <form action={solicitarCopiaExpediente} className="mt-2">
+              <input type="hidden" name="codigo" value={reclamo.codigo} />
+              <button
+                type="submit"
+                className="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-svc-red text-white font-bold text-sm"
+              >
+                Solicitar copia del expediente
+              </button>
+            </form>
+          </section>
+        )}
+
+      {reclamo.copiaExpedienteSolicitada && (
+        <section className="rounded-2xl border border-svc-red bg-svc-red/10 p-4 text-sm text-navy">
+          <strong>Copia del expediente solicitada</strong>{" "}
+          {reclamo.copiaExpedienteEn && (
+            <span className="text-muted">
+              el {reclamo.copiaExpedienteEn.toLocaleDateString("es-AR")}
+            </span>
+          )}
+          . El Ente la preparará y te la enviará por email.
+        </section>
+      )}
+
+      {/* ENCUESTA DE CIERRE */}
+      {["RESUELTO", "CERRADO_SIN_SOLUCION", "RECHAZADO"].includes(
+        reclamo.estado,
+      ) &&
+        !reclamo.encuestaEn && (
+          <section className="rounded-2xl border-2 border-svc-green/40 bg-svc-green/5 p-4">
+            <div className="text-[11px] font-bold text-svc-green uppercase tracking-wider mb-1">
+              ¿Cómo te atendimos?
+            </div>
+            <p className="text-sm text-navy mb-3">
+              Calificá del 1 al 5 la atención del Ente y de la prestadora.
+              Tu opinión cuenta para mejorar.
+            </p>
+            <form action={calificarReclamo} className="flex flex-col gap-3">
+              <input type="hidden" name="codigo" value={reclamo.codigo} />
+              <PuntajeField name="puntajeEnte" label="Ente (ENCOSEP)" />
+              <PuntajeField
+                name="puntajePrestadora"
+                label={`Prestadora${reclamo.prestadora ? ` (${reclamo.prestadora.razonSocial})` : ""}`}
+              />
+              <textarea
+                name="comentarioEncuesta"
+                rows={2}
+                placeholder="Comentario opcional…"
+                className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper resize-y"
+              />
+              <button
+                type="submit"
+                className="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-svc-green text-white font-bold text-sm"
+              >
+                Enviar mi calificación
+              </button>
+            </form>
+          </section>
+        )}
+
+      {reclamo.encuestaEn && (
+        <section className="rounded-2xl border border-svc-green bg-svc-green/10 p-4 text-sm text-navy">
+          <strong>¡Gracias por tu calificación!</strong> Ente:{" "}
+          {reclamo.puntajeEnte}/5 · Prestadora: {reclamo.puntajePrestadora}/5
+        </section>
+      )}
     </main>
+  );
+}
+
+function PuntajeField({ name, label }: { name: string; label: string }) {
+  return (
+    <fieldset>
+      <legend className="text-xs font-bold text-navy">{label}</legend>
+      <div className="flex gap-1.5 mt-1">
+        {[1, 2, 3, 4, 5].map((n) => (
+          <label key={n} className="flex-1 cursor-pointer">
+            <input
+              type="radio"
+              name={name}
+              value={n}
+              required
+              className="peer sr-only"
+            />
+            <div className="text-center py-2 rounded-lg border-2 border-line-strong bg-paper-2 text-navy font-bold peer-checked:bg-svc-green peer-checked:text-white peer-checked:border-svc-green transition">
+              {n}
+            </div>
+          </label>
+        ))}
+      </div>
+    </fieldset>
   );
 }
 
