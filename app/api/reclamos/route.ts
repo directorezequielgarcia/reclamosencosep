@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { generarCodigo } from "@/lib/codigos";
 import { SVC_META, type SvcKey } from "@/lib/servicios";
 import { guardarFotoReclamo } from "@/lib/uploads";
+import { geocodificarDireccion } from "@/lib/geocode";
 
 export const runtime = "nodejs";
 
@@ -117,6 +118,19 @@ export async function POST(req: Request) {
       ? `Coordenadas GPS ${datos.lat?.toFixed(5)}, ${datos.lng?.toFixed(5)}`
       : "Sin dirección");
 
+  // Si el vecino NO mandó GPS pero SÍ una dirección escrita, intentamos
+  // geocodificar con Nominatim (OpenStreetMap) para obtener coordenadas
+  // aproximadas. Esto enriquece el mapa de calor con todos los reclamos.
+  let lat = datos.lat ?? null;
+  let lng = datos.lng ?? null;
+  if ((lat === null || lng === null) && datos.direccion?.trim()) {
+    const geo = await geocodificarDireccion(datos.direccion, datos.barrio);
+    if (geo) {
+      lat = geo.lat;
+      lng = geo.lng;
+    }
+  }
+
   const reclamo = await prisma.reclamo.create({
     data: {
       codigo,
@@ -127,8 +141,8 @@ export async function POST(req: Request) {
       descripcion: datos.descripcion,
       direccion: direccionPersistida,
       barrio: datos.barrio ?? null,
-      lat: datos.lat ?? null,
-      lng: datos.lng ?? null,
+      lat,
+      lng,
       slaHoras,
       slaDeadline,
       estado: "RECIBIDO",
