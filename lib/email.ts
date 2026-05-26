@@ -1,17 +1,23 @@
 /**
- * Helper de envío de emails — usa Resend si hay API key configurada,
- * caso contrario hace fallback a console.log (útil en dev y como
- * salvaguarda para que ninguna acción crashee si falta la key).
+ * Helper de envío de emails con 3 backends en cascada:
+ *   1) Gmail SMTP via nodemailer (si GMAIL_USER + GMAIL_APP_PASSWORD están seteados).
+ *      Recomendado porque permite enviar a CUALQUIER email sin verificar dominio.
+ *   2) Resend (si RESEND_API_KEY está seteada). Limitación del tier gratis:
+ *      sólo envía al email del owner de la cuenta hasta que se verifique un dominio.
+ *   3) Fallback a console.log (dev y salvaguarda — ninguna acción crashea por falta de email).
  *
- * Para habilitar emails reales:
- * 1. Crear cuenta gratis en https://resend.com (3.000 emails/mes free)
- * 2. Obtener API key del dashboard de Resend
- * 3. En Vercel → Settings → Environment Variables agregar:
- *      RESEND_API_KEY=re_xxxxxxxxxxxx
- *      EMAIL_FROM="ENCOSEP <onboarding@resend.dev>"
- *      (cuando tengamos dominio propio, EMAIL_FROM puede ser
- *       "ENCOSEP <no-reply@encosepcomodoro.gob.ar>")
+ * Configuración Gmail SMTP (recomendado mientras no hay dominio propio):
+ *   En Vercel → Settings → Environment Variables:
+ *     GMAIL_USER=abogadoezequielgarcia@gmail.com
+ *     GMAIL_APP_PASSWORD=<App Password de 16 caracteres generado en https://myaccount.google.com/apppasswords>
+ *     EMAIL_FROM="ENCOSEP <abogadoezequielgarcia@gmail.com>"
+ *
+ * Configuración Resend (cuando tengamos dominio):
+ *   RESEND_API_KEY=re_xxxxxxxxxxxx
+ *   EMAIL_FROM="ENCOSEP <no-reply@encosepcomodoro.gob.ar>"
  */
+
+import nodemailer from "nodemailer";
 
 type EnviarEmailParams = {
   para: string;
@@ -25,47 +31,75 @@ export async function enviarEmail({
   asunto,
   html,
   texto,
-}: EnviarEmailParams): Promise<{ ok: boolean; error?: string }> {
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.EMAIL_FROM ?? "ENCOSEP <onboarding@resend.dev>";
+}: EnviarEmailParams): Promise<{ ok: boolean; error?: string; via?: string }> {
+  const gmailUser = process.env.GMAIL_USER;
+  const gmailPass = process.env.GMAIL_APP_PASSWORD;
+  const resendKey = process.env.RESEND_API_KEY;
+  const from =
+    process.env.EMAIL_FROM ??
+    (gmailUser
+      ? `ENCOSEP <${gmailUser}>`
+      : "ENCOSEP <onboarding@resend.dev>");
 
-  if (!apiKey) {
-    console.log("─────────────────────────────────────────────");
-    console.log("EMAIL (fallback console, sin RESEND_API_KEY):");
-    console.log("  Para:", para);
-    console.log("  Asunto:", asunto);
-    console.log("  Texto:", texto ?? "(solo HTML)");
-    console.log("  HTML:", html.slice(0, 200) + (html.length > 200 ? "..." : ""));
-    console.log("─────────────────────────────────────────────");
-    return { ok: true };
-  }
-
-  try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
+  // Backend 1: Gmail SMTP (preferido — sin restricción de destinatario)
+  if (gmailUser && gmailPass) {
+    try {
+      const transporter = nodemailer.createTransport({
+        host: "smtp.gmail.com",
+        port: 465,
+        secure: true,
+        auth: {
+          user: gmailUser,
+          pass: gmailPass.replace(/\s+/g, ""), // App Passwords vienen con espacios al copiar
+        },
+      });
+      await transporter.sendMail({
         from,
-        to: [para],
+        to: para,
         subject: asunto,
         html,
         text: texto,
-      }),
-    });
+      });
+      return { ok: true, via: "gmail" };
+    } catch (err) {
+      console.error("Gmail SMTP error:", err);
+      // Cae al siguiente backend
+    }
+  }
 
-    if (!res.ok) {
+  // Backend 2: Resend
+  if (resendKey) {
+    try {
+      const res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${resendKey}`,
+        },
+        body: JSON.stringify({
+          from,
+          to: [para],
+          subject: asunto,
+          html,
+          text: texto,
+        }),
+      });
+      if (res.ok) return { ok: true, via: "resend" };
       const error = await res.text();
       console.error("Resend error:", error);
-      return { ok: false, error };
+    } catch (err) {
+      console.error("Resend exception:", err);
     }
-    return { ok: true };
-  } catch (err) {
-    console.error("Error enviando email:", err);
-    return { ok: false, error: String(err) };
   }
+
+  // Backend 3: Fallback consola (dev o emergencia)
+  console.log("─────────────────────────────────────────────");
+  console.log("EMAIL (fallback consola, sin SMTP/Resend configurado):");
+  console.log("  Para:", para);
+  console.log("  Asunto:", asunto);
+  console.log("  Texto:", texto ?? "(solo HTML)");
+  console.log("─────────────────────────────────────────────");
+  return { ok: true, via: "console" };
 }
 
 const NAVY = "#1d3550";

@@ -34,6 +34,26 @@ export default async function MisReclamosPage() {
     include: { servicio: true, prestadora: true },
   });
 
+  // Eventos recientes (últimas 24hs) para cada reclamo — suple notificaciones por email mientras tanto
+  const desde = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const eventosRecientes = await prisma.reclamoEvento.groupBy({
+    by: ["reclamoId"],
+    where: {
+      reclamoId: { in: reclamos.map((r) => r.id) },
+      createdAt: { gte: desde },
+      // No contamos el evento CREACION (no es novedad para el vecino que lo cargó)
+      tipo: { not: "CREACION" },
+    },
+    _count: { _all: true },
+  });
+  const novedadesPorReclamo = new Map(
+    eventosRecientes.map((e) => [e.reclamoId, e._count._all]),
+  );
+  const totalNovedades = Array.from(novedadesPorReclamo.values()).reduce(
+    (a, b) => a + b,
+    0,
+  );
+
   return (
     <main className="flex flex-1 flex-col gap-4 py-4">
       <header>
@@ -45,6 +65,14 @@ export default async function MisReclamosPage() {
             ? "Todavía no registraste ningún reclamo."
             : `${reclamos.length} ${reclamos.length === 1 ? "reclamo" : "reclamos"} en total.`}
         </p>
+        {totalNovedades > 0 && (
+          <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-svc-orange/15 border border-svc-orange/40 text-navy text-xs font-semibold">
+            <span className="w-2 h-2 rounded-full bg-svc-orange animate-pulse" />
+            {totalNovedades === 1
+              ? "1 novedad en las últimas 24hs"
+              : `${totalNovedades} novedades en las últimas 24hs`}
+          </div>
+        )}
       </header>
 
       {reclamos.length === 0 ? (
@@ -62,11 +90,16 @@ export default async function MisReclamosPage() {
               day: "2-digit",
               month: "short",
             });
+            const novedades = novedadesPorReclamo.get(r.id) ?? 0;
             return (
               <li key={r.id}>
                 <Link
                   href={`/mis-reclamos/${r.codigo}`}
-                  className="flex items-start gap-3 p-3 rounded-xl border border-line bg-paper hover:bg-paper-2 transition"
+                  className={`relative flex items-start gap-3 p-3 rounded-xl border bg-paper hover:bg-paper-2 transition ${
+                    novedades > 0
+                      ? "border-svc-orange/60 shadow-sm shadow-svc-orange/15"
+                      : "border-line"
+                  }`}
                 >
                   <SvcIcon kind={svc} size={44} />
                   <div className="flex-1 min-w-0">
@@ -79,6 +112,12 @@ export default async function MisReclamosPage() {
                       >
                         {ESTADO_LABEL[r.estado]}
                       </span>
+                      {novedades > 0 && (
+                        <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full bg-svc-orange text-white">
+                          <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                          {novedades === 1 ? "novedad" : `${novedades} novedades`}
+                        </span>
+                      )}
                       <span className="text-[11px] text-muted ml-auto">
                         {fecha}
                       </span>

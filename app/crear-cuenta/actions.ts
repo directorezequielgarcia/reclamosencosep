@@ -10,13 +10,29 @@ import { enviarEmail, plantillaBienvenida } from "@/lib/email";
 const RegistroSchema = z.object({
   dni: z
     .string()
-    .min(6)
-    .max(12)
-    .regex(/^\d+$/, "El DNI debe contener solo números"),
-  nombre: z.string().trim().min(2).max(60),
-  apellido: z.string().trim().min(2).max(60),
-  email: z.string().trim().toLowerCase().email("Email inválido").max(120),
-  password: z.string().min(6, "La clave debe tener al menos 6 caracteres").max(80),
+    .min(7, "El DNI debe tener entre 7 y 11 dígitos")
+    .max(11, "El DNI debe tener entre 7 y 11 dígitos")
+    .regex(/^\d+$/, "El DNI debe contener solo números (sin puntos ni espacios)"),
+  nombre: z
+    .string()
+    .trim()
+    .min(2, "El nombre es muy corto")
+    .max(60, "El nombre es muy largo"),
+  apellido: z
+    .string()
+    .trim()
+    .min(2, "El apellido es muy corto")
+    .max(60, "El apellido es muy largo"),
+  email: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .email("El email no parece válido — revisá el formato")
+    .max(120),
+  password: z
+    .string()
+    .min(6, "La clave debe tener al menos 6 caracteres")
+    .max(80),
 });
 
 export type CrearCuentaState = {
