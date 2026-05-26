@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* Pin de servicio en mapa de calor — overridea el fondo blanco que Leaflet aplica por default a divIcon */
+.encosep-mapa-pin {
+  background: transparent !important;
+  border: none !important;
+}
+
 /* ============================================
    EnCoSeP · Portal de Reclamos · Sistema visual
    Tokens portados del prototipo en Claude Design.
