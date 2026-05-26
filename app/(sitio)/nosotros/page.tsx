@@ -31,26 +31,58 @@ const FUNCIONES_DIRECTORIO = [
   "Coordinar con el Concejo Deliberante y el Departamento Ejecutivo.",
 ];
 
-const COLABORADORES = [
+// Áreas operativas que reportan al Directorio. Cada una con su responsable
+// actual y el detalle de funciones, según el organigrama institucional.
+const AREAS = [
   {
-    rol: "Área Jurídica",
-    descripcion:
-      "Asesoramiento legal al Directorio, instrucción de expedientes administrativos y elaboración de resoluciones.",
+    rol: "Comunicación y Medios",
+    titular: "Marcos Barrionuevo",
+    cargo: "Analista Responsable",
+    funciones: [
+      "Planificación de medios: agendas mensuales, entrevistas",
+      "Monitoreo de información: redes, portales, carpetas Drive",
+      "Diseño de campañas semestrales (derechos, funciones, fiscalización)",
+      "Producción de contenidos: videos, fotos, notas, copys",
+    ],
   },
   {
-    rol: "Área Técnica",
-    descripcion:
-      "Verificación de cumplimiento de los pliegos, control en campo, mediciones técnicas y elaboración de informes por servicio.",
+    rol: "Atención a Usuarios e Inspecciones",
+    titular: "Julieta Palacios",
+    cargo: "Analista Responsable",
+    funciones: [
+      "Atención telefónica y registro (resumen-minuta)",
+      "Inspecciones oculares y recorridos semanales (basura, postes, desbordes, agua)",
+      "Carga de evidencia en Drive",
+      "Relevamiento diario del Boletín Oficial MCR (Excel)",
+      "Gestión de compras y recursos (presupuestos, comprobantes)",
+      "Informe mensual (hasta día 5)",
+    ],
   },
   {
-    rol: "Atención al Usuario",
-    descripcion:
-      "Recepción de reclamos por todas las vías, seguimiento, comunicación con el vecino y vínculo con las prestadoras.",
+    rol: "Gestión de Expedientes y Trámites",
+    titular: "Yanina del Bono",
+    cargo: "Analista Responsable",
+    funciones: [
+      "Atención a usuarios: consultas, soporte inicial",
+      "Apertura y seguimiento de expedientes (trazabilidad, carátula)",
+      "Elaboración y presentación de notas por canales formales",
+      "Registro institucional en libros oficiales (reuniones Directorio, resoluciones)",
+      "Soporte a inspecciones y reclamos",
+      "Listado mensual (hasta día 5)",
+    ],
   },
   {
-    rol: "Administración",
-    descripcion:
-      "Mesa de entradas, archivo de expedientes, gestión presupuestaria, soporte al Directorio.",
+    rol: "Control Documental y Certificaciones",
+    titular: "Adriana Almonacid",
+    cargo: "Analista Responsable",
+    funciones: [
+      "Atención a prestadoras: consultas, procedimientos",
+      "Recepción documental: verificación y orden",
+      "Análisis y control técnico (certificaciones, informes, contratos, obras)",
+      "Elaboración de checklists (Urbana, SCPL, Patagonia, otras)",
+      "Emisión de informes de certificación: cumplimiento / incumplimiento",
+      "Elevar a Directivos",
+    ],
   },
 ];
 
@@ -135,40 +167,46 @@ export default function Nosotros() {
         <h2 className="text-2xl font-extrabold text-navy mt-1">Organigrama</h2>
 
         <div className="mt-6 flex flex-col items-center gap-3">
-          {/* Directorio (top) */}
-          <CajaOrg
-            color="navy"
-            titulo="DIRECTORIO"
-            subtitulo="Órgano máximo de conducción · 3 miembros"
-            ancho="md:w-[420px] w-full"
-          />
-
-          {/* Conectores y áreas */}
-          <div className="h-6 w-px bg-line-strong" />
-          <div className="text-[10px] uppercase tracking-widest text-muted font-bold">
-            Áreas operativas
+          {/* Nivel superior: Directorio + Asesoría externa */}
+          <div className="w-full grid md:grid-cols-[1fr_320px] gap-4 items-center max-w-3xl">
+            <CajaOrg
+              color="navy"
+              titulo="DIRECTORIO"
+              subtitulo="Cuerpo Colegiado · 3 miembros"
+            />
+            <CajaOrg
+              color="paper"
+              titulo="Asesoría Externa Técnica"
+              subtitulo="Soporte especializado"
+            />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 w-full mt-2">
+          {/* Conector vertical */}
+          <div className="h-6 w-px bg-line-strong" />
+          <div className="text-[10px] uppercase tracking-widest text-muted font-bold">
+            4 áreas operativas
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 w-full mt-2">
             <CajaOrg
               color="paper"
-              titulo="Jurídica"
-              subtitulo="Asesoría legal · Expedientes"
+              titulo="Comunicación y Medios"
+              subtitulo="Marcos Barrionuevo"
             />
             <CajaOrg
               color="paper"
-              titulo="Técnica"
-              subtitulo="Control de pliegos · Verificación"
+              titulo="Atención a Usuarios e Inspecciones"
+              subtitulo="Julieta Palacios"
             />
             <CajaOrg
               color="paper"
-              titulo="Atención al Usuario"
-              subtitulo="Reclamos · Vínculo con vecinos"
+              titulo="Gestión de Expedientes y Trámites"
+              subtitulo="Yanina del Bono"
             />
             <CajaOrg
               color="paper"
-              titulo="Administración"
-              subtitulo="Mesa de entradas · Presupuesto"
+              titulo="Control Documental y Certificaciones"
+              subtitulo="Adriana Almonacid"
             />
           </div>
         </div>
@@ -245,21 +283,40 @@ export default function Nosotros() {
         </h2>
         <p className="text-sm text-muted mt-2 max-w-3xl">
           El Ente trabaja con un equipo profesional organizado en cuatro áreas
-          que reportan al Directorio.
+          operativas que reportan al Directorio, con responsable y funciones
+          definidas.
         </p>
 
-        <div className="grid sm:grid-cols-2 gap-4 mt-5">
-          {COLABORADORES.map((c) => (
+        <div className="grid md:grid-cols-2 gap-4 mt-5">
+          {AREAS.map((a) => (
             <div
-              key={c.rol}
-              className="rounded-2xl border border-line bg-paper p-5"
+              key={a.rol}
+              className="rounded-2xl border border-line bg-paper p-5 flex flex-col gap-3"
             >
-              <h3 className="text-base font-extrabold text-navy">{c.rol}</h3>
-              <p className="text-sm text-navy mt-2 leading-relaxed">
-                {c.descripcion}
-              </p>
+              <header>
+                <div className="text-[11px] uppercase tracking-widest text-svc-orange font-bold">
+                  {a.cargo}
+                </div>
+                <h3 className="text-lg font-extrabold text-navy mt-0.5">
+                  {a.titular}
+                </h3>
+                <div className="text-sm font-semibold text-navy-2 mt-1">
+                  {a.rol}
+                </div>
+              </header>
+              <ul className="text-sm text-navy space-y-1.5 list-disc list-inside leading-snug">
+                {a.funciones.map((f, i) => (
+                  <li key={i}>{f}</li>
+                ))}
+              </ul>
             </div>
           ))}
+        </div>
+
+        <div className="mt-5 rounded-xl border border-dashed border-line-strong bg-paper-2 p-4 text-xs text-muted leading-relaxed">
+          <strong className="text-navy">Aspectos cubiertos:</strong> Claridad,
+          transparencia, trazabilidad, rigor técnico, cumplimiento normativo,
+          atención ciudadana y fiscalización efectiva.
         </div>
       </section>
 
