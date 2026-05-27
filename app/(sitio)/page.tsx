@@ -7,55 +7,52 @@ export const metadata = {
     "Control y fiscalización de los servicios públicos bajo control municipal: residuos, electricidad, agua y transporte.",
 };
 
-// Hero institucional con la imagen compuesta (foto Comodoro + anillos
-// orbitales + nombre EnCoSeP). Se renderiza como <img> con object-cover
-// para que llene todo el ancho del viewport sin dejar bandas blancas.
+// Hero institucional partido: panel izquierdo con el logo EnCoSeP entero
+// sobre fondo claro y panel derecho con la panorámica de Comodoro sin
+// nada encima. Así ambos elementos se ven al 100% y no compiten.
 
 export default function HomeInstitucional() {
   return (
     <>
-      {/* HERO INSTITUCIONAL — imagen compuesta foto + anillos + EnCoSeP */}
-      <section
-        className="relative text-white overflow-hidden w-full"
-        style={{
-          height: "min(72vh, 720px)",
-          minHeight: "460px",
-        }}
-      >
-        {/* Imagen de fondo que cubre todo el ancho (recorta el centro
-            vertical si la imagen es más cuadrada que el contenedor) */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/imagenes/hero-encosep.png"
-          alt="EnCoSeP — Ente de Control de Servicios Públicos de Comodoro Rivadavia"
-          className="absolute inset-0 w-full h-full object-cover object-center"
-          loading="eager"
-        />
-        {/* Overlay degradé navy en la parte inferior para legibilidad del CTA */}
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "linear-gradient(180deg, transparent 0%, transparent 55%, rgba(29,53,80,0.65) 85%, rgba(29,53,80,0.9) 100%)",
-          }}
-        />
-
-        {/* Bloque inferior izquierdo — título secundario + CTA */}
-        <div className="absolute bottom-0 left-0 right-0">
-          <div className="max-w-6xl mx-auto px-6 pb-8 md:pb-12">
-            <h1 className="text-3xl md:text-4xl font-extrabold leading-[1.05] text-white drop-shadow-xl max-w-md">
-              Control de los
-              <br />
-              Servicios Públicos
-            </h1>
-            <div className="flex flex-wrap gap-3 mt-5">
-              <Link
-                href="/nosotros"
-                className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-svc-red text-white font-bold text-sm uppercase tracking-wider shadow-lg shadow-svc-red/40"
-              >
-                Conoce nuestras acciones <span aria-hidden>›</span>
-              </Link>
+      {/* HERO INSTITUCIONAL — logo + panorámica, sin superposición */}
+      <section className="relative bg-paper overflow-hidden w-full border-b border-line">
+        <div className="grid md:grid-cols-2 items-stretch min-h-[460px] md:min-h-[560px]">
+          {/* Columna izquierda — LOGO + título + CTA sobre fondo claro */}
+          <div className="flex flex-col justify-center items-start gap-6 px-6 md:px-12 lg:px-16 py-12 md:py-16">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/imagenes/logo-encosep.jpg"
+              alt="EnCoSeP — Ente de Control de Servicios Públicos"
+              className="w-64 md:w-80 lg:w-96 h-auto"
+              loading="eager"
+            />
+            <div>
+              <div className="text-xs font-bold tracking-[0.18em] uppercase text-muted mb-2">
+                Comodoro Rivadavia · Chubut
+              </div>
+              <h1 className="text-3xl md:text-4xl font-extrabold leading-[1.05] text-navy max-w-md">
+                Control de los
+                <br />
+                Servicios Públicos
+              </h1>
             </div>
+            <Link
+              href="/nosotros"
+              className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-svc-red text-white font-bold text-sm uppercase tracking-wider shadow-lg shadow-svc-red/40"
+            >
+              Conoce nuestras acciones <span aria-hidden>›</span>
+            </Link>
+          </div>
+
+          {/* Columna derecha — PANORÁMICA de Comodoro sin nada encima */}
+          <div className="relative min-h-[280px] md:min-h-full">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/imagenes/comodoro-panoramica.png"
+              alt="Vista panorámica de Comodoro Rivadavia"
+              className="absolute inset-0 w-full h-full object-cover object-center"
+              loading="eager"
+            />
           </div>
         </div>
       </section>
