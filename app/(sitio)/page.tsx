@@ -76,6 +76,39 @@ export default function HomeInstitucional() {
         </div>
       </section>
 
+      {/* RENOVACIÓN DE IMAGEN INSTITUCIONAL — video destacado */}
+      <section className="bg-paper-2 py-14 px-6 border-b border-line">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-8">
+            <div className="text-xs font-bold tracking-[0.18em] uppercase text-muted">
+              Institucional
+            </div>
+            <h2 className="text-2xl md:text-3xl font-extrabold text-navy mt-2">
+              Renovación de imagen institucional
+            </h2>
+            <p className="text-sm text-muted mt-2 max-w-2xl mx-auto">
+              Una nueva identidad para el Ente de Control de Servicios Públicos
+              de Comodoro Rivadavia.
+            </p>
+          </div>
+          <div className="rounded-2xl overflow-hidden border border-line shadow-xl bg-black">
+            {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+            <video
+              className="w-full h-auto block"
+              controls
+              preload="metadata"
+              playsInline
+            >
+              <source
+                src="/videos/renovacion-imagen-institucional.mp4"
+                type="video/mp4"
+              />
+              Tu navegador no puede reproducir este video.
+            </video>
+          </div>
+        </div>
+      </section>
+
       {/* ÁREAS FISCALIZADAS — botonera interactiva */}
       <section className="bg-paper py-12 px-6 border-b border-line">
         <div className="max-w-5xl mx-auto">
