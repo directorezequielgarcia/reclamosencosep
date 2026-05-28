@@ -136,14 +136,13 @@ export default async function InspeccionDetallePage({
                 />
               </Field>
 
-              <Field label="Observaciones">
+              <Field label="Observaciones (opcional)">
                 <textarea
                   name="observaciones"
                   defaultValue={insp.observaciones}
                   rows={10}
-                  required
-                  minLength={10}
                   maxLength={20000}
+                  placeholder="Texto del relevamiento. Podés dejarlo vacío si la información está cargada como audio dictado o fotos."
                   className="px-3 py-2 rounded-lg border border-line-strong bg-paper text-navy resize-y"
                 />
               </Field>

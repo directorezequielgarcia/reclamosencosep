@@ -20,10 +20,9 @@ const CrearInspeccionSchema = z.object({
     .string()
     .min(4, "El título debe tener al menos 4 caracteres")
     .max(200),
-  observaciones: z
-    .string()
-    .min(10, "Las observaciones deben tener al menos 10 caracteres")
-    .max(20000),
+  // Observaciones opcional: la idea es poder crear una inspección rápida con
+  // sólo título y después grabar audio dictado / sumar fotos desde el detalle.
+  observaciones: z.string().max(20000).optional().or(z.literal("")),
   direccion: z.string().max(200).optional().or(z.literal("")),
   barrio: z.string().max(120).optional().or(z.literal("")),
   prestadoraId: z.string().optional().or(z.literal("")),
@@ -82,7 +81,7 @@ export async function crearInspeccion(formData: FormData) {
       tipo: datos.tipo,
       estado: "BORRADOR",
       titulo: datos.titulo,
-      observaciones: datos.observaciones,
+      observaciones: datos.observaciones?.length ? datos.observaciones : "",
       direccion: datos.direccion?.length ? datos.direccion : null,
       barrio: datos.barrio?.length ? datos.barrio : null,
       lat: datos.lat,
@@ -97,7 +96,7 @@ export async function crearInspeccion(formData: FormData) {
 const ActualizarSchema = z.object({
   inspeccionId: z.string().min(1),
   titulo: z.string().min(4).max(200).optional(),
-  observaciones: z.string().min(10).max(20000).optional(),
+  observaciones: z.string().max(20000).optional(),
   direccion: z.string().max(200).optional().or(z.literal("")),
   barrio: z.string().max(120).optional().or(z.literal("")),
   transcripcionAudio: z.string().max(40000).optional().or(z.literal("")),
