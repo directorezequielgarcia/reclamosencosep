@@ -37,6 +37,17 @@ export type MetricasServicio = {
   inspeccionesPublicadas: number;
   inspeccionesPorTipo: Record<string, number>;
   inspeccionesPorBarrio: { barrio: string; total: number }[];
+  /** Listado detallado de las inspecciones publicadas del mes, para citarlas
+   *  en el cuerpo de las secciones 2/3 del informe vinculadas a expedientes. */
+  inspeccionesDetalle: {
+    codigo: string;
+    titulo: string;
+    fecha: Date;
+    barrio: string | null;
+    direccion: string | null;
+    expedienteNumero: string | null;
+    expedienteCaratula: string | null;
+  }[];
 
   // Documentación revisada por Adriana
   documentacionAprobada: number;
@@ -158,14 +169,23 @@ export async function recolectarDatosMes(
         estado: e.estado,
       }));
 
-    // Inspecciones publicadas del mes
+    // Inspecciones publicadas del mes (con expediente vinculado para citarlas)
     const inspeccionesMes = await prisma.inspeccion.findMany({
       where: {
         servicioId: s.id,
         estado: "PUBLICADA",
         fecha: { gte: desde, lt: hasta },
       },
-      select: { tipo: true, barrio: true, direccion: true },
+      select: {
+        codigo: true,
+        titulo: true,
+        fecha: true,
+        tipo: true,
+        barrio: true,
+        direccion: true,
+        expediente: { select: { numero: true, caratula: true } },
+      },
+      orderBy: { fecha: "asc" },
     });
 
     const tipoCount: Record<string, number> = {};
@@ -182,6 +202,16 @@ export async function recolectarDatosMes(
       .map(([barrio, total]) => ({ barrio, total }))
       .sort((a, b) => b.total - a.total)
       .slice(0, 10);
+
+    const inspeccionesDetalle = inspeccionesMes.map((i) => ({
+      codigo: i.codigo,
+      titulo: i.titulo,
+      fecha: i.fecha,
+      barrio: i.barrio,
+      direccion: i.direccion,
+      expedienteNumero: i.expediente?.numero ?? null,
+      expedienteCaratula: i.expediente?.caratula ?? null,
+    }));
 
     // Documentación revisada en el mes vinculada a alguna prestadora del servicio
     const docs = await prisma.documento.findMany({
@@ -234,6 +264,7 @@ export async function recolectarDatosMes(
       inspeccionesPublicadas: inspeccionesMes.length,
       inspeccionesPorTipo: tipoCount,
       inspeccionesPorBarrio,
+      inspeccionesDetalle,
       documentacionAprobada,
       documentacionObservada,
       documentacionRechazada,

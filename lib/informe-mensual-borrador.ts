@@ -81,7 +81,8 @@ function seccion2Servicio(m: MetricasServicio): string {
   if (
     m.reclamosTotal === 0 &&
     m.expedientesAbiertosEnMes === 0 &&
-    m.expedientesActivos.length === 0
+    m.expedientesActivos.length === 0 &&
+    m.inspeccionesPublicadas === 0
   ) {
     return "No existen expedientes en trámite a la fecha de cierre del informe.";
   }
@@ -94,10 +95,38 @@ function seccion2Servicio(m: MetricasServicio): string {
     );
   }
 
+  // Resumen del movimiento de expedientes en el mes
+  if (
+    m.expedientesEnCursoInicioMes + m.expedientesAbiertosEnMes + m.expedientesCerradosEnMes >
+    0
+  ) {
+    partes.push(
+      `Movimiento de expedientes durante el mes: ${m.expedientesEnCursoInicioMes} ${m.expedientesEnCursoInicioMes === 1 ? "expediente en curso" : "expedientes en curso"} al inicio del período, ${m.expedientesAbiertosEnMes} ${m.expedientesAbiertosEnMes === 1 ? "iniciado" : "iniciados"} y ${m.expedientesCerradosEnMes} ${m.expedientesCerradosEnMes === 1 ? "finalizado" : "finalizados"} durante el mes.`,
+    );
+  }
+
   if (m.expedientesActivos.length > 0) {
     partes.push("Expedientes vinculados al servicio:");
-    for (const e of m.expedientesActivos.slice(0, 10)) {
+    for (const e of m.expedientesActivos.slice(0, 15)) {
       partes.push(`• ${e.numero}: ${e.caratula}. ${e.asunto} (${e.estado}).`);
+    }
+  }
+
+  // Inspecciones publicadas con/sin expediente vinculado
+  if (m.inspeccionesPublicadas > 0) {
+    partes.push(
+      `Se publicaron ${m.inspeccionesPublicadas} ${m.inspeccionesPublicadas === 1 ? "inspección de campo" : "inspecciones de campo"} del Ente vinculadas a este servicio:`,
+    );
+    for (const i of m.inspeccionesDetalle.slice(0, 20)) {
+      const fechaCorta = i.fecha.toLocaleDateString("es-AR", {
+        day: "2-digit",
+        month: "2-digit",
+      });
+      const ubic = i.barrio ?? i.direccion ?? "sin ubicación cargada";
+      const exp = i.expedienteNumero
+        ? ` Vinculada al expediente ${i.expedienteNumero}.`
+        : " Sin expediente vinculado al cierre del informe.";
+      partes.push(`• ${i.codigo} (${fechaCorta}): ${i.titulo} — ${ubic}.${exp}`);
     }
   }
 
@@ -216,26 +245,70 @@ function seccion5(data: InformeMensualData): string {
 }
 
 function seccion6(data: InformeMensualData): string {
-  // Evaluación inicial — recomendamos abstención si todavía no hay base
-  // comparativa suficiente (modelo del primer informe de diciembre 2025).
   const partes: string[] = [];
 
-  const puntajes = data.porServicio
-    .filter((sv) => sv.puntajePromedio !== null)
-    .map((sv) => `${sv.nombreCorto.toLowerCase()}: ${sv.puntajePromedio}/5`);
+  // Corte de la encuesta general del Portal (vecinos califican el servicio
+  // de forma directa, no atado a un reclamo). Y de la encuesta al cierre
+  // de reclamo (por servicio).
+  const eg = data.generales.encuestaGeneralPromedio;
+  const cortesEncuestaGeneral: string[] = [];
+  if (eg.agua !== null) cortesEncuestaGeneral.push(`agua y saneamiento: ${eg.agua}/5`);
+  if (eg.energia !== null) cortesEncuestaGeneral.push(`electricidad: ${eg.energia}/5`);
+  if (eg.residuos !== null) cortesEncuestaGeneral.push(`residuos: ${eg.residuos}/5`);
+  if (eg.transporte !== null) cortesEncuestaGeneral.push(`transporte: ${eg.transporte}/5`);
 
-  if (puntajes.length > 0) {
+  if (cortesEncuestaGeneral.length > 0) {
     partes.push(
-      `Indicadores de satisfacción de usuarios al cierre de reclamos: ${puntajes.join("; ")}.`,
+      `Indicador de la encuesta general de los usuarios del Portal durante el mes: ${cortesEncuestaGeneral.join("; ")}.`,
     );
   }
 
+  // Por servicio: cifras concretas (reclamos + resolución + encuesta de cierre + documental)
+  for (const sv of data.porServicio) {
+    if (
+      sv.reclamosTotal === 0 &&
+      sv.puntajePromedio === null &&
+      sv.documentacionAprobada + sv.documentacionObservada + sv.documentacionRechazada === 0
+    ) {
+      continue;
+    }
+    const fragmentos: string[] = [];
+    if (sv.reclamosTotal > 0) {
+      const pctResueltos =
+        sv.reclamosTotal > 0
+          ? Math.round((sv.reclamosResueltos / sv.reclamosTotal) * 100)
+          : 0;
+      fragmentos.push(
+        `${sv.reclamosTotal} ${sv.reclamosTotal === 1 ? "reclamo" : "reclamos"} en el mes, ${pctResueltos}% resuelto al cierre`,
+      );
+    }
+    if (sv.puntajePromedio !== null) {
+      fragmentos.push(
+        `puntaje promedio al cierre de reclamo ${sv.puntajePromedio}/5 sobre ${sv.puntajeMuestras} ${sv.puntajeMuestras === 1 ? "respuesta" : "respuestas"}`,
+      );
+    }
+    const totDoc =
+      sv.documentacionAprobada + sv.documentacionObservada + sv.documentacionRechazada;
+    if (totDoc > 0) {
+      fragmentos.push(
+        `documental: ${sv.documentacionAprobada} aprobada, ${sv.documentacionObservada} observada/incompleta, ${sv.documentacionRechazada} rechazada`,
+      );
+    }
+    if (fragmentos.length > 0) {
+      partes.push(
+        `Servicio de ${sv.nombreCorto.toLowerCase()}: ${fragmentos.join("; ")}.`,
+      );
+    }
+  }
+
+  // Cierre interpretativo, dejando margen para la abstención formal o la
+  // valoración fundada según juicio del Directorio.
   partes.push(
-    "Que, sin perjuicio de los datos relevados durante el período, este Directorio considera prudente continuar consolidando la base comparativa antes de emitir una valoración integral y fundada sobre la conducta de los concesionarios.",
+    "Los indicadores arriba expuestos surgen de los reclamos efectivamente ingresados por los usuarios al Portal, de las respuestas a la encuesta de satisfacción que reciben al cierre del reclamo y de la encuesta general pública del sitio, todos correspondientes exclusivamente al mes informado.",
   );
 
   partes.push(
-    "[Completar manualmente: si corresponde emitir evaluación, redactarla acá citando los principios afectados y comparando con períodos anteriores. Si todavía no hay base suficiente, mantener la fórmula de abstención: 'En consecuencia, este Directorio se ABSTIENE de emitir una evaluación de conducta sobre los concesionarios y prestadores de los servicios públicos sujetos a control.']",
+    "[Completar manualmente: si los indicadores justifican una evaluación fundada, redactarla acá citando los principios afectados (CONTINUIDAD, REGULARIDAD, UNIFORMIDAD, IGUALDAD, ACCESIBILIDAD, MANTENIMIENTO). Si la base comparativa todavía es insuficiente, mantener la fórmula: 'En consecuencia, este Directorio se ABSTIENE de emitir una evaluación de conducta sobre los concesionarios y prestadores de los servicios públicos sujetos a control.']",
   );
 
   return partes.join("\n\n");

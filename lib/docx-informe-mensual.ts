@@ -10,11 +10,13 @@ import {
   AlignmentType,
   Document,
   HeadingLevel,
+  ImageRun,
   PageOrientation,
   Packer,
   Paragraph,
   TextRun,
 } from "docx";
+import { cargarLogoBuffer } from "@/lib/docx-logo";
 import type { BloquesInforme } from "@/lib/informe-mensual-borrador";
 
 const FONT = "Calibri";
@@ -124,6 +126,24 @@ export async function generarDocxInformeMensual(
 ): Promise<Buffer> {
   const { anio, mes, bloques, emisor, emitidoEn } = datos;
   const children: Paragraph[] = [];
+
+  // Logo institucional en la carátula
+  const logoBuffer = await cargarLogoBuffer();
+  if (logoBuffer) {
+    children.push(
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 240 },
+        children: [
+          new ImageRun({
+            data: new Uint8Array(logoBuffer),
+            transformation: { width: 140, height: 140 },
+            type: "jpg",
+          }),
+        ],
+      }),
+    );
+  }
 
   // Encabezado institucional
   children.push(
