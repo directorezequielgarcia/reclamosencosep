@@ -158,3 +158,118 @@ function extFromMime(mime: string): string {
       return "";
   }
 }
+
+const MAX_AUDIO_BYTES = 20 * 1024 * 1024; // 20 MB
+const ALLOWED_AUDIO = new Set([
+  "audio/webm",
+  "audio/ogg",
+  "audio/mpeg",
+  "audio/mp4",
+  "audio/m4a",
+  "audio/x-m4a",
+  "audio/wav",
+  "audio/x-wav",
+]);
+
+/**
+ * Guarda una foto vinculada a una inspección de campo.
+ * Misma estrategia que guardarFotoReclamo: Blob si hay token, fs local sino.
+ */
+export async function guardarFotoInspeccion(
+  inspeccionId: string,
+  file: File,
+): Promise<UploadedFile> {
+  if (file.size === 0) throw new Error("Archivo vacío");
+  if (file.size > MAX_BYTES) {
+    throw new Error("Imagen demasiado grande (máx 8 MB)");
+  }
+  if (!ALLOWED_IMAGE.has(file.type)) {
+    throw new Error(`Tipo de imagen no soportado: ${file.type}`);
+  }
+
+  const ext = extFromMime(file.type);
+  const nombre = `${randomUUID()}${ext}`;
+
+  if (process.env.BLOB_READ_WRITE_TOKEN) {
+    const key = `inspecciones/${inspeccionId}/fotos/${nombre}`;
+    const blob = await put(key, file, {
+      access: "public",
+      contentType: file.type,
+    });
+    return { url: blob.url, mimeType: file.type, bytes: file.size };
+  }
+
+  const dir = path.join(UPLOAD_ROOT, "inspecciones", inspeccionId, "fotos");
+  await fs.mkdir(dir, { recursive: true });
+  const dest = path.join(dir, nombre);
+  const buf = Buffer.from(await file.arrayBuffer());
+  await fs.writeFile(dest, buf);
+  return {
+    url: `/uploads/inspecciones/${inspeccionId}/fotos/${nombre}`,
+    mimeType: file.type,
+    bytes: file.size,
+  };
+}
+
+/**
+ * Guarda el audio dictado en campo de una inspección.
+ * Un único archivo por inspección — un nuevo upload reemplaza el anterior.
+ */
+export async function guardarAudioInspeccion(
+  inspeccionId: string,
+  file: File,
+): Promise<UploadedFile> {
+  if (file.size === 0) throw new Error("Audio vacío");
+  if (file.size > MAX_AUDIO_BYTES) {
+    throw new Error(
+      `Audio demasiado grande (máx ${MAX_AUDIO_BYTES / 1024 / 1024} MB)`,
+    );
+  }
+  const mime = file.type || "audio/webm";
+  if (!ALLOWED_AUDIO.has(mime)) {
+    throw new Error(`Formato de audio no soportado: ${mime}`);
+  }
+
+  const ext = extAudioFromMime(mime);
+  const nombre = `dictado-${Date.now()}${ext}`;
+
+  if (process.env.BLOB_READ_WRITE_TOKEN) {
+    const key = `inspecciones/${inspeccionId}/audio/${nombre}`;
+    const blob = await put(key, file, {
+      access: "public",
+      contentType: mime,
+    });
+    return { url: blob.url, mimeType: mime, bytes: file.size };
+  }
+
+  const dir = path.join(UPLOAD_ROOT, "inspecciones", inspeccionId, "audio");
+  await fs.mkdir(dir, { recursive: true });
+  const dest = path.join(dir, nombre);
+  const buf = Buffer.from(await file.arrayBuffer());
+  await fs.writeFile(dest, buf);
+  return {
+    url: `/uploads/inspecciones/${inspeccionId}/audio/${nombre}`,
+    mimeType: mime,
+    bytes: file.size,
+  };
+}
+
+function extAudioFromMime(mime: string): string {
+  switch (mime) {
+    case "audio/webm":
+      return ".webm";
+    case "audio/ogg":
+      return ".ogg";
+    case "audio/mpeg":
+      return ".mp3";
+    case "audio/mp4":
+    case "audio/m4a":
+    case "audio/x-m4a":
+      return ".m4a";
+    case "audio/wav":
+    case "audio/x-wav":
+      return ".wav";
+    default:
+      return "";
+  }
+}

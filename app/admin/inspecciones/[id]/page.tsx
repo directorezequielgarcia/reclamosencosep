@@ -11,6 +11,7 @@ import {
   actualizarInspeccion,
   cambiarEstadoInspeccion,
 } from "../actions";
+import { CapturaCampo } from "@/components/inspecciones/CapturaCampo";
 import type { EstadoInspeccion } from "@prisma/client";
 
 export const metadata = { title: "Inspección · Panel ENCOSEP" };
@@ -215,6 +216,15 @@ export default async function InspeccionDetallePage({
                 {insp.observaciones}
               </p>
             </Card>
+          )}
+
+          {editable && (
+            <CapturaCampo
+              inspeccionId={insp.id}
+              audioInicialUrl={insp.audioUrl}
+              latInicial={insp.lat}
+              lngInicial={insp.lng}
+            />
           )}
 
           {insp.fotos.length > 0 && (
