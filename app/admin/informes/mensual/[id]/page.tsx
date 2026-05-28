@@ -253,14 +253,25 @@ export default async function InformeMensualDetallePage({
             Descargar .docx
           </h3>
           <p className="text-xs text-muted mt-1">
-            La exportación con plantilla institucional (Calibri 11 pt,
-            interlineado simple, encabezado del Ente) se habilita en el próximo
-            deploy. Por ahora podés copiar los bloques de arriba a Word.
+            Formato institucional: Calibri 11 pt, interlineado simple,
+            encabezado del Ente, las 7 secciones con sus títulos formales y
+            firma del emisor.
+            {informe.estado === "BORRADOR" && (
+              <>
+                {" "}
+                Se descarga marcado como{" "}
+                <strong className="text-navy">borrador</strong> hasta que lo
+                publiques.
+              </>
+            )}
           </p>
         </div>
-        <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-paper-3 text-muted text-[11px] font-bold uppercase tracking-wider">
-          Próximamente
-        </span>
+        <a
+          href={`/api/informes/${informe.id}`}
+          className="inline-flex items-center justify-center px-5 py-2.5 rounded-lg bg-navy text-white font-bold text-sm hover:opacity-90"
+        >
+          📄 Descargar .docx
+        </a>
       </div>
     </div>
   );

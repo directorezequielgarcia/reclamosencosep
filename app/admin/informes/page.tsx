@@ -181,6 +181,13 @@ export default async function InformesPage() {
                           : "—"}
                       </td>
                       <td className="py-2.5 px-4 text-right">
+                        <a
+                          href={`/api/informes/${i.id}`}
+                          className="text-navy-2 underline text-xs mr-3"
+                          title="Descargar .docx"
+                        >
+                          .docx
+                        </a>
                         <Link
                           href={`/admin/informes/mensual/${i.id}`}
                           className="text-navy-2 underline text-xs"
