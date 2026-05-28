@@ -100,7 +100,7 @@ export default function HomeInstitucional() {
               playsInline
             >
               <source
-                src="/videos/renovacion-imagen-institucional.mp4"
+                src="/videos/hace-tu-reclamo.mp4"
                 type="video/mp4"
               />
               Tu navegador no puede reproducir este video.
