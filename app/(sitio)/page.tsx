@@ -46,13 +46,13 @@ export default function HomeInstitucional() {
           />
         </div>
 
-        {/* Vignette suave: aclara levemente el centro para que respire el logo
-            y oscurece la base para legibilidad del CTA */}
+        {/* Vignette: aclara el centro para que los colores del logo respiren
+            bajo el mix-blend-multiply, y oscurece la base para legibilidad del CTA. */}
         <div
           className="absolute inset-0"
           style={{
             background:
-              "radial-gradient(ellipse 60% 70% at center, rgba(255,255,255,0.10) 0%, transparent 60%), linear-gradient(180deg, transparent 55%, rgba(29,53,80,0.85) 100%)",
+              "radial-gradient(ellipse 45% 55% at center, rgba(255,255,255,0.40) 0%, rgba(255,255,255,0.15) 45%, transparent 70%), linear-gradient(180deg, transparent 55%, rgba(29,53,80,0.85) 100%)",
           }}
         />
 
@@ -64,7 +64,10 @@ export default function HomeInstitucional() {
             alt=""
             aria-hidden
             className="w-64 md:w-80 lg:w-[26rem] h-auto drop-shadow-2xl"
-            style={{ mixBlendMode: "multiply" }}
+            style={{
+              mixBlendMode: "multiply",
+              filter: "saturate(1.9) brightness(1.18) contrast(1.08)",
+            }}
             loading="eager"
           />
           <Link
