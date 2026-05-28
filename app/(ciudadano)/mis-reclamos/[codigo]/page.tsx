@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { SvcIcon } from "@/components/servicios/SvcIcon";
 import { MiniMapa } from "@/components/mapa/MiniMapa";
 import { EstadoBadge } from "@/components/ui/EstadoBadge";
+import { Galeria } from "@/components/ui/Galeria";
 import { svcFromKind } from "@/lib/servicios";
 import { ESTADO_META } from "@/lib/admin";
 import {
@@ -101,24 +102,14 @@ export default async function DetalleMiReclamoPage({
           <div className="text-[11px] font-bold text-muted uppercase tracking-wider mb-2">
             Fotos · {fotos.length}
           </div>
-          <div className="grid grid-cols-3 gap-2">
-            {fotos.map((f) => (
-              <a
-                key={f.id}
-                href={f.url}
-                target="_blank"
-                rel="noreferrer"
-                className="block aspect-square rounded-xl overflow-hidden border border-line"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={f.url}
-                  alt="foto del reclamo"
-                  className="w-full h-full object-cover"
-                />
-              </a>
-            ))}
-          </div>
+          <Galeria
+            fotos={fotos.map((f) => ({
+              id: f.id,
+              url: f.url,
+              descripcion: null,
+            }))}
+            titulo={`Reclamo ${reclamo.codigo}`}
+          />
         </section>
       )}
 

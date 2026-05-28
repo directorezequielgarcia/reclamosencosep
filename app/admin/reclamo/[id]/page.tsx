@@ -9,6 +9,8 @@ import {
   whereReclamosByRol,
 } from "@/lib/admin";
 import { EstadoBadge } from "@/components/ui/EstadoBadge";
+import { Galeria } from "@/components/ui/Galeria";
+import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { SvcIcon } from "@/components/servicios/SvcIcon";
 import { MiniMapa } from "@/components/mapa/MiniMapa";
 import { svcFromKind } from "@/lib/servicios";
@@ -84,11 +86,13 @@ export default async function ReclamoDetallePage({
 
   return (
     <div className="flex flex-col gap-5">
-      <nav className="text-xs text-muted">
-        <Link href="/admin/bandeja" className="hover:underline">
-          ← Bandeja
-        </Link>
-      </nav>
+      <Breadcrumbs
+        items={[
+          { label: "Panel", href: "/admin" },
+          { label: "Bandeja", href: "/admin/bandeja" },
+          { label: `Reclamo #${reclamo.codigo}` },
+        ]}
+      />
 
       <header className="flex items-start justify-between gap-4 flex-wrap">
         <div className="flex items-start gap-4">
@@ -128,24 +132,14 @@ export default async function ReclamoDetallePage({
 
           {fotos.length > 0 && (
             <Card titulo={`Fotos · ${fotos.length}`}>
-              <div className="grid grid-cols-3 gap-2">
-                {fotos.map((f) => (
-                  <a
-                    key={f.id}
-                    href={f.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="block aspect-square rounded-xl overflow-hidden border border-line hover:border-navy-2"
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={f.url}
-                      alt="foto del reclamo"
-                      className="w-full h-full object-cover"
-                    />
-                  </a>
-                ))}
-              </div>
+              <Galeria
+                fotos={fotos.map((f) => ({
+                  id: f.id,
+                  url: f.url,
+                  descripcion: null,
+                }))}
+                titulo={`Reclamo ${reclamo.codigo}`}
+              />
             </Card>
           )}
 

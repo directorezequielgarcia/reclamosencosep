@@ -10,6 +10,7 @@ import {
 } from "@/lib/documentos";
 import { TONE_CLASS, puedeRevisarDocumentos } from "@/lib/admin";
 import { revisarDocumento } from "../actions";
+import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 
 export const metadata = { title: "Documento · Panel ENCOSEP" };
 
@@ -46,11 +47,13 @@ export default async function DocumentoDetallePage({
 
   return (
     <div className="flex flex-col gap-5">
-      <nav className="text-xs text-muted">
-        <Link href="/admin/documentacion" className="hover:underline">
-          ← Documentación
-        </Link>
-      </nav>
+      <Breadcrumbs
+        items={[
+          { label: "Panel", href: "/admin" },
+          { label: "Documentación", href: "/admin/documentacion" },
+          { label: doc.titulo },
+        ]}
+      />
 
       <header className="flex items-start justify-between gap-4 flex-wrap">
         <div>

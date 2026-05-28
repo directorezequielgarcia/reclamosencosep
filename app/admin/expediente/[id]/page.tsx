@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { EXPEDIENTE_ESTADO_META, TIPO_ACTO_META } from "@/lib/expedientes";
 import { TONE_CLASS } from "@/lib/admin";
 import { EstadoBadge } from "@/components/ui/EstadoBadge";
+import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { SvcIcon } from "@/components/servicios/SvcIcon";
 import { svcFromKind } from "@/lib/servicios";
 import { agregarActo, cambiarEstadoExpediente } from "./actions";
@@ -46,11 +47,13 @@ export default async function ExpedienteDetallePage({
 
   return (
     <div className="flex flex-col gap-5">
-      <nav className="text-xs text-muted">
-        <Link href="/admin/expedientes" className="hover:underline">
-          ← Expedientes
-        </Link>
-      </nav>
+      <Breadcrumbs
+        items={[
+          { label: "Panel", href: "/admin" },
+          { label: "Expedientes", href: "/admin/expedientes" },
+          { label: exp.numero },
+        ]}
+      />
 
       <header className="flex items-start justify-between gap-4 flex-wrap">
         <div>

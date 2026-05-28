@@ -1,4 +1,5 @@
 import { SeccionHeader } from "@/components/ui/SeccionHeader";
+import { Galeria } from "@/components/ui/Galeria";
 
 export const metadata = { title: "Acciones del Ente · ENCOSEP" };
 
@@ -83,26 +84,18 @@ export default function AccionesPage() {
           </h2>
           <p className="text-sm text-muted mt-2 max-w-3xl">
             Imágenes de las inspecciones, mesas de trabajo y recorridas
-            barriales. Hacé click para ver en tamaño completo.
+            barriales. Hacé click para verlas a pantalla completa con
+            navegación de galería.
           </p>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mt-5">
-            {FOTOS.map((src, i) => (
-              <a
-                key={src}
-                href={src}
-                target="_blank"
-                rel="noreferrer"
-                className="block aspect-square rounded-xl overflow-hidden border border-line bg-paper-2 hover:border-navy-2 hover:shadow-lg transition"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={src}
-                  alt={`Acción ${i + 1}`}
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                />
-              </a>
-            ))}
+          <div className="mt-5">
+            <Galeria
+              fotos={FOTOS.map((src, i) => ({
+                id: src,
+                url: src,
+                descripcion: `Acción ${i + 1}`,
+              }))}
+              titulo="Acciones del Ente"
+            />
           </div>
         </section>
 

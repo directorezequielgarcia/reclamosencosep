@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ROL_LABEL, puedeGestionarUsuarios, esDireccion } from "@/lib/admin";
 import { crearUsuario } from "../actions";
+import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import type { Rol } from "@prisma/client";
 
 export const metadata = { title: "Nuevo usuario · Panel ENCOSEP" };
@@ -48,11 +49,13 @@ export default async function CrearUsuarioPage() {
 
   return (
     <div className="flex flex-col gap-5 max-w-2xl">
-      <nav className="text-xs text-muted">
-        <Link href="/admin/usuarios" className="hover:underline">
-          ← Usuarios
-        </Link>
-      </nav>
+      <Breadcrumbs
+        items={[
+          { label: "Panel", href: "/admin" },
+          { label: "Usuarios", href: "/admin/usuarios" },
+          { label: "Nuevo usuario" },
+        ]}
+      />
 
       <header>
         <h1 className="text-2xl font-extrabold text-navy">Nuevo usuario</h1>

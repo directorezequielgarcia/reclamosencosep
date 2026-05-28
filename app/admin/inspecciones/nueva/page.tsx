@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { puedeGestionarInspecciones } from "@/lib/admin";
 import { NuevaInspeccionForm } from "./nueva-form";
+import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 
 export const metadata = { title: "Nueva inspección · Panel ENCOSEP" };
 
@@ -35,11 +36,13 @@ export default async function NuevaInspeccionPage() {
 
   return (
     <div className="flex flex-col gap-5 max-w-3xl">
-      <nav className="text-xs text-muted">
-        <Link href="/admin/inspecciones" className="hover:underline">
-          ← Inspecciones
-        </Link>
-      </nav>
+      <Breadcrumbs
+        items={[
+          { label: "Panel", href: "/admin" },
+          { label: "Inspecciones", href: "/admin/inspecciones" },
+          { label: "Nueva" },
+        ]}
+      />
 
       <header>
         <h1 className="text-2xl font-extrabold text-navy">Nueva inspección</h1>

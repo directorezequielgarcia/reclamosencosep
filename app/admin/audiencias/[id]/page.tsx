@@ -8,6 +8,7 @@ import {
   actualizarMaterialAudiencia,
   cambiarEstadoAudiencia,
 } from "../actions";
+import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import type { EstadoAudiencia } from "@prisma/client";
 
 export const metadata = { title: "Audiencia · Panel ENCOSEP" };
@@ -44,11 +45,13 @@ export default async function AudienciaAdminDetalle({
 
   return (
     <div className="flex flex-col gap-5">
-      <nav className="text-xs text-muted">
-        <Link href="/admin/audiencias" className="hover:underline">
-          ← Audiencias
-        </Link>
-      </nav>
+      <Breadcrumbs
+        items={[
+          { label: "Panel", href: "/admin" },
+          { label: "Audiencias", href: "/admin/audiencias" },
+          { label: a.titulo },
+        ]}
+      />
 
       <header>
         <div className="flex items-center gap-2 flex-wrap">

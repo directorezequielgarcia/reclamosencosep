@@ -19,6 +19,8 @@ import {
   vincularExpediente,
 } from "../actions";
 import { CapturaCampo } from "@/components/inspecciones/CapturaCampo";
+import { Galeria } from "@/components/ui/Galeria";
+import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import type { EstadoInspeccion } from "@prisma/client";
 
 export const metadata = { title: "Inspección · Panel ENCOSEP" };
@@ -100,11 +102,13 @@ export default async function InspeccionDetallePage({
 
   return (
     <div className="flex flex-col gap-5">
-      <nav className="text-xs text-muted">
-        <Link href="/admin/inspecciones" className="hover:underline">
-          ← Inspecciones
-        </Link>
-      </nav>
+      <Breadcrumbs
+        items={[
+          { label: "Panel", href: "/admin" },
+          { label: "Inspecciones", href: "/admin/inspecciones" },
+          { label: insp.codigo },
+        ]}
+      />
 
       <header className="flex items-start justify-between gap-4 flex-wrap">
         <div>
@@ -170,27 +174,17 @@ export default async function InspeccionDetallePage({
             />
           )}
 
-          {/* Fotos ya cargadas */}
+          {/* Fotos ya cargadas — galería con lightbox */}
           {insp.fotos.length > 0 && (
             <Card titulo={`Fotos cargadas (${insp.fotos.length})`}>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {insp.fotos.map((f) => (
-                  <a
-                    key={f.id}
-                    href={f.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="block rounded-lg overflow-hidden border border-line"
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={f.url}
-                      alt={f.descripcion ?? "Foto de inspección"}
-                      className="w-full h-32 object-cover"
-                    />
-                  </a>
-                ))}
-              </div>
+              <Galeria
+                fotos={insp.fotos.map((f) => ({
+                  id: f.id,
+                  url: f.url,
+                  descripcion: f.descripcion,
+                }))}
+                titulo={`Inspección ${insp.codigo}`}
+              />
             </Card>
           )}
 

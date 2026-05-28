@@ -8,6 +8,7 @@ import {
   publicarInformeAnual,
   regenerarBorradorAnual,
 } from "../../actions";
+import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import type { BloquesInformeAnual } from "@/lib/informe-anual-borrador";
 import type { InformeAnualData } from "@/lib/informe-anual-data";
 
@@ -42,11 +43,13 @@ export default async function InformeAnualDetallePage({
 
   return (
     <div className="flex flex-col gap-5">
-      <nav className="text-xs text-muted">
-        <Link href="/admin/informes" className="hover:underline">
-          ← Informes oficiales
-        </Link>
-      </nav>
+      <Breadcrumbs
+        items={[
+          { label: "Panel", href: "/admin" },
+          { label: "Informes oficiales", href: "/admin/informes" },
+          { label: informe.titulo },
+        ]}
+      />
 
       <header className="flex items-start justify-between gap-4 flex-wrap">
         <div>

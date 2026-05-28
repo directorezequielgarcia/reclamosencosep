@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { TIPO_DOC_META } from "@/lib/documentos";
 import { subirDocumento } from "../actions";
+import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import type { TipoDocumento } from "@prisma/client";
 
 export const metadata = { title: "Subir documento · Panel ENCOSEP" };
@@ -37,11 +38,13 @@ export default async function SubirDocumentoPage() {
 
   return (
     <div className="flex flex-col gap-5 max-w-3xl">
-      <nav className="text-xs text-muted">
-        <Link href="/admin/documentacion" className="hover:underline">
-          ← Documentación
-        </Link>
-      </nav>
+      <Breadcrumbs
+        items={[
+          { label: "Panel", href: "/admin" },
+          { label: "Documentación", href: "/admin/documentacion" },
+          { label: "Subir" },
+        ]}
+      />
 
       <header>
         <h1 className="text-2xl font-extrabold text-navy">Subir documento</h1>
