@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth, signOut } from "@/lib/auth";
 import { BrandHeader } from "@/components/ui/BrandHeader";
+import { FabAsistenciaWsp } from "@/components/ui/FabAsistenciaWsp";
 
 export default async function CiudadanoLayout({
   children,
@@ -48,6 +49,7 @@ export default async function CiudadanoLayout({
         }
       />
       {children}
+      <FabAsistenciaWsp />
     </div>
   );
 }
