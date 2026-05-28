@@ -331,10 +331,29 @@ export default async function InspeccionDetallePage({
           </Card>
 
           <Card titulo="Acta de inspección">
-            <div className="text-xs text-muted">
-              La exportación a .docx con el formato del Ente está disponible en
-              el próximo deploy (Sprint 2C).
-            </div>
+            <p className="text-xs text-muted mb-3">
+              Descarga el .docx formal con encabezado del Ente, datos del
+              relevamiento, observaciones, transcripción del audio y línea de
+              firma para el inspector.
+            </p>
+            <a
+              href={`/api/inspecciones/${insp.id}/acta`}
+              className="inline-flex items-center justify-center w-full px-4 py-2.5 rounded-lg bg-navy text-white text-sm font-bold hover:opacity-90"
+            >
+              📄 Descargar acta (.docx)
+            </a>
+            {insp.actaGeneradaEn && (
+              <div className="text-[10px] text-muted mt-2 text-center">
+                Última generación:{" "}
+                {insp.actaGeneradaEn.toLocaleString("es-AR", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "2-digit",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </div>
+            )}
           </Card>
         </aside>
       </div>
