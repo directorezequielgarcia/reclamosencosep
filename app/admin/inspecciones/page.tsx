@@ -91,6 +91,8 @@ export default async function InspeccionesPage({
         <Kpi label="Archivadas" value={archivadas} tone="neutral" />
       </section>
 
+      <MensualDownloader />
+
       <form
         method="GET"
         className="flex flex-wrap gap-2 items-end p-3 rounded-xl border border-line bg-paper"
@@ -269,5 +271,81 @@ function Kpi({
         {value}
       </div>
     </div>
+  );
+}
+
+function MensualDownloader() {
+  const hoy = new Date();
+  const anio = hoy.getFullYear();
+  const mes = hoy.getMonth() + 1;
+  const meses = [
+    "Enero",
+    "Febrero",
+    "Marzo",
+    "Abril",
+    "Mayo",
+    "Junio",
+    "Julio",
+    "Agosto",
+    "Septiembre",
+    "Octubre",
+    "Noviembre",
+    "Diciembre",
+  ];
+  const aniosOpciones = [anio, anio - 1, anio - 2];
+
+  return (
+    <form
+      method="GET"
+      action="/api/inspecciones/mensual"
+      className="flex items-end gap-2 flex-wrap p-3 rounded-xl border border-line bg-paper-2"
+    >
+      <div>
+        <div className="text-[11px] uppercase tracking-wider text-muted font-semibold">
+          Mensual de inspecciones
+        </div>
+        <div className="text-sm text-navy">
+          Descargá un .docx con totalizadores y listado del mes seleccionado.
+        </div>
+      </div>
+      <label className="flex flex-col gap-1 ml-auto">
+        <span className="text-[10px] uppercase tracking-wider text-muted font-semibold">
+          Mes
+        </span>
+        <select
+          name="mes"
+          defaultValue={mes}
+          className="px-3 py-2 rounded-lg border border-line-strong bg-paper text-sm text-navy"
+        >
+          {meses.map((nombre, i) => (
+            <option key={i + 1} value={i + 1}>
+              {nombre}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="flex flex-col gap-1">
+        <span className="text-[10px] uppercase tracking-wider text-muted font-semibold">
+          Año
+        </span>
+        <select
+          name="anio"
+          defaultValue={anio}
+          className="px-3 py-2 rounded-lg border border-line-strong bg-paper text-sm text-navy"
+        >
+          {aniosOpciones.map((a) => (
+            <option key={a} value={a}>
+              {a}
+            </option>
+          ))}
+        </select>
+      </label>
+      <button
+        type="submit"
+        className="px-4 py-2 rounded-lg bg-navy text-white font-bold text-sm hover:opacity-90"
+      >
+        📄 Descargar .docx
+      </button>
+    </form>
   );
 }
