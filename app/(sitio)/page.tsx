@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BotoneraServicios } from "@/components/servicios/BotoneraServicios";
+import { prisma } from "@/lib/prisma";
 
 export const metadata = {
   title: "EnCoSeP · Ente de Control de Servicios Públicos · Comodoro Rivadavia",
@@ -7,13 +8,54 @@ export const metadata = {
     "Control y fiscalización de los servicios públicos bajo control municipal: residuos, electricidad, agua y transporte.",
 };
 
+// Datos vivos del home se re-arman cada 5 minutos (suficiente para un sitio
+// institucional, evita golpear la DB en cada visita).
+export const revalidate = 300;
+
 // Hero institucional: panorámica espejada (original + reflejo horizontal)
 // para que las laderas queden en los bordes y la ciudad/mar se encuentren
 // en el centro, donde se asienta el logo. El logo es el .jpg original sin
 // modificar; usamos mix-blend-mode: multiply para que el fondo blanco se
 // integre visualmente con la foto sin tocar el archivo del logo.
 
-export default function HomeInstitucional() {
+export default async function HomeInstitucional() {
+  const ahora = new Date();
+  const [
+    encuestaAgg,
+    totalReclamos,
+    reclamosResueltos,
+    totalPrestadoras,
+    audienciasProximas,
+  ] = await Promise.all([
+    prisma.encuestaServicios.aggregate({
+      _count: { _all: true },
+      _avg: {
+        puntajeAgua: true,
+        puntajeEnergia: true,
+        puntajeResiduos: true,
+        puntajeTransporte: true,
+      },
+    }),
+    prisma.reclamo.count(),
+    prisma.reclamo.count({ where: { estado: "RESUELTO" } }),
+    prisma.prestadora.count({ where: { activa: true } }),
+    prisma.audienciaPublica.count({ where: { fecha: { gte: ahora } } }),
+  ]);
+
+  const totalRespuestasEncuesta = encuestaAgg._count._all;
+  const pctResueltos =
+    totalReclamos > 0
+      ? Math.round((reclamosResueltos / totalReclamos) * 100)
+      : 0;
+  const promedioServicio = (n: number | null) =>
+    n === null ? null : Math.round(n * 10) / 10;
+  const puntajes = {
+    agua: promedioServicio(encuestaAgg._avg.puntajeAgua),
+    energia: promedioServicio(encuestaAgg._avg.puntajeEnergia),
+    residuos: promedioServicio(encuestaAgg._avg.puntajeResiduos),
+    transporte: promedioServicio(encuestaAgg._avg.puntajeTransporte),
+  };
+
   return (
     <>
       {/* HERO INSTITUCIONAL — panorámica espejo + logo centrado */}
@@ -112,8 +154,63 @@ export default function HomeInstitucional() {
         </div>
       </section>
 
-      {/* ÁREAS FISCALIZADAS — botonera interactiva */}
+      {/* CALIFICÁ LOS SERVICIOS — teaser de la encuesta */}
       <section className="bg-paper py-12 px-6 border-b border-line">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-6">
+            <div className="text-xs font-bold tracking-[0.18em] uppercase text-muted">
+              Tu opinión cuenta
+            </div>
+            <h2 className="text-2xl md:text-3xl font-extrabold text-navy mt-2">
+              Calificá los servicios públicos
+            </h2>
+            <p className="text-sm text-muted mt-2 max-w-2xl mx-auto">
+              Una encuesta anónima de 30 segundos. Tu puntaje alimenta los
+              indicadores públicos del Ente y los informes mensuales al
+              Directorio.
+            </p>
+            {totalRespuestasEncuesta > 0 && (
+              <p className="text-xs text-muted mt-3">
+                Ya respondieron{" "}
+                <strong className="text-navy">{totalRespuestasEncuesta}</strong>{" "}
+                {totalRespuestasEncuesta === 1 ? "vecino" : "vecinos"}.
+              </p>
+            )}
+          </div>
+
+          {/* Mini-tablero de promedios actuales (server-rendered) */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 max-w-3xl mx-auto">
+            <PuntajeBadge label="Agua" valor={puntajes.agua} acento="bg-svc-blue" />
+            <PuntajeBadge
+              label="Electricidad"
+              valor={puntajes.energia}
+              acento="bg-svc-yellow"
+            />
+            <PuntajeBadge
+              label="Residuos"
+              valor={puntajes.residuos}
+              acento="bg-svc-green"
+            />
+            <PuntajeBadge
+              label="Transporte"
+              valor={puntajes.transporte}
+              acento="bg-svc-red"
+            />
+          </div>
+
+          <div className="text-center">
+            <Link
+              href="/encuesta"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-svc-red text-white font-bold text-sm uppercase tracking-wider shadow-lg shadow-svc-red/40"
+            >
+              Calificar ahora <span aria-hidden>›</span>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ÁREAS FISCALIZADAS — botonera interactiva */}
+      <section className="bg-paper-2 py-12 px-6 border-b border-line">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-8">
             <div className="text-xs font-bold tracking-[0.18em] uppercase text-muted">
@@ -200,6 +297,42 @@ export default function HomeInstitucional() {
         </div>
       </section>
 
+      {/* TABLERO DE INDICADORES — KPIs públicos en vivo */}
+      <section className="bg-paper py-14 px-6 border-b border-line">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-8">
+            <div className="text-xs font-bold tracking-[0.18em] uppercase text-muted">
+              Datos públicos
+            </div>
+            <h2 className="text-2xl md:text-3xl font-extrabold text-navy mt-2">
+              El Ente en números
+            </h2>
+            <p className="text-sm text-muted mt-2 max-w-2xl mx-auto">
+              Información en vivo sobre la gestión del ENCOSEP.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-4xl mx-auto">
+            <Kpi label="Reclamos registrados" valor={totalReclamos} />
+            <Kpi label="Reclamos resueltos" valor={`${pctResueltos}%`} />
+            <Kpi label="Prestadoras controladas" valor={totalPrestadoras} />
+            <Kpi
+              label="Audiencias programadas"
+              valor={audienciasProximas}
+            />
+          </div>
+
+          <div className="text-center mt-7">
+            <Link
+              href="/indicadores"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-navy-2 text-white font-bold text-sm"
+            >
+              Ver tablero completo + mapa de calor <span aria-hidden>›</span>
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* ACCESOS RAPIDOS */}
       <section className="max-w-6xl mx-auto px-6 py-16">
         <div className="grid md:grid-cols-3 gap-5">
@@ -221,6 +354,48 @@ export default function HomeInstitucional() {
         </div>
       </section>
     </>
+  );
+}
+
+function PuntajeBadge({
+  label,
+  valor,
+  acento,
+}: {
+  label: string;
+  valor: number | null;
+  acento: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-line bg-paper p-3 flex items-center gap-3">
+      <div className={`w-3 h-10 rounded-full ${acento}`} aria-hidden />
+      <div className="flex flex-col min-w-0">
+        <span className="text-[10px] uppercase tracking-wider text-muted font-semibold">
+          {label}
+        </span>
+        {valor !== null ? (
+          <span className="text-xl font-extrabold text-navy leading-none">
+            {valor}
+            <span className="text-xs text-muted font-normal ml-1">/5</span>
+          </span>
+        ) : (
+          <span className="text-xs text-muted italic">sin datos aún</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Kpi({ label, valor }: { label: string; valor: number | string }) {
+  return (
+    <div className="rounded-2xl border-2 border-line bg-paper-2 p-4 text-center">
+      <div className="text-3xl md:text-4xl font-extrabold text-navy leading-none">
+        {valor}
+      </div>
+      <div className="text-[11px] uppercase tracking-wider text-muted font-semibold mt-2">
+        {label}
+      </div>
+    </div>
   );
 }
 
