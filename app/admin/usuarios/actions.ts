@@ -2,12 +2,60 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { randomBytes } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { puedeGestionarUsuarios, esDireccion } from "@/lib/admin";
 import { Rol } from "@prisma/client";
+
+/** Genera una clave aleatoria de 10 caracteres alfanuméricos (sin caracteres
+ *  ambiguos como 0/O/I/l/1) con guión cada 4 para facilitar la lectura
+ *  y transmisión verbal. Ej: "k7m3-pqrs-tv". */
+function generarClaveLegible(): string {
+  const chars = "abcdefghijkmnpqrstuvwxyz23456789";
+  const bytes = randomBytes(10);
+  let s = "";
+  for (let i = 0; i < 10; i++) s += chars[bytes[i] % chars.length];
+  return `${s.slice(0, 4)}-${s.slice(4, 8)}-${s.slice(8, 10)}`;
+}
+
+/**
+ * Genera una clave temporal aleatoria, la guarda hasheada en la DB, y la
+ * devuelve en plaintext una sola vez al admin que la solicitó. El plaintext
+ * NO se almacena en ningún lado — se le comunica al usuario por mensaje y
+ * el usuario debe cambiarla en su primer ingreso desde /mi-cuenta.
+ *
+ * Esto es seguro porque:
+ * - Las contraseñas en DB siguen siendo bcrypt (no se exponen las viejas).
+ * - El plaintext aparece una vez en pantalla y luego se descarta.
+ * - Solo lo pueden ejecutar roles con puedeGestionarUsuarios.
+ */
+export async function generarClaveTemporalUsuario(
+  usuarioId: string,
+): Promise<{ clave: string; usuario: string }> {
+  const session = await auth();
+  if (!session || !puedeGestionarUsuarios(session.user.rol)) {
+    throw new Error("Sin permisos");
+  }
+  const u = await prisma.usuario.findUnique({ where: { id: usuarioId } });
+  if (!u) throw new Error("Usuario no encontrado");
+
+  const clave = generarClaveLegible();
+  const passwordHash = await bcrypt.hash(clave, 10);
+  await prisma.usuario.update({
+    where: { id: usuarioId },
+    data: {
+      passwordHash,
+      passwordResetToken: null,
+      passwordResetExpires: null,
+    },
+  });
+
+  revalidatePath("/admin/usuarios");
+  return { clave, usuario: `${u.nombre} ${u.apellido}` };
+}
 
 export async function resetClaveADni(formData: FormData) {
   const session = await auth();

@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ROL_LABEL, puedeGestionarUsuarios, esDireccion } from "@/lib/admin";
 import { resetClaveADni, toggleActivo } from "./actions";
+import { BotonClaveTemporal } from "./BotonClaveTemporal";
 import type { Prisma, Rol } from "@prisma/client";
 
 export const metadata = { title: "Usuarios · Panel ENCOSEP" };
@@ -176,6 +177,7 @@ export default async function UsuariosPage({
                   </td>
                   <td className="py-2 px-3">
                     <div className="flex justify-end gap-2">
+                      <BotonClaveTemporal usuarioId={u.id} />
                       <form action={resetClaveADni}>
                         <input
                           type="hidden"
@@ -219,12 +221,31 @@ export default async function UsuariosPage({
         </table>
       </div>
 
-      <p className="text-[12px] text-muted">
-        <strong className="text-navy">Reset a DNI:</strong> deja la clave del
-        usuario igual a su DNI. Útil cuando un vecino sin email registrado pide
-        ayuda. Aclarale que la primera cosa que tiene que hacer al entrar es ir a{" "}
-        <span className="font-mono">/mi-cuenta</span> y elegir una clave nueva.
-      </p>
+      <div className="rounded-xl border border-line bg-paper-2 p-4 text-[12px] text-navy leading-relaxed space-y-2">
+        <p>
+          <strong>Las claves no se muestran nunca en pantalla</strong> — están
+          guardadas con bcrypt (hash + salt) y son irrecuperables a propósito,
+          igual que en cualquier sistema serio. Si la base de datos se filtra,
+          las claves siguen siendo inútiles.
+        </p>
+        <p>
+          <strong className="text-navy">Para dar soporte tenés dos botones:</strong>
+        </p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>
+            <strong>Generar clave</strong> — crea una clave aleatoria nueva,
+            la muestra <strong>una sola vez</strong> en pantalla para que se la
+            comuniques al usuario, y se descarta. Es lo recomendado para
+            operadores y staff del Ente.
+          </li>
+          <li>
+            <strong>Reset a DNI</strong> — deja la clave igual al propio DNI/CUIT.
+            Útil cuando un vecino pide ayuda urgente. Acordate que el usuario
+            tiene que cambiarla apenas entre desde{" "}
+            <span className="font-mono">/mi-cuenta</span>.
+          </li>
+        </ul>
+      </div>
     </div>
   );
 }
