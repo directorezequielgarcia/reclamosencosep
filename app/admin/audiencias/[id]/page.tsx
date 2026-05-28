@@ -1,9 +1,13 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ESTADO_AUDIENCIA_META, MODALIDAD_META } from "@/lib/audiencias";
-import { TONE_CLASS } from "@/lib/admin";
-import { cambiarEstadoAudiencia } from "../actions";
+import { puedeGestionarAudienciasMedios, TONE_CLASS } from "@/lib/admin";
+import {
+  actualizarMaterialAudiencia,
+  cambiarEstadoAudiencia,
+} from "../actions";
 import type { EstadoAudiencia } from "@prisma/client";
 
 export const metadata = { title: "Audiencia · Panel ENCOSEP" };
@@ -21,6 +25,11 @@ export default async function AudienciaAdminDetalle({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const session = await auth();
+  if (!session || !puedeGestionarAudienciasMedios(session.user.rol)) {
+    redirect("/admin");
+  }
+
   const { id } = await params;
   const a = await prisma.audienciaPublica.findUnique({
     where: { id },
@@ -31,6 +40,7 @@ export default async function AudienciaAdminDetalle({
   });
   if (!a) notFound();
   const m = ESTADO_AUDIENCIA_META[a.estado];
+  const realizada = a.estado === "REALIZADA";
 
   return (
     <div className="flex flex-col gap-5">
@@ -73,7 +83,12 @@ export default async function AudienciaAdminDetalle({
           {a.enlaceVirtual && (
             <div>
               <div className="text-xs text-muted">Enlace virtual</div>
-              <a className="text-navy-2 underline break-all" href={a.enlaceVirtual} target="_blank" rel="noreferrer">
+              <a
+                className="text-navy-2 underline break-all"
+                href={a.enlaceVirtual}
+                target="_blank"
+                rel="noreferrer"
+              >
                 {a.enlaceVirtual}
               </a>
             </div>
@@ -86,7 +101,129 @@ export default async function AudienciaAdminDetalle({
               </div>
             </div>
           )}
+          {a.inscripcionCierra && (
+            <div>
+              <div className="text-xs text-muted">Cierre de inscripción</div>
+              <div className="text-navy">
+                {a.inscripcionCierra.toLocaleString("es-AR", {
+                  day: "2-digit",
+                  month: "long",
+                  year: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </div>
+            </div>
+          )}
+          {a.expedienteNumero && (
+            <div>
+              <div className="text-xs text-muted">N° expediente</div>
+              <div className="text-navy font-bold">{a.expedienteNumero}</div>
+              {a.expedienteTitulo && (
+                <div className="text-xs text-muted">{a.expedienteTitulo}</div>
+              )}
+            </div>
+          )}
         </div>
+      </section>
+
+      {/* Material post-audiencia: video, transcripción taquigráfica, dictamen */}
+      <section className="rounded-2xl border border-line bg-paper p-5">
+        <h2 className="text-base font-extrabold text-navy mb-1">
+          Material de la audiencia
+        </h2>
+        <p className="text-xs text-muted mb-4">
+          {realizada
+            ? "Cargá acá el video grabado, la transcripción taquigráfica y el dictamen del ENCOSEP para que sea consultable por la ciudadanía."
+            : "Estos campos se pueden ir cargando, pero recién aparecen para el público cuando la audiencia esté marcada como REALIZADA."}
+        </p>
+        <form
+          action={actualizarMaterialAudiencia}
+          className="grid sm:grid-cols-2 gap-3"
+        >
+          <input type="hidden" name="audienciaId" value={a.id} />
+
+          <FieldD label="Link al video grabado" full>
+            <input
+              type="url"
+              name="videoUrl"
+              defaultValue={a.videoUrl ?? ""}
+              placeholder="https://youtu.be/…"
+              className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper"
+            />
+          </FieldD>
+
+          <FieldD label="URL de la transcripción taquigráfica (PDF/DOCX)">
+            <input
+              type="url"
+              name="transcripcionTaquigraficaUrl"
+              defaultValue={a.transcripcionTaquigraficaUrl ?? ""}
+              placeholder="https://…"
+              className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper"
+            />
+          </FieldD>
+
+          <FieldD label="URL del dictamen del ENCOSEP (PDF)">
+            <input
+              type="url"
+              name="dictamenUrl"
+              defaultValue={a.dictamenUrl ?? ""}
+              placeholder="https://…"
+              className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper"
+            />
+          </FieldD>
+
+          <FieldD
+            label="Texto de la transcripción taquigráfica (alternativa al archivo)"
+            full
+          >
+            <textarea
+              name="transcripcionTaquigraficaTexto"
+              defaultValue={a.transcripcionTaquigraficaTexto ?? ""}
+              rows={6}
+              placeholder="Pegá acá la transcripción si la tenés en texto plano."
+              className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper resize-y"
+            />
+          </FieldD>
+
+          <FieldD label="Dictamen del ENCOSEP — texto" full>
+            <textarea
+              name="dictamenTexto"
+              defaultValue={a.dictamenTexto ?? ""}
+              rows={8}
+              placeholder="Dictamen institucional del Ente con la conclusión y recomendación al Concejo / Poder Ejecutivo."
+              className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper resize-y"
+            />
+          </FieldD>
+
+          <FieldD label="Acta de la audiencia — URL">
+            <input
+              type="url"
+              name="actaUrl"
+              defaultValue={a.actaUrl ?? ""}
+              placeholder="https://…"
+              className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper"
+            />
+          </FieldD>
+
+          <FieldD label="Acta — texto (alternativa)" full>
+            <textarea
+              name="actaTexto"
+              defaultValue={a.actaTexto ?? ""}
+              rows={4}
+              className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper resize-y"
+            />
+          </FieldD>
+
+          <div className="sm:col-span-2">
+            <button
+              type="submit"
+              className="px-5 py-2.5 rounded-lg bg-navy text-white font-bold text-sm"
+            >
+              Guardar material
+            </button>
+          </div>
+        </form>
       </section>
 
       <section className="rounded-2xl border border-line bg-paper p-5">
@@ -131,5 +268,24 @@ export default async function AudienciaAdminDetalle({
         )}
       </section>
     </div>
+  );
+}
+
+function FieldD({
+  label,
+  full,
+  children,
+}: {
+  label: string;
+  full?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className={`flex flex-col gap-1 ${full ? "sm:col-span-2" : ""}`}>
+      <span className="text-[11px] uppercase tracking-wider text-muted font-semibold">
+        {label}
+      </span>
+      {children}
+    </label>
   );
 }

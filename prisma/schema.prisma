@@ -407,6 +407,14 @@ model AudienciaPublica {
   actaUrl      String?
   realizadaEn  DateTime?
 
+  // Material de la audiencia ya realizada
+  videoUrl                       String?  // link al video grabado (YouTube, Vimeo, etc.)
+  transcripcionTaquigraficaUrl   String?  // archivo de la transcripción
+  transcripcionTaquigraficaTexto String?  // alternativa: texto pegable
+  // Dictamen del ENCOSEP posterior a la audiencia
+  dictamenTexto String?
+  dictamenUrl   String?
+
   inscripciones InscripcionAudiencia[]
   autorId       String
   autor         Usuario             @relation(fields: [autorId], references: [id])

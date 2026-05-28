@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { puedeGestionarAudienciasMedios } from "@/lib/admin";
 import type { EstadoAudiencia, ModalidadAudiencia } from "@prisma/client";
 
 const Schema = z.object({
@@ -15,14 +16,14 @@ const Schema = z.object({
   enlaceVirtual: z.string().url().optional().or(z.literal("")),
   modalidad: z.enum(["PRESENCIAL", "VIRTUAL", "HIBRIDA"]),
   capacidad: z.coerce.number().int().positive().optional(),
+  expedienteNumero: z.string().max(60).optional().or(z.literal("")),
+  expedienteTitulo: z.string().max(200).optional().or(z.literal("")),
+  inscripcionCierra: z.string().optional().or(z.literal("")),
 });
 
 export async function crearAudiencia(formData: FormData) {
   const session = await auth();
-  if (
-    !session ||
-    (session.user.rol !== "GESTOR_ENTE" && session.user.rol !== "SUPER_ADMIN")
-  ) {
+  if (!session || !puedeGestionarAudienciasMedios(session.user.rol)) {
     throw new Error("Sin permiso");
   }
 
@@ -34,6 +35,9 @@ export async function crearAudiencia(formData: FormData) {
     enlaceVirtual: formData.get("enlaceVirtual") || undefined,
     modalidad: formData.get("modalidad"),
     capacidad: formData.get("capacidad") || undefined,
+    expedienteNumero: formData.get("expedienteNumero") || undefined,
+    expedienteTitulo: formData.get("expedienteTitulo") || undefined,
+    inscripcionCierra: formData.get("inscripcionCierra") || undefined,
   });
   if (!parsed.success) throw new Error("Datos inválidos");
   const d = parsed.data;
@@ -49,6 +53,11 @@ export async function crearAudiencia(formData: FormData) {
       capacidad: d.capacidad ?? null,
       estado: "ABIERTA_INSCRIPCION",
       autorId: session.user.id,
+      expedienteNumero: d.expedienteNumero?.length ? d.expedienteNumero : null,
+      expedienteTitulo: d.expedienteTitulo?.length ? d.expedienteTitulo : null,
+      inscripcionCierra: d.inscripcionCierra?.length
+        ? new Date(d.inscripcionCierra)
+        : null,
     },
   });
   revalidatePath("/admin/audiencias");
@@ -58,10 +67,7 @@ export async function crearAudiencia(formData: FormData) {
 
 export async function cambiarEstadoAudiencia(formData: FormData) {
   const session = await auth();
-  if (
-    !session ||
-    (session.user.rol !== "GESTOR_ENTE" && session.user.rol !== "SUPER_ADMIN")
-  ) {
+  if (!session || !puedeGestionarAudienciasMedios(session.user.rol)) {
     throw new Error("Sin permiso");
   }
   const id = String(formData.get("id") ?? "");
@@ -70,11 +76,78 @@ export async function cambiarEstadoAudiencia(formData: FormData) {
 
   await prisma.audienciaPublica.update({
     where: { id },
-    data: { estado: estado as EstadoAudiencia },
+    data: {
+      estado: estado as EstadoAudiencia,
+      // Si se marca como REALIZADA y no estaba con fecha de realización,
+      // la registramos en este momento.
+      ...(estado === "REALIZADA"
+        ? { realizadaEn: new Date() }
+        : {}),
+    },
   });
   revalidatePath(`/admin/audiencias/${id}`);
   revalidatePath("/admin/audiencias");
   revalidatePath("/audiencias");
+}
+
+const MaterialSchema = z.object({
+  audienciaId: z.string().min(1),
+  videoUrl: z.string().url().optional().or(z.literal("")),
+  transcripcionTaquigraficaUrl: z
+    .string()
+    .url()
+    .optional()
+    .or(z.literal("")),
+  transcripcionTaquigraficaTexto: z.string().max(200000).optional().or(z.literal("")),
+  dictamenTexto: z.string().max(60000).optional().or(z.literal("")),
+  dictamenUrl: z.string().url().optional().or(z.literal("")),
+  actaTexto: z.string().max(60000).optional().or(z.literal("")),
+  actaUrl: z.string().url().optional().or(z.literal("")),
+});
+
+/** Actualiza el material post-audiencia: acta, transcripción, video, dictamen. */
+export async function actualizarMaterialAudiencia(formData: FormData) {
+  const session = await auth();
+  if (!session || !puedeGestionarAudienciasMedios(session.user.rol)) {
+    throw new Error("Sin permiso");
+  }
+
+  const parsed = MaterialSchema.safeParse({
+    audienciaId: formData.get("audienciaId"),
+    videoUrl: formData.get("videoUrl") || "",
+    transcripcionTaquigraficaUrl:
+      formData.get("transcripcionTaquigraficaUrl") || "",
+    transcripcionTaquigraficaTexto:
+      formData.get("transcripcionTaquigraficaTexto") || "",
+    dictamenTexto: formData.get("dictamenTexto") || "",
+    dictamenUrl: formData.get("dictamenUrl") || "",
+    actaTexto: formData.get("actaTexto") || "",
+    actaUrl: formData.get("actaUrl") || "",
+  });
+  if (!parsed.success) {
+    throw new Error(parsed.error.issues[0]?.message ?? "Datos inválidos");
+  }
+  const d = parsed.data;
+
+  await prisma.audienciaPublica.update({
+    where: { id: d.audienciaId },
+    data: {
+      videoUrl: d.videoUrl?.length ? d.videoUrl : null,
+      transcripcionTaquigraficaUrl: d.transcripcionTaquigraficaUrl?.length
+        ? d.transcripcionTaquigraficaUrl
+        : null,
+      transcripcionTaquigraficaTexto: d.transcripcionTaquigraficaTexto?.length
+        ? d.transcripcionTaquigraficaTexto
+        : null,
+      dictamenTexto: d.dictamenTexto?.length ? d.dictamenTexto : null,
+      dictamenUrl: d.dictamenUrl?.length ? d.dictamenUrl : null,
+      actaTexto: d.actaTexto?.length ? d.actaTexto : null,
+      actaUrl: d.actaUrl?.length ? d.actaUrl : null,
+    },
+  });
+
+  revalidatePath(`/admin/audiencias/${d.audienciaId}`);
+  revalidatePath(`/audiencias/${d.audienciaId}`);
 }
 
 const InscripcionSchema = z.object({

@@ -167,6 +167,118 @@ export default async function AudienciaDetallePublico({
           </section>
         )}
 
+        {/* MATERIAL POST-AUDIENCIA — solo cuando ya se realizó */}
+        {yaSeRealizo &&
+          (a.videoUrl ||
+            a.transcripcionTaquigraficaUrl ||
+            a.transcripcionTaquigraficaTexto ||
+            a.dictamenTexto ||
+            a.dictamenUrl ||
+            a.actaUrl ||
+            a.actaTexto) && (
+            <section className="rounded-2xl border-2 border-svc-green/40 bg-svc-green/5 p-5">
+              <h2 className="text-base font-extrabold text-navy uppercase tracking-wider mb-3">
+                Material de la audiencia realizada
+              </h2>
+              <div className="grid sm:grid-cols-2 gap-3">
+                {a.videoUrl && (
+                  <a
+                    href={a.videoUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-3 rounded-xl border border-line bg-paper p-3 hover:border-navy-2 transition"
+                  >
+                    <span className="text-3xl">🎥</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-bold text-svc-red uppercase tracking-wider">
+                        Video de la audiencia
+                      </div>
+                      <div className="text-sm font-semibold text-navy mt-0.5 truncate">
+                        Ver grabación oficial
+                      </div>
+                    </div>
+                  </a>
+                )}
+                {a.transcripcionTaquigraficaUrl && (
+                  <a
+                    href={a.transcripcionTaquigraficaUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-3 rounded-xl border border-line bg-paper p-3 hover:border-navy-2 transition"
+                  >
+                    <span className="text-3xl">📜</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-bold text-navy-2 uppercase tracking-wider">
+                        Transcripción taquigráfica
+                      </div>
+                      <div className="text-sm font-semibold text-navy mt-0.5 truncate">
+                        Descargar versión textual
+                      </div>
+                    </div>
+                  </a>
+                )}
+                {a.dictamenUrl && (
+                  <a
+                    href={a.dictamenUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-3 rounded-xl border border-line bg-paper p-3 hover:border-navy-2 transition"
+                  >
+                    <span className="text-3xl">⚖️</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-bold text-svc-green uppercase tracking-wider">
+                        Dictamen del ENCOSEP
+                      </div>
+                      <div className="text-sm font-semibold text-navy mt-0.5 truncate">
+                        Descargar dictamen institucional
+                      </div>
+                    </div>
+                  </a>
+                )}
+                {a.actaUrl && (
+                  <a
+                    href={a.actaUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-3 rounded-xl border border-line bg-paper p-3 hover:border-navy-2 transition"
+                  >
+                    <span className="text-3xl">🗒️</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-bold text-svc-orange uppercase tracking-wider">
+                        Acta de la audiencia
+                      </div>
+                      <div className="text-sm font-semibold text-navy mt-0.5 truncate">
+                        Descargar acta firmada
+                      </div>
+                    </div>
+                  </a>
+                )}
+              </div>
+
+              {a.dictamenTexto && (
+                <div className="mt-4 rounded-xl bg-paper p-4">
+                  <h3 className="text-xs font-bold text-navy uppercase tracking-wider mb-2">
+                    Dictamen del ENCOSEP (texto)
+                  </h3>
+                  <p className="text-sm text-navy whitespace-pre-wrap leading-relaxed">
+                    {a.dictamenTexto}
+                  </p>
+                </div>
+              )}
+
+              {a.transcripcionTaquigraficaTexto && (
+                <details className="mt-4 rounded-xl bg-paper p-4">
+                  <summary className="cursor-pointer text-xs font-bold text-navy uppercase tracking-wider">
+                    Transcripción taquigráfica (texto completo)
+                  </summary>
+                  <div className="text-sm text-navy whitespace-pre-wrap leading-relaxed mt-3">
+                    {a.transcripcionTaquigraficaTexto}
+                  </div>
+                </details>
+              )}
+            </section>
+          )}
+
         {/* CONVOCATORIA */}
         {a.convocatoriaTexto && (
           <section className="rounded-2xl border border-line bg-paper p-5">
