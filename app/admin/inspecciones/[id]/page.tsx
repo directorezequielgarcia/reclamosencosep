@@ -2,10 +2,15 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { puedeGestionarInspecciones, TONE_CLASS } from "@/lib/admin";
+import {
+  puedeGestionarInspecciones,
+  puedeVerInspecciones,
+  TONE_CLASS,
+} from "@/lib/admin";
 import {
   ESTADO_INSPECCION_META,
   TIPO_INSPECCION_META,
+  whereInspeccionesByRol,
 } from "@/lib/inspecciones";
 import {
   actualizarInspeccion,
@@ -24,13 +29,19 @@ export default async function InspeccionDetallePage({
   params: Promise<{ id: string }>;
 }) {
   const session = await auth();
-  if (!session || !puedeGestionarInspecciones(session.user.rol)) {
+  if (!session || !puedeVerInspecciones(session.user.rol)) {
     redirect("/admin");
   }
 
   const { id } = await params;
-  const insp = await prisma.inspeccion.findUnique({
-    where: { id },
+  const visibilidadWhere = whereInspeccionesByRol(
+    session.user.rol,
+    session.user.id,
+  );
+  // findFirst con el WHERE de visibilidad: si el rol no la puede ver, queda
+  // null y devuelve 404 (igual que si no existiera).
+  const insp = await prisma.inspeccion.findFirst({
+    where: { AND: [{ id }, visibilidadWhere] },
     include: {
       servicio: true,
       prestadora: true,
@@ -44,6 +55,12 @@ export default async function InspeccionDetallePage({
     },
   });
   if (!insp) notFound();
+
+  // El usuario solo puede EDITAR si tiene rol de gestión y la inspección
+  // no está archivada. Los roles "solo lectura" (EXPEDIENTES, AUDITOR) ven
+  // los datos pero no pueden tocar.
+  const puedeEditar =
+    puedeGestionarInspecciones(session.user.rol) && insp.estado !== "ARCHIVADA";
 
   const estadoMeta = ESTADO_INSPECCION_META[insp.estado];
   const tipoMeta = TIPO_INSPECCION_META[insp.tipo];
@@ -63,7 +80,7 @@ export default async function InspeccionDetallePage({
         ? ["ARCHIVADA"]
         : [];
 
-  const editable = insp.estado !== "ARCHIVADA";
+  const editable = puedeEditar;
 
   // Listado de expedientes vinculables: filtramos por la misma prestadora
   // si la inspección la tiene cargada; sino mostramos todos los activos.

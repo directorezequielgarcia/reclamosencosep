@@ -8,11 +8,11 @@ import {
   puedeExportarInformes,
   puedeGestionarAudienciasMedios,
   puedeGestionarExpedientes,
-  puedeGestionarInspecciones,
   puedeGestionarReclamos,
   puedeGestionarUsuarios,
   puedeGestionarVencimientos,
   puedeVerDocumentos,
+  puedeVerInspecciones,
 } from "@/lib/admin";
 
 export default async function AdminLayout({
@@ -60,7 +60,7 @@ export default async function AdminLayout({
             {puedeGestionarVencimientos(rol) && (
               <NavLink href="/admin/vencimientos">Vencimientos</NavLink>
             )}
-            {puedeGestionarInspecciones(rol) && (
+            {puedeVerInspecciones(rol) && (
               <NavLink href="/admin/inspecciones">Inspecciones</NavLink>
             )}
             {puedeGestionarAudienciasMedios(rol) && (

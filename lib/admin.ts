@@ -92,9 +92,19 @@ export function puedeVerExpedientes(rol: Rol): boolean {
   return puedeGestionarExpedientes(rol) || rol === "AUDITOR";
 }
 
-/** Puede cargar/gestionar inspecciones de campo. */
+/** Puede cargar/gestionar inspecciones de campo (crear, editar, publicar). */
 export function puedeGestionarInspecciones(rol: Rol): boolean {
-  return esDireccion(rol) || rol === "INSPECCIONES";
+  return esDireccion(rol) || rol === "INSPECCIONES" || rol === "GESTOR_ENTE";
+}
+
+/** Puede VER inspecciones, posiblemente con filtro por vínculos. La
+ *  función whereInspeccionesByRol determina cuáles efectivamente ve. */
+export function puedeVerInspecciones(rol: Rol): boolean {
+  return (
+    puedeGestionarInspecciones(rol) ||
+    rol === "EXPEDIENTES" ||
+    rol === "AUDITOR"
+  );
 }
 
 /** Puede gestionar audiencias públicas y boletines/clipping de medios. */

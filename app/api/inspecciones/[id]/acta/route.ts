@@ -6,7 +6,8 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { puedeGestionarInspecciones } from "@/lib/admin";
+import { puedeVerInspecciones } from "@/lib/admin";
+import { whereInspeccionesByRol } from "@/lib/inspecciones";
 import { generarActaInspeccion } from "@/lib/docx-acta-inspeccion";
 
 export async function GET(
@@ -14,13 +15,17 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const session = await auth();
-  if (!session || !puedeGestionarInspecciones(session.user.rol)) {
+  if (!session || !puedeVerInspecciones(session.user.rol)) {
     return new NextResponse("No autorizado", { status: 403 });
   }
 
   const { id } = await params;
-  const insp = await prisma.inspeccion.findUnique({
-    where: { id },
+  const visibilidadWhere = whereInspeccionesByRol(
+    session.user.rol,
+    session.user.id,
+  );
+  const insp = await prisma.inspeccion.findFirst({
+    where: { AND: [{ id }, visibilidadWhere] },
     include: {
       servicio: true,
       prestadora: true,

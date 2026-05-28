@@ -2,10 +2,11 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { puedeGestionarInspecciones, TONE_CLASS } from "@/lib/admin";
+import { puedeGestionarInspecciones, puedeVerInspecciones, TONE_CLASS } from "@/lib/admin";
 import {
   ESTADO_INSPECCION_META,
   TIPO_INSPECCION_META,
+  whereInspeccionesByRol,
 } from "@/lib/inspecciones";
 import type { EstadoInspeccion, Prisma, TipoInspeccion } from "@prisma/client";
 
@@ -23,21 +24,28 @@ export default async function InspeccionesPage({
   searchParams: Promise<SP>;
 }) {
   const session = await auth();
-  if (!session || !puedeGestionarInspecciones(session.user.rol)) {
+  if (!session || !puedeVerInspecciones(session.user.rol)) {
     redirect("/admin");
   }
 
   const sp = await searchParams;
-  const where: Prisma.InspeccionWhereInput = {};
+  const filtros: Prisma.InspeccionWhereInput = {};
   if (sp.estado && sp.estado in ESTADO_INSPECCION_META) {
-    where.estado = sp.estado as EstadoInspeccion;
+    filtros.estado = sp.estado as EstadoInspeccion;
   }
   if (sp.tipo && sp.tipo in TIPO_INSPECCION_META) {
-    where.tipo = sp.tipo as TipoInspeccion;
+    filtros.tipo = sp.tipo as TipoInspeccion;
   }
   if (sp.servicio) {
-    where.servicioId = sp.servicio;
+    filtros.servicioId = sp.servicio;
   }
+
+  // Combinamos el filtro de visibilidad por rol con los filtros de la UI.
+  const visibilidadWhere = whereInspeccionesByRol(
+    session.user.rol,
+    session.user.id,
+  );
+  const where: Prisma.InspeccionWhereInput = { AND: [visibilidadWhere, filtros] };
 
   const [inspecciones, servicios, totales] = await Promise.all([
     prisma.inspeccion.findMany({
@@ -54,6 +62,7 @@ export default async function InspeccionesPage({
     prisma.servicio.findMany({ orderBy: { nombreCorto: "asc" } }),
     prisma.inspeccion.groupBy({
       by: ["estado"],
+      where: visibilidadWhere,
       _count: { _all: true },
     }),
   ]);
@@ -77,12 +86,14 @@ export default async function InspeccionesPage({
             públicos bajo control.
           </p>
         </div>
-        <Link
-          href="/admin/inspecciones/nueva"
-          className="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-svc-red text-white text-sm font-bold"
-        >
-          + Nueva inspección
-        </Link>
+        {puedeGestionarInspecciones(session.user.rol) && (
+          <Link
+            href="/admin/inspecciones/nueva"
+            className="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-svc-red text-white text-sm font-bold"
+          >
+            + Nueva inspección
+          </Link>
+        )}
       </header>
 
       <section className="grid grid-cols-3 gap-3">

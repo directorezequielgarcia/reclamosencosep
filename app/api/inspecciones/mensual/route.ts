@@ -5,7 +5,8 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { puedeGestionarInspecciones } from "@/lib/admin";
+import { puedeVerInspecciones } from "@/lib/admin";
+import { whereInspeccionesByRol } from "@/lib/inspecciones";
 import {
   generarMensualInspecciones,
   type DatosMensualInspecciones,
@@ -14,7 +15,7 @@ import type { TipoInspeccion } from "@prisma/client";
 
 export async function GET(req: Request) {
   const session = await auth();
-  if (!session || !puedeGestionarInspecciones(session.user.rol)) {
+  if (!session || !puedeVerInspecciones(session.user.rol)) {
     return new NextResponse("No autorizado", { status: 403 });
   }
 
@@ -33,12 +34,20 @@ export async function GET(req: Request) {
   const desde = new Date(Date.UTC(anio, mes - 1, 1, 3, 0, 0));
   const hasta = new Date(Date.UTC(anio, mes, 1, 3, 0, 0));
 
+  // Aplicamos el WHERE de visibilidad por rol: el mensual de inspecciones
+  // de un EXPEDIENTES o AUDITOR refleja solo lo que ese rol puede ver.
+  const visibilidadWhere = whereInspeccionesByRol(
+    session.user.rol,
+    session.user.id,
+  );
   const [servicios, inspecciones] = await Promise.all([
     prisma.servicio.findMany({ orderBy: { nombreCorto: "asc" } }),
     prisma.inspeccion.findMany({
       where: {
-        estado: "PUBLICADA",
-        fecha: { gte: desde, lt: hasta },
+        AND: [
+          visibilidadWhere,
+          { estado: "PUBLICADA", fecha: { gte: desde, lt: hasta } },
+        ],
       },
       orderBy: { fecha: "asc" },
       include: {
