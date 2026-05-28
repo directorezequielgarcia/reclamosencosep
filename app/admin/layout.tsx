@@ -1,7 +1,19 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth, signOut } from "@/lib/auth";
-import { ROL_LABEL, ROLES_ADMIN } from "@/lib/admin";
+import {
+  ROL_LABEL,
+  ROLES_ADMIN,
+  esDireccion,
+  puedeExportarInformes,
+  puedeGestionarAudienciasMedios,
+  puedeGestionarExpedientes,
+  puedeGestionarInspecciones,
+  puedeGestionarReclamos,
+  puedeGestionarUsuarios,
+  puedeGestionarVencimientos,
+  puedeVerDocumentos,
+} from "@/lib/admin";
 
 export default async function AdminLayout({
   children,
@@ -17,6 +29,7 @@ export default async function AdminLayout({
     await signOut({ redirectTo: "/" });
   }
 
+  const rol = session.user.rol;
   const nombre = session.user.name ?? "Usuario";
   const inicial = nombre.charAt(0).toUpperCase();
 
@@ -35,14 +48,31 @@ export default async function AdminLayout({
 
           <nav className="flex items-center gap-1 ml-4 flex-wrap">
             <NavLink href="/admin">Dashboard</NavLink>
-            <NavLink href="/admin/bandeja">Bandeja</NavLink>
-            <NavLink href="/admin/expedientes">Expedientes</NavLink>
-            <NavLink href="/admin/documentacion">Documentación</NavLink>
-            <NavLink href="/admin/vencimientos">Vencimientos</NavLink>
-            <NavLink href="/admin/boletines">Boletines</NavLink>
-            <NavLink href="/admin/audiencias">Audiencias</NavLink>
-            {(session.user.rol === "SUPER_ADMIN" ||
-              session.user.rol === "GESTOR_ENTE") && (
+            {puedeGestionarReclamos(rol) && (
+              <NavLink href="/admin/bandeja">Bandeja</NavLink>
+            )}
+            {puedeGestionarExpedientes(rol) && (
+              <NavLink href="/admin/expedientes">Expedientes</NavLink>
+            )}
+            {puedeVerDocumentos(rol) && (
+              <NavLink href="/admin/documentacion">Documentación</NavLink>
+            )}
+            {puedeGestionarVencimientos(rol) && (
+              <NavLink href="/admin/vencimientos">Vencimientos</NavLink>
+            )}
+            {puedeGestionarInspecciones(rol) && (
+              <NavLink href="/admin/inspecciones">Inspecciones</NavLink>
+            )}
+            {puedeGestionarAudienciasMedios(rol) && (
+              <>
+                <NavLink href="/admin/boletines">Boletines</NavLink>
+                <NavLink href="/admin/audiencias">Audiencias</NavLink>
+              </>
+            )}
+            {puedeExportarInformes(rol) && (
+              <NavLink href="/admin/informes">Informes</NavLink>
+            )}
+            {puedeGestionarUsuarios(rol) && (
               <NavLink href="/admin/usuarios">Usuarios</NavLink>
             )}
           </nav>

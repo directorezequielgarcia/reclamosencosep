@@ -8,9 +8,8 @@ import {
   TRANSICIONES_DOC,
   periodoLabel,
 } from "@/lib/documentos";
-import { TONE_CLASS } from "@/lib/admin";
+import { TONE_CLASS, puedeRevisarDocumentos } from "@/lib/admin";
 import { revisarDocumento } from "../actions";
-import type { EstadoDocumento } from "@prisma/client";
 
 export const metadata = { title: "Documento · Panel ENCOSEP" };
 
@@ -40,8 +39,7 @@ export default async function DocumentoDetallePage({
     notFound();
   }
 
-  const esEnte =
-    session!.user.rol === "GESTOR_ENTE" || session!.user.rol === "SUPER_ADMIN";
+  const esEnte = puedeRevisarDocumentos(session!.user.rol);
   const tipoMeta = TIPO_DOC_META[doc.tipo];
   const estadoMeta = ESTADO_DOC_META[doc.estado];
   const transiciones = TRANSICIONES_DOC[doc.estado];

@@ -15,19 +15,25 @@ export const ESTADO_DOC_META: Record<
   EstadoDocumento,
   { label: string; tone: "neutral" | "info" | "warning" | "success" | "danger" }
 > = {
-  PENDIENTE: { label: "Pendiente de revisión", tone: "warning" },
+  PENDIENTE: { label: "Recibido", tone: "neutral" },
   EN_REVISION: { label: "En revisión", tone: "info" },
+  ANALIZADO: { label: "Analizado", tone: "info" },
   APROBADO: { label: "Aprobado", tone: "success" },
-  OBSERVADO: { label: "Observado", tone: "warning" },
+  OBSERVADO: { label: "Con observaciones", tone: "warning" },
+  INCOMPLETO: { label: "Incompleto", tone: "warning" },
   RECHAZADO: { label: "Rechazado", tone: "danger" },
 };
 
 // Transiciones permitidas
+// Flujo típico: PENDIENTE → EN_REVISION → ANALIZADO → (APROBADO | OBSERVADO | INCOMPLETO | RECHAZADO)
+// Desde OBSERVADO o INCOMPLETO la prestadora puede subir nueva versión y reabrir el ciclo.
 export const TRANSICIONES_DOC: Record<EstadoDocumento, EstadoDocumento[]> = {
-  PENDIENTE: ["EN_REVISION", "APROBADO", "OBSERVADO", "RECHAZADO"],
-  EN_REVISION: ["APROBADO", "OBSERVADO", "RECHAZADO"],
+  PENDIENTE: ["EN_REVISION", "ANALIZADO", "APROBADO", "OBSERVADO", "INCOMPLETO", "RECHAZADO"],
+  EN_REVISION: ["ANALIZADO", "APROBADO", "OBSERVADO", "INCOMPLETO", "RECHAZADO"],
+  ANALIZADO: ["APROBADO", "OBSERVADO", "INCOMPLETO", "RECHAZADO"],
   APROBADO: [],
-  OBSERVADO: ["APROBADO", "RECHAZADO"],
+  OBSERVADO: ["EN_REVISION", "APROBADO", "RECHAZADO"],
+  INCOMPLETO: ["EN_REVISION", "APROBADO", "RECHAZADO"],
   RECHAZADO: [],
 };
 

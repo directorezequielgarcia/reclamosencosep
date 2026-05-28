@@ -1,7 +1,8 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { ROL_LABEL } from "@/lib/admin";
+import { ROL_LABEL, puedeGestionarUsuarios, esDireccion } from "@/lib/admin";
 import { resetClaveADni, toggleActivo } from "./actions";
 import type { Prisma, Rol } from "@prisma/client";
 
@@ -10,9 +11,15 @@ export const metadata = { title: "Usuarios · Panel ENCOSEP" };
 const ROL_FILTROS: { value: Rol | "TODOS"; label: string }[] = [
   { value: "TODOS", label: "Todos" },
   { value: "CIUDADANO", label: "Vecinos" },
-  { value: "GESTOR_ENTE", label: "Equipo del Ente" },
+  { value: "DIRECTOR", label: "Directorio" },
+  { value: "SUPER_ADMIN", label: "Director técnico" },
+  { value: "COOPERATIVA_DOCS", label: "Documental de prestadoras" },
+  { value: "EXPEDIENTES", label: "Expedientes" },
+  { value: "INSPECCIONES", label: "Inspecciones de campo" },
+  { value: "AUDIENCIAS_MEDIOS", label: "Audiencias y medios" },
+  { value: "GESTOR_ENTE", label: "Gestor del Ente (legacy)" },
   { value: "OPERADOR_PRESTADORA", label: "Operadores prestadora" },
-  { value: "SUPER_ADMIN", label: "Directorio" },
+  { value: "AUDITOR", label: "Auditor" },
 ];
 
 export default async function UsuariosPage({
@@ -21,10 +28,7 @@ export default async function UsuariosPage({
   searchParams: Promise<{ rol?: string; q?: string }>;
 }) {
   const session = await auth();
-  if (
-    !session ||
-    (session.user.rol !== "SUPER_ADMIN" && session.user.rol !== "GESTOR_ENTE")
-  ) {
+  if (!session || !puedeGestionarUsuarios(session.user.rol)) {
     redirect("/admin");
   }
 
@@ -58,12 +62,20 @@ export default async function UsuariosPage({
 
   return (
     <div className="flex flex-col gap-6">
-      <header>
-        <h1 className="text-2xl font-extrabold text-navy">Usuarios</h1>
-        <p className="text-sm text-muted mt-1">
-          {totalCiudadanos} {totalCiudadanos === 1 ? "vecino registrado" : "vecinos registrados"} ·{" "}
-          mostrando {usuarios.length} resultados.
-        </p>
+      <header className="flex items-end justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-extrabold text-navy">Usuarios</h1>
+          <p className="text-sm text-muted mt-1">
+            {totalCiudadanos} {totalCiudadanos === 1 ? "vecino registrado" : "vecinos registrados"} ·{" "}
+            mostrando {usuarios.length} resultados.
+          </p>
+        </div>
+        <Link
+          href="/admin/usuarios/crear"
+          className="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-svc-red text-white text-sm font-bold"
+        >
+          + Crear usuario
+        </Link>
       </header>
 
       <form className="flex flex-wrap gap-3 items-end bg-paper rounded-2xl border border-line p-4">
@@ -178,7 +190,7 @@ export default async function UsuariosPage({
                           Reset a DNI
                         </button>
                       </form>
-                      {session.user.rol === "SUPER_ADMIN" &&
+                      {esDireccion(session.user.rol) &&
                         u.id !== session.user.id && (
                           <form action={toggleActivo}>
                             <input

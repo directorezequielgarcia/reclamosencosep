@@ -7,6 +7,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { guardarDocumentoPrestadora } from "@/lib/uploads";
 import { TRANSICIONES_DOC } from "@/lib/documentos";
+import { puedeRevisarDocumentos, esDireccion } from "@/lib/admin";
 import type { EstadoDocumento, TipoDocumento } from "@prisma/client";
 
 const TipoEnum = z.enum([
@@ -59,8 +60,10 @@ export async function subirDocumento(formData: FormData) {
     prestadoraId = session.user.prestadoraId;
   } else if (
     session.user.rol === "GESTOR_ENTE" ||
-    session.user.rol === "SUPER_ADMIN"
+    session.user.rol === "COOPERATIVA_DOCS" ||
+    esDireccion(session.user.rol)
   ) {
+    // Adriana o Direccion suben documentación recibida por papel/email desde la Secretaría.
     if (!datos.prestadoraId) {
       throw new Error("Indicá la prestadora");
     }
@@ -106,22 +109,25 @@ export async function subirDocumento(formData: FormData) {
 
 const RevisarSchema = z.object({
   documentoId: z.string().min(1),
-  estado: z.enum(["APROBADO", "OBSERVADO", "RECHAZADO", "EN_REVISION"]),
+  estado: z.enum([
+    "EN_REVISION",
+    "ANALIZADO",
+    "APROBADO",
+    "OBSERVADO",
+    "INCOMPLETO",
+    "RECHAZADO",
+  ]),
   comentario: z.string().max(2000).optional(),
 });
 
 /**
- * Revisar documento: aprobar, observar o rechazar.
- * Solo gestor/super_admin.
+ * Revisar documento: cambiar estado del workflow.
+ * Habilitado para Direccion, COOPERATIVA_DOCS (Adriana) y GESTOR_ENTE.
  */
 export async function revisarDocumento(formData: FormData) {
   const session = await auth();
-  if (
-    !session ||
-    (session.user.rol !== "GESTOR_ENTE" &&
-      session.user.rol !== "SUPER_ADMIN")
-  ) {
-    throw new Error("Solo el Ente puede revisar documentos");
+  if (!session || !puedeRevisarDocumentos(session.user.rol)) {
+    throw new Error("No tenés permiso para revisar documentos");
   }
 
   const parsed = RevisarSchema.safeParse({

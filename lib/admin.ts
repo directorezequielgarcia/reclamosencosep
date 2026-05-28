@@ -25,8 +25,13 @@ export const ROL_LABEL: Record<Rol, string> = {
   CIUDADANO: "Vecino",
   GESTOR_ENTE: "Gestor del Ente",
   OPERADOR_PRESTADORA: "Operador prestadora",
-  SUPER_ADMIN: "Super admin",
+  SUPER_ADMIN: "Director técnico",
   AUDITOR: "Auditor",
+  DIRECTOR: "Director del Ente",
+  COOPERATIVA_DOCS: "Documentación de prestadoras",
+  EXPEDIENTES: "Expedientes",
+  INSPECCIONES: "Inspecciones de campo",
+  AUDIENCIAS_MEDIOS: "Audiencias y medios",
 };
 
 // Roles que tienen acceso al panel admin
@@ -35,6 +40,11 @@ export const ROLES_ADMIN: Rol[] = [
   "OPERADOR_PRESTADORA",
   "SUPER_ADMIN",
   "AUDITOR",
+  "DIRECTOR",
+  "COOPERATIVA_DOCS",
+  "EXPEDIENTES",
+  "INSPECCIONES",
+  "AUDIENCIAS_MEDIOS",
 ];
 
 // Roles que pueden modificar reclamos (no solo leer)
@@ -42,7 +52,70 @@ export const ROLES_EDIT: Rol[] = [
   "GESTOR_ENTE",
   "OPERADOR_PRESTADORA",
   "SUPER_ADMIN",
+  "DIRECTOR",
 ];
+
+// ─────────────────────────────────────────────
+// Helpers de permisos por dominio
+// Modelo: los DIRECTOR y SUPER_ADMIN ven y hacen todo dentro del Ente.
+// Los roles funcionales (COOPERATIVA_DOCS, EXPEDIENTES, etc.) solo acceden
+// a su slice. GESTOR_ENTE es el rol legacy general (compatibilidad).
+// ─────────────────────────────────────────────
+
+/** Director del Ente o Super admin técnico — ven y operan TODO. */
+export function esDireccion(rol: Rol): boolean {
+  return rol === "DIRECTOR" || rol === "SUPER_ADMIN";
+}
+
+/** Único que puede exportar el informe oficial (mensual art. 5 inc. k, anual de gestión). */
+export function puedeExportarInformes(rol: Rol): boolean {
+  return esDireccion(rol);
+}
+
+/** Puede revisar / cambiar estado a la documentación de prestadoras. */
+export function puedeRevisarDocumentos(rol: Rol): boolean {
+  return esDireccion(rol) || rol === "COOPERATIVA_DOCS" || rol === "GESTOR_ENTE";
+}
+
+/** Puede ver/cargar documentos (incluye la propia prestadora). */
+export function puedeVerDocumentos(rol: Rol): boolean {
+  return puedeRevisarDocumentos(rol) || rol === "OPERADOR_PRESTADORA" || rol === "AUDITOR";
+}
+
+/** Puede gestionar expedientes administrativos. */
+export function puedeGestionarExpedientes(rol: Rol): boolean {
+  return esDireccion(rol) || rol === "EXPEDIENTES" || rol === "GESTOR_ENTE";
+}
+
+/** Puede ver expedientes (incluye auditor). */
+export function puedeVerExpedientes(rol: Rol): boolean {
+  return puedeGestionarExpedientes(rol) || rol === "AUDITOR";
+}
+
+/** Puede cargar/gestionar inspecciones de campo. */
+export function puedeGestionarInspecciones(rol: Rol): boolean {
+  return esDireccion(rol) || rol === "INSPECCIONES";
+}
+
+/** Puede gestionar audiencias públicas y boletines/clipping de medios. */
+export function puedeGestionarAudienciasMedios(rol: Rol): boolean {
+  return esDireccion(rol) || rol === "AUDIENCIAS_MEDIOS" || rol === "GESTOR_ENTE";
+}
+
+/** Puede gestionar usuarios (alta, reset clave, bloqueo). */
+export function puedeGestionarUsuarios(rol: Rol): boolean {
+  return esDireccion(rol) || rol === "GESTOR_ENTE";
+}
+
+/** Puede manejar la bandeja de reclamos (asignar, cambiar estado). */
+export function puedeGestionarReclamos(rol: Rol): boolean {
+  return esDireccion(rol) || rol === "GESTOR_ENTE" || rol === "EXPEDIENTES";
+}
+
+/** Puede gestionar vencimientos de documentación. */
+export function puedeGestionarVencimientos(rol: Rol): boolean {
+  return esDireccion(rol) || rol === "COOPERATIVA_DOCS" || rol === "GESTOR_ENTE";
+}
 
 // Filtro WHERE para Prisma según el rol del usuario.
 // El operador de prestadora solo ve los reclamos asignados a su prestadora.

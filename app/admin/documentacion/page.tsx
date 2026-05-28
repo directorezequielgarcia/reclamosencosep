@@ -6,7 +6,7 @@ import {
   TIPO_DOC_META,
   periodoLabel,
 } from "@/lib/documentos";
-import { TONE_CLASS } from "@/lib/admin";
+import { TONE_CLASS, puedeRevisarDocumentos } from "@/lib/admin";
 import type { EstadoDocumento, Prisma, TipoDocumento } from "@prisma/client";
 
 export const metadata = { title: "Documentación · Panel ENCOSEP" };
@@ -57,8 +57,7 @@ export default async function DocumentacionPage({
 
   const puedeSubir =
     session!.user.rol === "OPERADOR_PRESTADORA" ||
-    session!.user.rol === "GESTOR_ENTE" ||
-    session!.user.rol === "SUPER_ADMIN";
+    puedeRevisarDocumentos(session!.user.rol);
 
   return (
     <div className="flex flex-col gap-5">

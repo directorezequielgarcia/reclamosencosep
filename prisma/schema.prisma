@@ -21,6 +21,12 @@ enum Rol {
   OPERADOR_PRESTADORA
   SUPER_ADMIN
   AUDITOR
+  // ─ Roles del equipo del ENCOSEP (Ord. 13.189/17) ─
+  DIRECTOR             // Directorio del Ente (Serdeiro, García, López): ven TODO y exportan informes oficiales
+  COOPERATIVA_DOCS     // Adriana — administra documentación de prestadoras + certificaciones
+  EXPEDIENTES          // Yanina — gestión de expedientes
+  INSPECCIONES         // Julieta — inspecciones de campo
+  AUDIENCIAS_MEDIOS    // Marcos — audiencias públicas y comunicación / clipping de medios
 }
 
 model Usuario {
@@ -99,10 +105,12 @@ enum TipoDocumento {
 }
 
 enum EstadoDocumento {
-  PENDIENTE          // recién subido, esperando revisión
+  PENDIENTE          // recibido, esperando revisión
   EN_REVISION        // un gestor lo está revisando
+  ANALIZADO          // revisión técnica terminada, decisión pendiente
   APROBADO           // OK, queda en el archivo
   OBSERVADO          // hay objeciones, la prestadora debe corregir
+  INCOMPLETO         // falta documentación complementaria — la prestadora debe ampliar
   RECHAZADO          // rechazado definitivamente
 }
 
