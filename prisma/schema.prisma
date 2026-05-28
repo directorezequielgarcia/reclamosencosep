@@ -51,6 +51,7 @@ model Usuario {
   documentosRevisados Documento[]      @relation("DocRevisor")
   boletines       Boletin[]
   audienciasPublicas AudienciaPublica[]
+  inspeccionesRealizadas Inspeccion[]  @relation("InspeccionInspector")
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   activo          Boolean  @default(true)
@@ -74,6 +75,7 @@ model Servicio {
   nombreCorto String
   prestadoras Prestadora[]
   reclamos   Reclamo[]
+  inspecciones Inspeccion[]
 }
 
 model Prestadora {
@@ -86,6 +88,7 @@ model Prestadora {
   expedientes Expediente[]
   documentos  Documento[]
   vencimientos Vencimiento[]
+  inspecciones Inspeccion[]
   activa      Boolean    @default(true)
   createdAt   DateTime   @default(now())
 }
@@ -213,6 +216,7 @@ model Reclamo {
 
   adjuntos     Adjunto[]
   eventos      ReclamoEvento[]
+  inspecciones Inspeccion[]  @relation("InspeccionReclamos")
 
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
@@ -260,6 +264,7 @@ model Expediente {
   iniciador    Usuario          @relation("ExpIniciador", fields: [iniciadorId], references: [id])
   reclamos     Reclamo[]
   actos        ActoAdministrativo[]
+  inspecciones Inspeccion[]
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
   cerradoEn    DateTime?
@@ -471,4 +476,93 @@ model EncuestaServicios {
   createdAt        DateTime @default(now())
 
   @@index([createdAt])
+}
+
+// ─────────────────────────────────────────────
+// Inspecciones de campo
+// Las realiza Julieta (rol INSPECCIONES) y los directores. Cada inspección
+// puede tener audio dictado en campo, múltiples fotos y coordenadas GPS.
+// Alimentan las secciones 2 y 3 del informe mensual oficial del Directorio.
+// ─────────────────────────────────────────────
+
+enum TipoInspeccion {
+  OFICIO                  // inspección de oficio (rutina o seguimiento)
+  DENUNCIA_VECINO         // disparada por una denuncia / reclamo de vecino
+  SEGUIMIENTO_EXPEDIENTE  // verifica avance de un expediente abierto
+  EVENTO_PUNTUAL          // contingencia (corte masivo, deslizamiento, etc.)
+}
+
+enum EstadoInspeccion {
+  BORRADOR    // en captura, todavía no se considera oficial
+  PUBLICADA   // visible y exportable
+  ARCHIVADA   // queda en el archivo histórico, no aparece en bandeja activa
+}
+
+model Inspeccion {
+  id            String           @id @default(cuid())
+  codigo        String           @unique         // ej: INS-2026-001
+
+  fecha         DateTime                         // fecha y hora del relevamiento
+  inspectorId   String
+  inspector     Usuario          @relation("InspeccionInspector", fields: [inspectorId], references: [id])
+
+  servicioId    String
+  servicio      Servicio         @relation(fields: [servicioId], references: [id])
+  prestadoraId  String?
+  prestadora    Prestadora?      @relation(fields: [prestadoraId], references: [id])
+
+  tipo          TipoInspeccion   @default(OFICIO)
+  estado        EstadoInspeccion @default(BORRADOR)
+
+  titulo        String                           // resumen corto (1 línea)
+  observaciones String                           // texto largo — lo que se escribe o transcribe
+
+  // Ubicación
+  direccion     String?
+  barrio        String?
+  lat           Float?
+  lng           Float?
+
+  // Audio dictado en campo (un único archivo principal por inspección)
+  audioUrl          String?
+  audioMimeType     String?
+  audioBytes        Int?
+  audioDuracionSeg  Int?
+  transcripcionAudio String?                     // editable, puede venir de Web Speech API o cargado a mano
+
+  // Vínculos opcionales con otros registros del sistema
+  expedienteId  String?
+  expediente    Expediente?      @relation(fields: [expedienteId], references: [id])
+  reclamos      Reclamo[]        @relation("InspeccionReclamos")
+
+  // Acta exportada
+  actaUrl       String?                          // .docx generado y guardado en Blob
+  actaGeneradaEn DateTime?
+
+  fotos         InspeccionFoto[]
+
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@index([servicioId, estado])
+  @@index([inspectorId, fecha])
+  @@index([estado, fecha])
+  @@index([expedienteId])
+}
+
+model InspeccionFoto {
+  id           String     @id @default(cuid())
+  inspeccionId String
+  inspeccion   Inspeccion @relation(fields: [inspeccionId], references: [id], onDelete: Cascade)
+  url          String
+  descripcion  String?
+  mimeType     String?
+  bytes        Int?
+  // Coordenadas opcionales si la foto trae EXIF GPS
+  lat          Float?
+  lng          Float?
+  orden        Int        @default(0)
+  createdAt    DateTime   @default(now())
+
+  @@index([inspeccionId, orden])
 }
