@@ -84,16 +84,37 @@ export default async function InspeccionDetallePage({
 
   const editable = puedeEditar;
 
-  // Listado de expedientes vinculables: filtramos por la misma prestadora
-  // si la inspección la tiene cargada; sino mostramos todos los activos.
+  // Listado de expedientes vinculables: todos los activos (no filtramos
+  // por prestadora — un mismo evento puede involucrar a varias). Si la
+  // inspección tiene prestadora cargada, los de esa prestadora aparecen
+  // primero en el selector. Se agrupan por prestadora con <optgroup>.
   const expedientesVinculables = await prisma.expediente.findMany({
-    where: {
-      ...(insp.prestadoraId ? { prestadoraId: insp.prestadoraId } : {}),
-      estado: { in: ["ABIERTO", "EN_TRAMITE"] },
+    where: { estado: { in: ["ABIERTO", "EN_TRAMITE"] } },
+    orderBy: [{ createdAt: "desc" }],
+    take: 200,
+    select: {
+      id: true,
+      numero: true,
+      caratula: true,
+      estado: true,
+      prestadora: { select: { razonSocial: true } },
     },
-    orderBy: { createdAt: "desc" },
-    take: 50,
-    select: { id: true, numero: true, caratula: true, estado: true },
+  });
+
+  // Agrupar por prestadora, ordenando primero la de la inspección si aplica.
+  const grupos = new Map<string, typeof expedientesVinculables>();
+  for (const e of expedientesVinculables) {
+    const k = e.prestadora.razonSocial;
+    if (!grupos.has(k)) grupos.set(k, []);
+    grupos.get(k)!.push(e);
+  }
+  const nombrePrestadoraInsp = insp.prestadora?.razonSocial ?? null;
+  const gruposOrdenados = Array.from(grupos.entries()).sort(([a], [b]) => {
+    if (nombrePrestadoraInsp) {
+      if (a === nombrePrestadoraInsp) return -1;
+      if (b === nombrePrestadoraInsp) return 1;
+    }
+    return a.localeCompare(b);
   });
 
   const totalReclamosVinculados =
@@ -219,6 +240,11 @@ export default async function InspeccionDetallePage({
                 <label className="flex flex-col gap-1">
                   <span className="text-[11px] uppercase tracking-wider text-muted font-semibold">
                     Vincular a expediente existente
+                    {expedientesVinculables.length > 0 && (
+                      <span className="text-muted font-normal ml-1">
+                        ({expedientesVinculables.length} activos)
+                      </span>
+                    )}
                   </span>
                   <select
                     name="expedienteId"
@@ -226,11 +252,27 @@ export default async function InspeccionDetallePage({
                     className="px-3 py-2 rounded-lg border border-line-strong bg-paper text-sm text-navy"
                   >
                     <option value="">— Sin expediente vinculado —</option>
-                    {expedientesVinculables.map((e) => (
-                      <option key={e.id} value={e.id}>
-                        {e.numero} — {e.caratula} ({e.estado})
-                      </option>
+                    {gruposOrdenados.map(([prestadora, items]) => (
+                      <optgroup
+                        key={prestadora}
+                        label={
+                          prestadora === nombrePrestadoraInsp
+                            ? `★ ${prestadora} (prestadora de esta inspección)`
+                            : prestadora
+                        }
+                      >
+                        {items.map((e) => (
+                          <option key={e.id} value={e.id}>
+                            {e.numero} — {e.caratula} ({e.estado})
+                          </option>
+                        ))}
+                      </optgroup>
                     ))}
+                    {expedientesVinculables.length === 0 && (
+                      <option value="" disabled>
+                        — No hay expedientes abiertos en el sistema —
+                      </option>
+                    )}
                   </select>
                 </label>
                 <div>
