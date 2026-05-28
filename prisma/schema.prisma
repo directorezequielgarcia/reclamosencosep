@@ -52,6 +52,7 @@ model Usuario {
   boletines       Boletin[]
   audienciasPublicas AudienciaPublica[]
   inspeccionesRealizadas Inspeccion[]  @relation("InspeccionInspector")
+  informesMensualesEmitidos InformeMensual[]  @relation("InformeMensualEmisor")
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   activo          Boolean  @default(true)
@@ -565,4 +566,55 @@ model InspeccionFoto {
   createdAt    DateTime   @default(now())
 
   @@index([inspeccionId, orden])
+}
+
+// ─────────────────────────────────────────────
+// Informe Mensual del Estado de los Servicios Públicos (art. 5° inc. k
+// Ordenanza N° 13.189/17). Un único registro por mes/año, con las 7
+// secciones obligatorias y cifras agregadas como snapshot.
+// Los `bloques` se guardan en JSON estructurado para permitir editor por
+// sección (y por servicio donde aplica) sin migración por campo.
+// ─────────────────────────────────────────────
+
+enum EstadoInformeMensual {
+  BORRADOR    // se está editando, no es oficial todavía
+  PUBLICADO   // emitido por la Dirección, se considera el informe del mes
+  ARCHIVADO   // versión anterior conservada por historial
+}
+
+model InformeMensual {
+  id          String                @id @default(cuid())
+  mes         Int                                          // 1-12
+  anio        Int
+
+  estado      EstadoInformeMensual  @default(BORRADOR)
+
+  // Bloques narrativos de las 7 secciones del art. 5° inc. k.
+  // Estructura esperada en bloques (JSON):
+  //   {
+  //     seccion1: { intro: "...", porServicio: { RESIDUOS: "...", ENERGIA: "...", ... } },
+  //     seccion2: { porServicio: { ... } },
+  //     seccion3: { porServicio: { ... } },
+  //     seccion4: "texto plano",
+  //     seccion5: "texto plano",
+  //     seccion6: "texto plano",
+  //     seccion7: "texto plano",
+  //   }
+  bloques     Json
+
+  // Cifras congeladas al momento de emitir, para que la generación del
+  // .docx sea reproducible aunque cambien los datos crudos despues.
+  metricas    Json
+
+  emitidoPorId String?
+  emitidoPor   Usuario?             @relation("InformeMensualEmisor", fields: [emitidoPorId], references: [id])
+  emitidoEn    DateTime?
+
+  docxUrl     String?
+
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+
+  @@unique([anio, mes])
+  @@index([estado, anio, mes])
 }
