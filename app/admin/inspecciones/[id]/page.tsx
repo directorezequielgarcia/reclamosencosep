@@ -10,6 +10,8 @@ import {
 import {
   actualizarInspeccion,
   cambiarEstadoInspeccion,
+  crearReclamoOficio,
+  vincularExpediente,
 } from "../actions";
 import { CapturaCampo } from "@/components/inspecciones/CapturaCampo";
 import type { EstadoInspeccion } from "@prisma/client";
@@ -35,6 +37,10 @@ export default async function InspeccionDetallePage({
       inspector: true,
       expediente: true,
       fotos: { orderBy: { orden: "asc" } },
+      reclamos: { select: { id: true, codigo: true, titulo: true, estado: true } },
+      reclamosOriginados: {
+        select: { id: true, codigo: true, titulo: true, estado: true },
+      },
     },
   });
   if (!insp) notFound();
@@ -58,6 +64,22 @@ export default async function InspeccionDetallePage({
         : [];
 
   const editable = insp.estado !== "ARCHIVADA";
+
+  // Listado de expedientes vinculables: filtramos por la misma prestadora
+  // si la inspección la tiene cargada; sino mostramos todos los activos.
+  const expedientesVinculables = await prisma.expediente.findMany({
+    where: {
+      ...(insp.prestadoraId ? { prestadoraId: insp.prestadoraId } : {}),
+      estado: { in: ["ABIERTO", "EN_TRAMITE"] },
+    },
+    orderBy: { createdAt: "desc" },
+    take: 50,
+    select: { id: true, numero: true, caratula: true, estado: true },
+  });
+
+  const totalReclamosVinculados =
+    insp.reclamos.length + insp.reclamosOriginados.length;
+  const tieneVinculo = !!insp.expedienteId || totalReclamosVinculados > 0;
 
   return (
     <div className="flex flex-col gap-5">
@@ -100,7 +122,13 @@ export default async function InspeccionDetallePage({
               <input type="hidden" name="estado" value={e} />
               <button
                 type="submit"
-                className={`px-3 py-2 rounded-lg text-sm font-bold ${
+                disabled={e === "PUBLICADA" && !tieneVinculo}
+                title={
+                  e === "PUBLICADA" && !tieneVinculo
+                    ? "Para publicar, primero vinculá a un expediente o generá un reclamo de oficio"
+                    : undefined
+                }
+                className={`px-3 py-2 rounded-lg text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed ${
                   e === "PUBLICADA"
                     ? "bg-svc-green text-white"
                     : "bg-paper-3 text-navy border border-line-strong"
@@ -115,6 +143,162 @@ export default async function InspeccionDetallePage({
 
       <div className="grid lg:grid-cols-[1fr_360px] gap-5 items-start">
         <div className="flex flex-col gap-5">
+          {/* Captura de campo PRIMERO — es lo que se usa en obra */}
+          {editable && (
+            <CapturaCampo
+              inspeccionId={insp.id}
+              audioInicialUrl={insp.audioUrl}
+              latInicial={insp.lat}
+              lngInicial={insp.lng}
+            />
+          )}
+
+          {/* Fotos ya cargadas */}
+          {insp.fotos.length > 0 && (
+            <Card titulo={`Fotos cargadas (${insp.fotos.length})`}>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {insp.fotos.map((f) => (
+                  <a
+                    key={f.id}
+                    href={f.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="block rounded-lg overflow-hidden border border-line"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={f.url}
+                      alt={f.descripcion ?? "Foto de inspección"}
+                      className="w-full h-32 object-cover"
+                    />
+                  </a>
+                ))}
+              </div>
+            </Card>
+          )}
+
+          {/* Audio ya cargado */}
+          {insp.audioUrl && (
+            <Card titulo="Audio dictado en campo">
+              <audio controls src={insp.audioUrl} className="w-full">
+                Tu navegador no soporta audio HTML5.
+              </audio>
+            </Card>
+          )}
+
+          {/* Vinculación: a expediente o crear reclamo de oficio */}
+          {editable && (
+            <Card titulo="Vinculación administrativa">
+              <p className="text-xs text-muted mb-3">
+                Las inspecciones no se publican al equipo en general: se asocian
+                a un <strong className="text-navy">expediente</strong> o a un{" "}
+                <strong className="text-navy">reclamo</strong>. Quienes tienen
+                acceso a ese contenedor ven la inspección. Si todavía no hay
+                expediente, podés generar un{" "}
+                <strong className="text-navy">reclamo de oficio</strong> que
+                llega a la bandeja para que el gestor de expedientes decida si
+                escala.
+              </p>
+
+              <form
+                action={vincularExpediente}
+                className="flex flex-col gap-2 mb-4"
+              >
+                <input type="hidden" name="inspeccionId" value={insp.id} />
+                <label className="flex flex-col gap-1">
+                  <span className="text-[11px] uppercase tracking-wider text-muted font-semibold">
+                    Vincular a expediente existente
+                  </span>
+                  <select
+                    name="expedienteId"
+                    defaultValue={insp.expedienteId ?? ""}
+                    className="px-3 py-2 rounded-lg border border-line-strong bg-paper text-sm text-navy"
+                  >
+                    <option value="">— Sin expediente vinculado —</option>
+                    {expedientesVinculables.map((e) => (
+                      <option key={e.id} value={e.id}>
+                        {e.numero} — {e.caratula} ({e.estado})
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <div>
+                  <button
+                    type="submit"
+                    className="px-3 py-2 rounded-lg bg-navy text-white text-xs font-bold"
+                  >
+                    Guardar vinculación
+                  </button>
+                </div>
+              </form>
+
+              <div className="rounded-xl border border-line-strong bg-paper-2 p-3 flex items-center justify-between gap-3 flex-wrap">
+                <div className="text-xs text-navy">
+                  <strong>¿Todavía no hay expediente?</strong> Generá un reclamo
+                  de oficio (origen: ENCOSEP) y se carga a la bandeja para que
+                  el gestor de expedientes evalúe.
+                </div>
+                <form action={crearReclamoOficio}>
+                  <input type="hidden" name="inspeccionId" value={insp.id} />
+                  <button
+                    type="submit"
+                    className="px-3 py-2 rounded-lg bg-svc-red text-white text-xs font-bold"
+                  >
+                    + Generar reclamo de oficio
+                  </button>
+                </form>
+              </div>
+
+              {(insp.reclamos.length > 0 ||
+                insp.reclamosOriginados.length > 0) && (
+                <div className="mt-4">
+                  <div className="text-[11px] uppercase tracking-wider text-muted font-semibold mb-2">
+                    Reclamos asociados
+                  </div>
+                  <ul className="text-sm text-navy space-y-1">
+                    {insp.reclamosOriginados.map((r) => (
+                      <li key={r.id} className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold bg-svc-red/15 text-svc-red border border-svc-red/30 rounded-full px-2 py-0.5 uppercase tracking-wider">
+                          Oficio
+                        </span>
+                        <Link
+                          href={`/admin/reclamo/${r.id}`}
+                          className="font-mono font-bold hover:underline"
+                        >
+                          {r.codigo}
+                        </Link>
+                        <span className="text-muted truncate">{r.titulo}</span>
+                        <span className="text-[10px] text-muted">
+                          ({r.estado})
+                        </span>
+                      </li>
+                    ))}
+                    {insp.reclamos
+                      .filter(
+                        (r) =>
+                          !insp.reclamosOriginados.find((o) => o.id === r.id),
+                      )
+                      .map((r) => (
+                        <li key={r.id} className="flex items-center gap-2">
+                          <Link
+                            href={`/admin/reclamo/${r.id}`}
+                            className="font-mono font-bold hover:underline"
+                          >
+                            {r.codigo}
+                          </Link>
+                          <span className="text-muted truncate">{r.titulo}</span>
+                          <span className="text-[10px] text-muted">
+                            ({r.estado})
+                          </span>
+                        </li>
+                      ))}
+                  </ul>
+                </div>
+              )}
+            </Card>
+          )}
+
+          {/* Edición textual */}
           {editable ? (
             <form
               action={actualizarInspeccion}
@@ -122,7 +306,7 @@ export default async function InspeccionDetallePage({
             >
               <input type="hidden" name="inspeccionId" value={insp.id} />
               <h2 className="text-[11px] font-bold text-muted uppercase tracking-wider">
-                Edición
+                Edición textual
               </h2>
 
               <Field label="Título">
@@ -142,7 +326,7 @@ export default async function InspeccionDetallePage({
                   defaultValue={insp.observaciones}
                   rows={10}
                   maxLength={20000}
-                  placeholder="Texto del relevamiento. Podés dejarlo vacío si la información está cargada como audio dictado o fotos."
+                  placeholder="Texto del relevamiento. Podés dejarlo vacío si la información está cargada como audio o fotos."
                   className="px-3 py-2 rounded-lg border border-line-strong bg-paper text-navy resize-y"
                 />
               </Field>
@@ -164,27 +348,6 @@ export default async function InspeccionDetallePage({
                     defaultValue={insp.barrio ?? ""}
                     maxLength={120}
                     className="px-3 py-2 rounded-lg border border-line-strong bg-paper text-navy"
-                  />
-                </Field>
-              </div>
-
-              <div className="grid sm:grid-cols-2 gap-4">
-                <Field label="Latitud">
-                  <input
-                    type="text"
-                    name="lat"
-                    defaultValue={insp.lat?.toString() ?? ""}
-                    inputMode="decimal"
-                    className="px-3 py-2 rounded-lg border border-line-strong bg-paper text-navy font-mono"
-                  />
-                </Field>
-                <Field label="Longitud">
-                  <input
-                    type="text"
-                    name="lng"
-                    defaultValue={insp.lng?.toString() ?? ""}
-                    inputMode="decimal"
-                    className="px-3 py-2 rounded-lg border border-line-strong bg-paper text-navy font-mono"
                   />
                 </Field>
               </div>
@@ -216,46 +379,6 @@ export default async function InspeccionDetallePage({
               </p>
             </Card>
           )}
-
-          {editable && (
-            <CapturaCampo
-              inspeccionId={insp.id}
-              audioInicialUrl={insp.audioUrl}
-              latInicial={insp.lat}
-              lngInicial={insp.lng}
-            />
-          )}
-
-          {insp.fotos.length > 0 && (
-            <Card titulo={`Fotos (${insp.fotos.length})`}>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {insp.fotos.map((f) => (
-                  <a
-                    key={f.id}
-                    href={f.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="block rounded-lg overflow-hidden border border-line"
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={f.url}
-                      alt={f.descripcion ?? "Foto de inspección"}
-                      className="w-full h-32 object-cover"
-                    />
-                  </a>
-                ))}
-              </div>
-            </Card>
-          )}
-
-          {insp.audioUrl && (
-            <Card titulo="Audio dictado en campo">
-              <audio controls src={insp.audioUrl} className="w-full">
-                Tu navegador no soporta audio HTML5.
-              </audio>
-            </Card>
-          )}
         </div>
 
         <aside className="flex flex-col gap-4">
@@ -268,32 +391,32 @@ export default async function InspeccionDetallePage({
               </span>
               <span className="text-xs text-muted">
                 {insp.estado === "BORRADOR" &&
-                  "Solo vos la ves. Publicala para que cuente en informes."}
+                  (tieneVinculo
+                    ? "Vínculo cargado. Ya podés publicar."
+                    : "Falta vinculacionn con expediente o reclamo para poder publicar.")}
                 {insp.estado === "PUBLICADA" &&
-                  "Visible para todo el equipo. Alimenta informes."}
+                  "Visible para quienes tienen acceso al expediente o reclamo vinculado."}
                 {insp.estado === "ARCHIVADA" &&
                   "Solo consulta histórica. No editable."}
               </span>
             </div>
           </Card>
 
-          <Card titulo="Vínculos">
-            <ul className="text-sm text-navy space-y-1">
-              {insp.expediente ? (
-                <li>
-                  Expediente:{" "}
-                  <Link
-                    href={`/admin/expediente/${insp.expediente.id}`}
-                    className="text-navy-2 underline"
-                  >
-                    {insp.expediente.numero}
-                  </Link>
-                </li>
-              ) : (
-                <li className="text-muted">Sin expediente vinculado.</li>
-              )}
-            </ul>
-          </Card>
+          {insp.expediente && (
+            <Card titulo="Expediente vinculado">
+              <div className="text-sm text-navy font-bold">
+                <Link
+                  href={`/admin/expediente/${insp.expediente.id}`}
+                  className="hover:underline text-navy-2"
+                >
+                  {insp.expediente.numero}
+                </Link>
+              </div>
+              <div className="text-xs text-muted mt-1">
+                {insp.expediente.caratula}
+              </div>
+            </Card>
+          )}
 
           {(insp.lat != null || insp.lng != null) && (
             <Card titulo="Coordenadas">

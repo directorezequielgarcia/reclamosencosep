@@ -10,6 +10,7 @@ import {
   BorderStyle,
   Document,
   HeadingLevel,
+  ImageRun,
   PageOrientation,
   Packer,
   Paragraph,
@@ -20,6 +21,7 @@ import {
   WidthType,
 } from "docx";
 import { TIPO_INSPECCION_META } from "@/lib/inspecciones";
+import { cargarLogoBuffer } from "@/lib/docx-logo";
 import type { TipoInspeccion } from "@prisma/client";
 
 type InspeccionParaActa = {
@@ -173,6 +175,24 @@ export async function generarActaInspeccion(
   });
 
   const children: (Paragraph | Table)[] = [];
+
+  // Logo institucional centrado en la carátula (si está disponible)
+  const logoBuffer = await cargarLogoBuffer();
+  if (logoBuffer) {
+    children.push(
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 240 },
+        children: [
+          new ImageRun({
+            data: new Uint8Array(logoBuffer),
+            transformation: { width: 140, height: 140 },
+            type: "jpg",
+          }),
+        ],
+      }),
+    );
+  }
 
   // Encabezado institucional
   children.push(

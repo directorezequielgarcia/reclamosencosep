@@ -179,6 +179,12 @@ model Reclamo {
   codigo       String        @unique           // visible al ciudadano: A-2418
   ciudadanoId  String
   ciudadano    Usuario       @relation("ReclamoCiudadano", fields: [ciudadanoId], references: [id])
+  // Reclamo "de oficio" generado por el Ente desde una inspección de campo.
+  // Cuando origenOficio = true, ciudadanoId apunta al inspector que lo creó,
+  // pero se trata como denuncia institucional del propio ENCOSEP.
+  origenOficio        Boolean      @default(false)
+  inspeccionOrigenId  String?
+  inspeccionOrigen    Inspeccion?  @relation("ReclamoOriginadoEnInspeccion", fields: [inspeccionOrigenId], references: [id])
   servicioId   String
   servicio     Servicio      @relation(fields: [servicioId], references: [id])
   prestadoraId String?
@@ -535,6 +541,8 @@ model Inspeccion {
   expedienteId  String?
   expediente    Expediente?      @relation(fields: [expedienteId], references: [id])
   reclamos      Reclamo[]        @relation("InspeccionReclamos")
+  // Reclamos de oficio generados a partir de esta inspección.
+  reclamosOriginados Reclamo[]   @relation("ReclamoOriginadoEnInspeccion")
 
   // Acta exportada
   actaUrl       String?                          // .docx generado y guardado en Blob

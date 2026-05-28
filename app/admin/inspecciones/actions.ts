@@ -190,6 +190,29 @@ export async function cambiarEstadoInspeccion(formData: FormData) {
   });
   if (!parsed.success) throw new Error("Datos inválidos");
 
+  // Para pasar a PUBLICADA, la inspección debe estar vinculada a un expediente
+  // o haber generado un reclamo (de oficio o existente). Sin vínculo no se
+  // publica para "todo el equipo": el modelo es que las inspecciones se
+  // ven a través del contenedor (reclamo o expediente) al que están atadas.
+  if (parsed.data.estado === "PUBLICADA") {
+    const insp = await prisma.inspeccion.findUnique({
+      where: { id: parsed.data.inspeccionId },
+      include: {
+        _count: { select: { reclamos: true, reclamosOriginados: true } },
+      },
+    });
+    if (!insp) throw new Error("Inspección no encontrada");
+    const tieneVinculo =
+      !!insp.expedienteId ||
+      insp._count.reclamos > 0 ||
+      insp._count.reclamosOriginados > 0;
+    if (!tieneVinculo) {
+      throw new Error(
+        "Para publicar la inspección primero asocialá a un expediente o generá un reclamo de oficio desde el detalle.",
+      );
+    }
+  }
+
   await prisma.inspeccion.update({
     where: { id: parsed.data.inspeccionId },
     data: { estado: parsed.data.estado },
@@ -197,4 +220,110 @@ export async function cambiarEstadoInspeccion(formData: FormData) {
 
   revalidatePath(`/admin/inspecciones/${parsed.data.inspeccionId}`);
   revalidatePath("/admin/inspecciones");
+}
+
+/** Vincula la inspección a un expediente existente (o desvincula si vacío). */
+const VincularExpedienteSchema = z.object({
+  inspeccionId: z.string().min(1),
+  expedienteId: z.string().optional(),
+});
+
+export async function vincularExpediente(formData: FormData) {
+  const session = await auth();
+  if (!session || !puedeGestionarInspecciones(session.user.rol)) {
+    throw new Error("Sin permisos");
+  }
+  const parsed = VincularExpedienteSchema.safeParse({
+    inspeccionId: formData.get("inspeccionId"),
+    expedienteId: (formData.get("expedienteId") as string) || undefined,
+  });
+  if (!parsed.success) throw new Error("Datos inválidos");
+
+  await prisma.inspeccion.update({
+    where: { id: parsed.data.inspeccionId },
+    data: {
+      expedienteId: parsed.data.expedienteId?.length
+        ? parsed.data.expedienteId
+        : null,
+    },
+  });
+
+  revalidatePath(`/admin/inspecciones/${parsed.data.inspeccionId}`);
+}
+
+/**
+ * Genera un reclamo de oficio desde una inspección. Hereda servicio,
+ * prestadora y ubicación de la inspección. Queda en bandeja para que el
+ * rol EXPEDIENTES (Yanina) decida si lo escala a expediente.
+ *
+ * El "denunciante" técnico es el propio inspector (no se pide a un vecino),
+ * pero la marca origenOficio = true lo identifica como denuncia interna.
+ */
+const CrearReclamoOficioSchema = z.object({
+  inspeccionId: z.string().min(1),
+});
+
+export async function crearReclamoOficio(formData: FormData) {
+  const session = await auth();
+  if (!session || !puedeGestionarInspecciones(session.user.rol)) {
+    throw new Error("Sin permisos");
+  }
+  const parsed = CrearReclamoOficioSchema.safeParse({
+    inspeccionId: formData.get("inspeccionId"),
+  });
+  if (!parsed.success) throw new Error("Falta inspeccionId");
+
+  const insp = await prisma.inspeccion.findUnique({
+    where: { id: parsed.data.inspeccionId },
+    include: { servicio: true, prestadora: true },
+  });
+  if (!insp) throw new Error("Inspección no encontrada");
+
+  // Código distintivo para reclamos de oficio: OFI-YYYY-NNN.
+  const anio = new Date().getFullYear();
+  const prefijo = `OFI-${anio}-`;
+  const ultimo = await prisma.reclamo.findFirst({
+    where: { codigo: { startsWith: prefijo } },
+    orderBy: { codigo: "desc" },
+    select: { codigo: true },
+  });
+  let n = 1;
+  if (ultimo?.codigo) {
+    const parteN = parseInt(ultimo.codigo.slice(prefijo.length), 10);
+    if (Number.isFinite(parteN)) n = parteN + 1;
+  }
+  const codigo = `${prefijo}${String(n).padStart(3, "0")}`;
+
+  await prisma.reclamo.create({
+    data: {
+      codigo,
+      ciudadanoId: insp.inspectorId, // el inspector actúa como "denunciante" técnico
+      origenOficio: true,
+      inspeccionOrigenId: insp.id,
+      servicioId: insp.servicioId,
+      prestadoraId: insp.prestadoraId,
+      titulo: `Reclamo de oficio — ${insp.titulo}`,
+      descripcion:
+        insp.observaciones && insp.observaciones.trim().length
+          ? insp.observaciones
+          : `Reclamo de oficio generado desde la inspección ${insp.codigo}. Revisar audio y fotos adjuntas en la inspección.`,
+      direccion: insp.direccion ?? "S/D",
+      barrio: insp.barrio,
+      lat: insp.lat,
+      lng: insp.lng,
+      estado: "RECIBIDO",
+      eventos: {
+        create: {
+          tipo: "CREACION",
+          autorId: session.user.id,
+          mensaje: `Reclamo de oficio iniciado desde la inspección ${insp.codigo}.`,
+        },
+      },
+      // Vinculación M:N para que la inspección "muestre sus reclamos asociados".
+      inspecciones: { connect: { id: insp.id } },
+    },
+  });
+
+  revalidatePath(`/admin/inspecciones/${insp.id}`);
+  revalidatePath("/admin/bandeja");
 }
