@@ -180,6 +180,9 @@ export default async function AudienciaDetallePublico({
               <h2 className="text-base font-extrabold text-navy uppercase tracking-wider mb-3">
                 Material de la audiencia realizada
               </h2>
+              {/* Reproductor embebido del video si es YouTube/Vimeo/archivo */}
+              {a.videoUrl && <VideoEmbed url={a.videoUrl} />}
+
               <div className="grid sm:grid-cols-2 gap-3">
                 {a.videoUrl && (
                   <a
@@ -194,7 +197,7 @@ export default async function AudienciaDetallePublico({
                         Video de la audiencia
                       </div>
                       <div className="text-sm font-semibold text-navy mt-0.5 truncate">
-                        Ver grabación oficial
+                        Ver grabación en su origen
                       </div>
                     </div>
                   </a>
@@ -431,6 +434,61 @@ function DatoClave({
       <div className="text-navy mt-0.5">{children}</div>
     </div>
   );
+}
+
+/**
+ * Reproductor compacto del video de la audiencia. Detecta YouTube, Vimeo o
+ * un archivo directo y lo embebe responsivo (16:9). Si no reconoce la fuente,
+ * no renderiza nada y se queda con el link tradicional de la tarjeta.
+ */
+function VideoEmbed({ url }: { url: string }) {
+  // YouTube: youtu.be/<id> o youtube.com/watch?v=<id>
+  const ytMatch =
+    url.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=)([A-Za-z0-9_-]{6,})/) ||
+    url.match(/youtube\.com\/embed\/([A-Za-z0-9_-]{6,})/);
+  if (ytMatch) {
+    const id = ytMatch[1];
+    return (
+      <div className="relative w-full aspect-video rounded-xl overflow-hidden border border-line bg-black mb-3">
+        <iframe
+          src={`https://www.youtube.com/embed/${id}`}
+          title="Video de la audiencia"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          className="absolute inset-0 w-full h-full"
+        />
+      </div>
+    );
+  }
+  // Vimeo
+  const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
+  if (vimeoMatch) {
+    const id = vimeoMatch[1];
+    return (
+      <div className="relative w-full aspect-video rounded-xl overflow-hidden border border-line bg-black mb-3">
+        <iframe
+          src={`https://player.vimeo.com/video/${id}`}
+          title="Video de la audiencia"
+          allow="autoplay; fullscreen; picture-in-picture"
+          allowFullScreen
+          className="absolute inset-0 w-full h-full"
+        />
+      </div>
+    );
+  }
+  // Archivo directo (mp4/webm/ogg)
+  if (/\.(mp4|webm|ogg)(\?|$)/i.test(url)) {
+    return (
+      <div className="rounded-xl overflow-hidden border border-line bg-black mb-3">
+        {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+        <video controls src={url} className="w-full h-auto block">
+          Tu navegador no puede reproducir este video.
+        </video>
+      </div>
+    );
+  }
+  // Fuente desconocida: no embebemos, dejamos el link tradicional
+  return null;
 }
 
 function Field({

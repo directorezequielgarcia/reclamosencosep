@@ -3,7 +3,7 @@ import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { puedeExportarInformes, TONE_CLASS } from "@/lib/admin";
-import { crearOAbrirInforme } from "./actions";
+import { crearInformeAnual, crearOAbrirInforme } from "./actions";
 
 export const metadata = { title: "Informes oficiales · Panel ENCOSEP" };
 
@@ -37,16 +37,29 @@ export default async function InformesPage() {
     redirect("/admin");
   }
 
-  const informes = await prisma.informeMensual.findMany({
-    orderBy: [{ anio: "desc" }, { mes: "desc" }],
-    include: { emitidoPor: true },
-    take: 36,
-  });
+  const [informes, informesAnuales] = await Promise.all([
+    prisma.informeMensual.findMany({
+      orderBy: [{ anio: "desc" }, { mes: "desc" }],
+      include: { emitidoPor: true },
+      take: 36,
+    }),
+    prisma.informeAnual.findMany({
+      orderBy: { periodoDesde: "desc" },
+      include: { emitidoPor: true },
+      take: 12,
+    }),
+  ]);
 
   const hoy = new Date();
   const anioActual = hoy.getFullYear();
   const mesActual = hoy.getMonth() + 1;
   const aniosOpciones = [anioActual, anioActual - 1, anioActual - 2];
+
+  // Sugerencia de período por defecto para el informe anual:
+  // octubre del año previo al 30 de septiembre del año actual.
+  const sugDesde = `${anioActual - 1}-10-01`;
+  const sugHasta = `${anioActual}-10-01`;
+  const sugTitulo = `Informe de Gestión ${anioActual - 1}-${anioActual}`;
 
   return (
     <div className="flex flex-col gap-6 max-w-5xl">
@@ -204,16 +217,140 @@ export default async function InformesPage() {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-line bg-paper-2 p-5">
+      <section className="rounded-2xl border-2 border-svc-orange/40 bg-svc-orange/5 p-5">
         <h2 className="text-sm font-bold text-navy uppercase tracking-wider mb-2">
-          Informe anual de gestión
+          Informe anual de gestión (art. 5° Ord. 13.189/17)
         </h2>
-        <p className="text-sm text-navy leading-relaxed">
-          El informe anual al Concejo Deliberante (deadline 1° de octubre,
-          art. 5° Ord. 13.189/17) agrega los informes mensuales publicados del
-          período y suma bloques narrativos de balance, logros, desafíos y
-          sugerencias. Se habilita en el próximo deploy.
+        <p className="text-xs text-muted mb-4 leading-relaxed">
+          Se eleva al Concejo Deliberante y al Poder Ejecutivo Municipal al{" "}
+          <strong className="text-navy">1° de octubre de cada año</strong>.
+          Agrega los informes mensuales publicados del período y suma bloques
+          narrativos de balance, logros, desafíos y sugerencias.
         </p>
+        <form
+          action={crearInformeAnual}
+          className="grid sm:grid-cols-2 gap-3 mb-4"
+        >
+          <label className="sm:col-span-2 flex flex-col gap-1">
+            <span className="text-[10px] uppercase tracking-wider text-muted font-semibold">
+              Título del informe
+            </span>
+            <input
+              name="titulo"
+              type="text"
+              defaultValue={sugTitulo}
+              required
+              maxLength={200}
+              className="px-3 py-2 rounded-lg border border-line-strong bg-paper text-sm text-navy"
+            />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="text-[10px] uppercase tracking-wider text-muted font-semibold">
+              Período desde
+            </span>
+            <input
+              name="periodoDesde"
+              type="date"
+              defaultValue={sugDesde}
+              required
+              className="px-3 py-2 rounded-lg border border-line-strong bg-paper text-sm text-navy"
+            />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="text-[10px] uppercase tracking-wider text-muted font-semibold">
+              Período hasta (no inclusivo)
+            </span>
+            <input
+              name="periodoHasta"
+              type="date"
+              defaultValue={sugHasta}
+              required
+              className="px-3 py-2 rounded-lg border border-line-strong bg-paper text-sm text-navy"
+            />
+          </label>
+          <div className="sm:col-span-2">
+            <button
+              type="submit"
+              className="px-5 py-2.5 rounded-lg bg-svc-orange text-white font-bold text-sm"
+            >
+              Generar borrador del informe anual
+            </button>
+          </div>
+        </form>
+
+        {informesAnuales.length > 0 && (
+          <div className="rounded-xl border border-line bg-paper overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="text-[11px] uppercase tracking-wider text-muted bg-paper-2">
+                <tr>
+                  <th className="text-left font-semibold py-2 px-3">Título</th>
+                  <th className="text-left font-semibold py-2 px-2">Período</th>
+                  <th className="text-left font-semibold py-2 px-2">Estado</th>
+                  <th className="text-right font-semibold py-2 px-3">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {informesAnuales.map((a) => {
+                  const tone =
+                    a.estado === "PUBLICADO"
+                      ? "success"
+                      : a.estado === "BORRADOR"
+                        ? "warning"
+                        : "neutral";
+                  return (
+                    <tr
+                      key={a.id}
+                      className="border-t border-line hover:bg-paper-2"
+                    >
+                      <td className="py-2 px-3 font-bold text-navy">
+                        <Link
+                          href={`/admin/informes/anual/${a.id}`}
+                          className="hover:underline"
+                        >
+                          {a.titulo}
+                        </Link>
+                      </td>
+                      <td className="py-2 px-2 text-xs text-muted">
+                        {a.periodoDesde.toLocaleDateString("es-AR", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "2-digit",
+                        })}{" "}
+                        →{" "}
+                        {a.periodoHasta.toLocaleDateString("es-AR", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "2-digit",
+                        })}
+                      </td>
+                      <td className="py-2 px-2">
+                        <span
+                          className={`inline-flex items-center uppercase tracking-wider font-bold rounded-full border text-[10px] px-2 py-0.5 ${TONE_CLASS[tone]}`}
+                        >
+                          {a.estado}
+                        </span>
+                      </td>
+                      <td className="py-2 px-3 text-right">
+                        <a
+                          href={`/api/informes/anual/${a.id}`}
+                          className="text-navy-2 underline text-xs mr-3"
+                        >
+                          .docx
+                        </a>
+                        <Link
+                          href={`/admin/informes/anual/${a.id}`}
+                          className="text-navy-2 underline text-xs"
+                        >
+                          Abrir →
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
     </div>
   );

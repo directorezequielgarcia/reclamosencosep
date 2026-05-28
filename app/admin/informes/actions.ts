@@ -11,6 +11,11 @@ import {
   generarBorradorInforme,
   type BloquesInforme,
 } from "@/lib/informe-mensual-borrador";
+import { recolectarDatosAnual } from "@/lib/informe-anual-data";
+import {
+  generarBorradorAnual,
+  type BloquesInformeAnual,
+} from "@/lib/informe-anual-borrador";
 
 /**
  * Crea (o reabre) el informe mensual del par (anio, mes). Si ya existe en
@@ -194,4 +199,133 @@ export async function regenerarBorrador(formData: FormData) {
   });
 
   revalidatePath(`/admin/informes/mensual/${id}`);
+}
+
+// ─────────────────────────────────────────────
+// Informe Anual de Gestión
+// ─────────────────────────────────────────────
+
+const AnualSchema = z.object({
+  titulo: z.string().min(4).max(200),
+  periodoDesde: z.string().min(1),
+  periodoHasta: z.string().min(1),
+});
+
+export async function crearInformeAnual(formData: FormData) {
+  const session = await auth();
+  if (!session || !puedeExportarInformes(session.user.rol)) {
+    throw new Error("Solo el Directorio puede generar el informe anual");
+  }
+  const parsed = AnualSchema.safeParse({
+    titulo: formData.get("titulo"),
+    periodoDesde: formData.get("periodoDesde"),
+    periodoHasta: formData.get("periodoHasta"),
+  });
+  if (!parsed.success) {
+    throw new Error(parsed.error.issues[0]?.message ?? "Datos inválidos");
+  }
+  const desde = new Date(parsed.data.periodoDesde);
+  const hasta = new Date(parsed.data.periodoHasta);
+  if (Number.isNaN(desde.getTime()) || Number.isNaN(hasta.getTime())) {
+    throw new Error("Fechas inválidas");
+  }
+  if (hasta.getTime() <= desde.getTime()) {
+    throw new Error("La fecha hasta debe ser posterior a la fecha desde");
+  }
+
+  const data = await recolectarDatosAnual(desde, hasta);
+  const bloques = generarBorradorAnual(data);
+
+  const creado = await prisma.informeAnual.create({
+    data: {
+      titulo: parsed.data.titulo,
+      periodoDesde: desde,
+      periodoHasta: hasta,
+      estado: "BORRADOR",
+      bloques: bloques as object,
+      metricas: data as unknown as object,
+    },
+  });
+
+  revalidatePath("/admin/informes");
+  redirect(`/admin/informes/anual/${creado.id}`);
+}
+
+export async function actualizarBloquesAnual(formData: FormData) {
+  const session = await auth();
+  if (!session || !puedeExportarInformes(session.user.rol)) {
+    throw new Error("Sin permisos");
+  }
+  const id = String(formData.get("informeId") ?? "");
+  if (!id) throw new Error("Falta informeId");
+  const informe = await prisma.informeAnual.findUnique({ where: { id } });
+  if (!informe) throw new Error("Informe no encontrado");
+  if (informe.estado === "ARCHIVADO") {
+    throw new Error("El informe está archivado y no se puede editar");
+  }
+
+  const tituloRaw = formData.get("titulo");
+  const titulo = typeof tituloRaw === "string" && tituloRaw.trim().length
+    ? tituloRaw.trim()
+    : informe.titulo;
+
+  const actuales = informe.bloques as unknown as BloquesInformeAnual;
+  const bloques: BloquesInformeAnual = {
+    balance: String(formData.get("balance") ?? actuales.balance),
+    logros: String(formData.get("logros") ?? actuales.logros),
+    desafios: String(formData.get("desafios") ?? actuales.desafios),
+    sugerencias: String(formData.get("sugerencias") ?? actuales.sugerencias),
+  };
+
+  await prisma.informeAnual.update({
+    where: { id },
+    data: { bloques: bloques as object, titulo },
+  });
+
+  revalidatePath(`/admin/informes/anual/${id}`);
+}
+
+export async function publicarInformeAnual(formData: FormData) {
+  const session = await auth();
+  if (!session || !puedeExportarInformes(session.user.rol)) {
+    throw new Error("Sin permisos");
+  }
+  const id = String(formData.get("informeId") ?? "");
+  if (!id) throw new Error("Falta informeId");
+
+  await prisma.informeAnual.update({
+    where: { id },
+    data: {
+      estado: "PUBLICADO",
+      emitidoPorId: session.user.id,
+      emitidoEn: new Date(),
+    },
+  });
+
+  revalidatePath(`/admin/informes/anual/${id}`);
+  revalidatePath("/admin/informes");
+}
+
+export async function regenerarBorradorAnual(formData: FormData) {
+  const session = await auth();
+  if (!session || !puedeExportarInformes(session.user.rol)) {
+    throw new Error("Sin permisos");
+  }
+  const id = String(formData.get("informeId") ?? "");
+  if (!id) throw new Error("Falta informeId");
+  const informe = await prisma.informeAnual.findUnique({ where: { id } });
+  if (!informe) throw new Error("Informe no encontrado");
+  if (informe.estado !== "BORRADOR") {
+    throw new Error("Solo se puede regenerar un informe en borrador");
+  }
+  const data = await recolectarDatosAnual(informe.periodoDesde, informe.periodoHasta);
+  const bloques = generarBorradorAnual(data);
+  await prisma.informeAnual.update({
+    where: { id },
+    data: {
+      bloques: bloques as object,
+      metricas: data as unknown as object,
+    },
+  });
+  revalidatePath(`/admin/informes/anual/${id}`);
 }

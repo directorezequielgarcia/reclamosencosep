@@ -53,6 +53,7 @@ model Usuario {
   audienciasPublicas AudienciaPublica[]
   inspeccionesRealizadas Inspeccion[]  @relation("InspeccionInspector")
   informesMensualesEmitidos InformeMensual[]  @relation("InformeMensualEmisor")
+  informesAnualesEmitidos   InformeAnual[]    @relation("InformeAnualEmisor")
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   activo          Boolean  @default(true)
@@ -596,6 +597,46 @@ enum EstadoInformeMensual {
   BORRADOR    // se está editando, no es oficial todavía
   PUBLICADO   // emitido por la Dirección, se considera el informe del mes
   ARCHIVADO   // versión anterior conservada por historial
+}
+
+// ─────────────────────────────────────────────
+// Informe Anual de Gestión (art. 5° Ord. 13.189/17).
+// Se eleva al Concejo Deliberante y al Poder Ejecutivo Municipal con
+// deadline al 1° de octubre de cada año. Cubre el período definido por
+// el Directorio (típicamente octubre del año previo a septiembre).
+// ─────────────────────────────────────────────
+
+enum EstadoInformeAnual {
+  BORRADOR
+  PUBLICADO
+  ARCHIVADO
+}
+
+model InformeAnual {
+  id            String              @id @default(cuid())
+  periodoDesde  DateTime
+  periodoHasta  DateTime
+  titulo        String                                  // ej: "Informe de Gestión 2025-2026"
+
+  estado        EstadoInformeAnual  @default(BORRADOR)
+
+  // Bloques narrativos:
+  //   { balance, logros, desafios, sugerencias, anexoMensuales }
+  bloques       Json
+
+  // Cifras congeladas al emitir (totales por servicio, serie temporal, etc.)
+  metricas      Json
+
+  emitidoPorId  String?
+  emitidoPor    Usuario?            @relation("InformeAnualEmisor", fields: [emitidoPorId], references: [id])
+  emitidoEn     DateTime?
+
+  docxUrl       String?
+
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  @@index([estado, periodoDesde])
 }
 
 model InformeMensual {
