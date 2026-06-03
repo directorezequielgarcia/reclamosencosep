@@ -13,6 +13,44 @@ const AREAS = [
   { src: "/imagenes/areas/transporte.png", label: "Transporte Público" },
 ];
 
+// Guía de procedimiento para reclamos — versión digital de la cartilla
+// institucional del Ente. El reclamo nace ante la prestadora; el ENCOSEP
+// interviene si la empresa no contesta o la respuesta no satisface.
+const PASOS_GUIA: { titulo: string; texto: string; destacado?: string }[] = [
+  {
+    titulo: "Iniciá el reclamo ante la empresa prestadora",
+    texto:
+      "Presentá tu reclamo directamente ante la prestadora del servicio: SCPL, Urbana, Transporte Patagonia o Transporte Diadema, según corresponda.",
+    destacado:
+      "Importante: pedí siempre la constancia del trámite y el número de reclamo.",
+  },
+  {
+    titulo: "Tiempos de espera",
+    texto:
+      "La empresa tiene un plazo de 15 días para contestar tu reclamo.",
+  },
+  {
+    titulo: "¿Qué pasa si la prestadora no contesta?",
+    texto:
+      "Si la prestadora no responde dentro del plazo, o si la respuesta no te resulta satisfactoria, podés llevar el reclamo al ENCOSEP: por e-mail a info@encosepcomodoro.gob.ar o personalmente en las oficinas de Pasaje Valdivia 435.",
+  },
+  {
+    titulo: "Nuestra parte",
+    texto:
+      "El ENCOSEP da inicio a un nuevo procedimiento de solicitud de información respecto del caso.",
+  },
+  {
+    titulo: "¿Cuánto debo esperar?",
+    texto:
+      "En un plazo de 15 días, la empresa concesionaria debe proporcionar la información solicitada, para continuar el proceso y arribar a una resolución teniendo en cuenta todos los datos aportados.",
+  },
+  {
+    titulo: "Resolución del ENCOSEP",
+    texto:
+      "El Ente de Control de Servicios Públicos emite su resolución sobre el caso.",
+  },
+];
+
 export default async function IngresarPage({
   searchParams,
 }: {
@@ -38,8 +76,8 @@ export default async function IngresarPage({
   }
 
   return (
-    <main className="flex flex-1 items-stretch">
-      <div className="grid w-full md:grid-cols-[1fr_440px] flex-1">
+    <main className="flex flex-1 flex-col">
+      <div className="grid w-full md:grid-cols-[1fr_440px] items-stretch min-h-screen">
         {/* PANEL INSTITUCIONAL IZQUIERDO */}
         <aside className="hidden md:flex flex-col justify-between bg-gradient-to-br from-navy via-navy-2 to-navy text-white p-10 lg:p-14">
           <div>
@@ -197,6 +235,83 @@ export default async function IngresarPage({
           </div>
         </div>
       </div>
+
+      {/* GUÍA DE PROCEDIMIENTO — cartilla institucional, paso a paso */}
+      <section className="bg-paper-2 border-t border-line px-6 py-14">
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center mb-10">
+            <div className="text-[10px] font-bold tracking-[0.18em] uppercase text-muted">
+              Antes de empezar
+            </div>
+            <h2 className="text-2xl md:text-3xl font-extrabold text-navy mt-2">
+              Guía de procedimiento para reclamos
+            </h2>
+            <p className="text-sm text-muted mt-2 max-w-2xl mx-auto leading-relaxed">
+              Así avanza un reclamo, paso a paso: desde que lo presentás ante la
+              prestadora hasta la resolución del Ente.
+            </p>
+            <BrandStripe className="mx-auto mt-4 max-w-[160px]" />
+          </div>
+
+          <ol className="flex flex-col">
+            {PASOS_GUIA.map((p, i) => (
+              <PasoGuia
+                key={i}
+                n={i + 1}
+                titulo={p.titulo}
+                texto={p.texto}
+                destacado={p.destacado}
+                ultimo={i === PASOS_GUIA.length - 1}
+              />
+            ))}
+          </ol>
+
+          <p className="text-center text-xs text-muted mt-10 leading-relaxed">
+            ENCOSEP · Pasaje Valdivia 435 · info@encosepcomodoro.gob.ar
+            <br />
+            <span className="font-semibold">encosepcomodoro.gob.ar</span>
+          </p>
+        </div>
+      </section>
     </main>
+  );
+}
+
+function PasoGuia({
+  n,
+  titulo,
+  texto,
+  destacado,
+  ultimo,
+}: {
+  n: number;
+  titulo: string;
+  texto: string;
+  destacado?: string;
+  ultimo: boolean;
+}) {
+  return (
+    <li className="flex gap-4">
+      {/* Columna del número + línea conectora del timeline */}
+      <div className="flex flex-col items-center">
+        <div className="w-10 h-10 shrink-0 rounded-full bg-navy text-white font-extrabold flex items-center justify-center shadow-md">
+          {n}
+        </div>
+        {!ultimo && <div className="w-px flex-1 bg-line my-1" aria-hidden />}
+      </div>
+
+      {/* Contenido del paso */}
+      <div className={`flex-1 ${ultimo ? "" : "pb-6"}`}>
+        <div className="rounded-2xl border border-line bg-paper p-5">
+          <h3 className="text-base font-extrabold text-navy">{titulo}</h3>
+          <p className="text-sm text-navy/90 leading-relaxed mt-1">{texto}</p>
+          {destacado ? (
+            <p className="text-sm font-semibold text-svc-red bg-svc-red/10 border border-svc-red/25 rounded-lg px-3 py-2 mt-3">
+              {destacado}
+            </p>
+          ) : null}
+        </div>
+      </div>
+    </li>
   );
 }
