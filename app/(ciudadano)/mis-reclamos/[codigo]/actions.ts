@@ -1,9 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { guardarFotoReclamo } from "@/lib/uploads";
 
 async function reclamoDelUsuario(codigo: string, userId: string) {
   const r = await prisma.reclamo.findUnique({ where: { codigo } });
@@ -131,4 +133,67 @@ export async function responderReclamo(formData: FormData) {
   });
   revalidatePath(`/mis-reclamos/${parsed.data.codigo}`);
   revalidatePath(`/admin/reclamo/${r.id}`);
+}
+
+// El vecino agrega documentación (fotos / imágenes de facturas) en cualquier
+// momento — "ampliar declaratoria". Queda registrado con fecha en el historial.
+export async function agregarDocumental(formData: FormData) {
+  const session = await auth();
+  if (!session) throw new Error("Sin sesión");
+  const codigo = String(formData.get("codigo") ?? "");
+  const r = await reclamoDelUsuario(codigo, session.user.id);
+
+  const archivos = formData
+    .getAll("archivo")
+    .filter((f): f is File => f instanceof File && f.size > 0)
+    .slice(0, 5);
+  if (archivos.length === 0) throw new Error("Adjuntá al menos un archivo");
+
+  let guardados = 0;
+  for (const f of archivos) {
+    try {
+      const saved = await guardarFotoReclamo(r.id, f);
+      await prisma.adjunto.create({
+        data: {
+          reclamoId: r.id,
+          tipo: "FOTO",
+          url: saved.url,
+          mimeType: saved.mimeType,
+          bytes: saved.bytes,
+        },
+      });
+      guardados++;
+    } catch (e) {
+      console.error("adjunto rechazado:", (e as Error).message);
+    }
+  }
+  if (guardados > 0) {
+    await prisma.reclamoEvento.create({
+      data: {
+        reclamoId: r.id,
+        tipo: "ADJUNTO",
+        autorId: session.user.id,
+        mensaje: `Agregaste ${guardados} archivo${guardados === 1 ? "" : "s"} de documentación.`,
+        visibleVecino: true,
+      },
+    });
+  }
+  revalidatePath(`/mis-reclamos/${codigo}`);
+  revalidatePath(`/admin/reclamo/${r.id}`);
+}
+
+// El vecino puede borrar su reclamo SOLO mientras no fue revisado por el Ente.
+export async function borrarReclamo(formData: FormData) {
+  const session = await auth();
+  if (!session) throw new Error("Sin sesión");
+  const codigo = String(formData.get("codigo") ?? "");
+  const r = await reclamoDelUsuario(codigo, session.user.id);
+  if (r.estado !== "RECIBIDO") {
+    throw new Error(
+      "Ya no podés borrar este reclamo: el Ente comenzó a revisarlo.",
+    );
+  }
+  await prisma.reclamo.delete({ where: { id: r.id } });
+  revalidatePath("/mis-reclamos");
+  redirect("/mis-reclamos");
 }

@@ -12,13 +12,21 @@ import {
   solicitarCopiaExpediente,
   calificarReclamo,
   responderReclamo,
+  agregarDocumental,
 } from "./actions";
+import { BorrarReclamo } from "./BorrarReclamo";
 
 export const metadata = { title: "Mi reclamo · ENCOSEP" };
 
 // Eventos visibles para el vecino: el historial completo excepto comentarios internos
 // del Ente. Mantengo CREACION, CAMBIO_ESTADO, ASIGNACION, NOTIFICACION.
-const TIPOS_VISIBLES = ["CREACION", "CAMBIO_ESTADO", "ASIGNACION", "NOTIFICACION"];
+const TIPOS_VISIBLES = [
+  "CREACION",
+  "CAMBIO_ESTADO",
+  "ASIGNACION",
+  "NOTIFICACION",
+  "ADJUNTO",
+];
 
 export default async function DetalleMiReclamoPage({
   params,
@@ -170,6 +178,34 @@ export default async function DetalleMiReclamoPage({
             </li>
           ))}
         </ol>
+      </section>
+
+      {/* SUMAR DOCUMENTACIÓN — ampliar declaratoria, en cualquier estado */}
+      <section className="rounded-2xl border border-line bg-paper p-4">
+        <div className="text-[11px] font-bold text-muted uppercase tracking-wider mb-1">
+          Sumar documentación
+        </div>
+        <div className="text-xs text-muted leading-relaxed mb-3">
+          Podés agregar fotos o imágenes (por ejemplo, de una factura) cuando
+          quieras. Quedan registradas con la fecha en el historial de abajo.
+        </div>
+        <form action={agregarDocumental} className="flex flex-col gap-2">
+          <input type="hidden" name="codigo" value={reclamo.codigo} />
+          <input
+            type="file"
+            name="archivo"
+            accept="image/*"
+            multiple
+            required
+            className="text-sm text-navy file:mr-3 file:px-3 file:py-2 file:rounded-lg file:border-0 file:bg-navy-2 file:text-white file:font-semibold"
+          />
+          <button
+            type="submit"
+            className="self-end inline-flex items-center justify-center px-4 py-2 rounded-lg bg-navy-2 text-white font-bold text-sm"
+          >
+            Agregar documentación
+          </button>
+        </form>
       </section>
 
       {/* CONVERSACIÓN — ida y vuelta con el ENCOSEP */}
@@ -365,6 +401,19 @@ export default async function DetalleMiReclamoPage({
           {reclamo.puntajeEnte}/5 · Prestadora: {reclamo.puntajePrestadora}/5
         </section>
       )}
+
+      {reclamo.estado === "RECIBIDO" && (
+        <section className="rounded-2xl border border-svc-red/30 bg-svc-red/5 p-4">
+          <div className="text-[11px] font-bold text-svc-red uppercase tracking-wider mb-1">
+            ¿Te equivocaste?
+          </div>
+          <p className="text-sm text-navy mb-3 leading-relaxed">
+            Mientras el Ente todavía no empezó a revisar tu reclamo, podés
+            borrarlo.
+          </p>
+          <BorrarReclamo codigo={reclamo.codigo} />
+        </section>
+      )}
     </main>
   );
 }
@@ -401,6 +450,8 @@ function eventoLabelVecino(tipo: string): string {
       return "Cambio de estado";
     case "ASIGNACION":
       return "Derivado a la prestadora";
+    case "ADJUNTO":
+      return "Documentación agregada";
     case "NOTIFICACION":
       return "Aviso del Ente";
     default:
