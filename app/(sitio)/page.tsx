@@ -12,6 +12,15 @@ export const metadata = {
 // institucional, evita golpear la DB en cada visita).
 export const revalidate = 300;
 
+// Asistencia por WhatsApp — mismo número y texto que el FAB flotante
+// (components/ui/FabAsistenciaWsp.tsx). Si cambia el número, cambiar en ambos.
+const WSP_NUMERO = "5492974303051"; // +54 9 2974 30-3051
+const WSP_TEXTO =
+  "Hola, necesito ayuda para cargar mi reclamo en el portal del ENCOSEP.";
+const WSP_HREF = `https://wa.me/${WSP_NUMERO}?text=${encodeURIComponent(
+  WSP_TEXTO,
+)}`;
+
 // Hero institucional: panorámica espejada (original + reflejo horizontal)
 // para que las laderas queden en los bordes y la ciudad/mar se encuentren
 // en el centro, donde se asienta el logo. El logo es el .jpg original sin
@@ -112,12 +121,116 @@ export default async function HomeInstitucional() {
             }}
             loading="eager"
           />
+          {/* Acciones principales: el vecino entra directo a reclamar o pide
+              ayuda por WhatsApp sin tener que bajar en la página. */}
+          <div className="flex flex-col sm:flex-row items-center gap-3">
+            <Link
+              href="/reclamos"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-svc-red text-white font-bold text-sm uppercase tracking-wider shadow-lg shadow-svc-red/40 hover:scale-105 transition"
+            >
+              Hacé tu reclamo <span aria-hidden>›</span>
+            </Link>
+            <a
+              href={WSP_HREF}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-svc-green text-white font-bold text-sm uppercase tracking-wider shadow-lg shadow-svc-green/40 hover:scale-105 transition"
+            >
+              <svg
+                viewBox="0 0 32 32"
+                width="20"
+                height="20"
+                aria-hidden
+                className="fill-current"
+              >
+                <path d="M19.11 17.205c-.372 0-1.088 1.39-1.518 1.39a.63.63 0 01-.315-.1c-.802-.402-1.504-.817-2.163-1.447-.545-.516-1.146-1.29-1.46-1.963a.426.426 0 01-.073-.215c0-.33.99-.945.99-1.49 0-.143-.73-2.09-.832-2.335-.143-.372-.214-.487-.6-.487-.187 0-.36-.043-.53-.043-.302 0-.53.115-.746.315-.688.645-1.032 1.318-1.06 2.264v.114c-.015.99.472 1.977 1.017 2.78 1.23 1.82 2.506 3.41 4.554 4.34.616.287 2.035.888 2.722.888.817 0 2.15-.515 2.521-1.318.13-.27.13-.527.13-.802-.001-.66-1.49-.99-1.637-.99zM16.06 4C9.91 4 4.96 8.95 4.96 15.09c0 1.973.515 3.916 1.504 5.617L4.038 28 11.5 25.69c1.633.847 3.465 1.275 5.297 1.275 6.142 0 11.092-4.95 11.092-11.09 0-2.974-1.16-5.77-3.256-7.864A11.08 11.08 0 0016.06 4zm0 20.318a9.18 9.18 0 01-4.566-1.218l-.33-.187-3.5 1.18 1.166-3.36-.215-.359a9.226 9.226 0 01-1.418-4.892c0-5.094 4.144-9.238 9.243-9.238 2.466 0 4.78.962 6.523 2.706a9.187 9.187 0 012.706 6.532c0 5.099-4.145 9.236-9.61 9.236z" />
+              </svg>
+              Asistencia por WhatsApp
+            </a>
+          </div>
           <Link
             href="/nosotros"
-            className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-svc-red text-white font-bold text-sm uppercase tracking-wider shadow-lg shadow-svc-red/40"
+            className="text-white/90 font-semibold text-sm underline underline-offset-4 hover:text-white"
           >
-            Conoce nuestras acciones <span aria-hidden>›</span>
+            Conocé nuestras acciones ›
           </Link>
+        </div>
+      </section>
+
+      {/* DOS FORMAS DE RECLAMAR — el vecino entiende qué implica cada vía */}
+      <section className="bg-paper py-14 px-6 border-b border-line">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-8">
+            <div className="text-xs font-bold tracking-[0.18em] uppercase text-muted">
+              ¿Cómo querés reclamar?
+            </div>
+            <h2 className="text-2xl md:text-3xl font-extrabold text-navy mt-2">
+              Dos formas de hacer tu reclamo
+            </h2>
+            <p className="text-sm text-muted mt-2 max-w-2xl mx-auto">
+              Elegí la que te resulte más cómoda. Las dos llegan al mismo lugar:
+              el expediente de reclamos del ENCOSEP.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-5">
+            {/* Vía 1: usuario propio (recomendada / más rápida) */}
+            <div className="relative rounded-2xl border-2 border-svc-red/30 bg-paper p-6 flex flex-col gap-4">
+              <span className="absolute -top-3 left-6 px-3 py-1 rounded-full bg-svc-red text-white text-[10px] font-bold uppercase tracking-widest shadow">
+                Más rápido
+              </span>
+              <h3 className="text-xl font-extrabold text-navy mt-1">
+                Con tu usuario
+              </h3>
+              <p className="text-sm text-navy leading-relaxed flex-1">
+                Creás una cuenta y cargás vos mismo el reclamo: ubicación,
+                fotos y descripción de la situación. Te queda un código de
+                seguimiento para ver el avance en tiempo real, y el trámite{" "}
+                <strong>se impulsa más rápido</strong> porque entra directo al
+                sistema.
+              </p>
+              <Link
+                href="/reclamos"
+                className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-svc-red text-white font-bold text-sm shadow-lg shadow-svc-red/30 hover:scale-105 transition"
+              >
+                Crear mi usuario y reclamar →
+              </Link>
+            </div>
+
+            {/* Vía 2: asistencia por WhatsApp (carga manual del Ente) */}
+            <div className="rounded-2xl border border-line bg-paper p-6 flex flex-col gap-4">
+              <h3 className="text-xl font-extrabold text-navy mt-1">
+                Con asistencia por WhatsApp
+              </h3>
+              <p className="text-sm text-navy leading-relaxed flex-1">
+                Si preferís no crear un usuario, escribinos por WhatsApp y
+                contanos los datos del problema:{" "}
+                <strong>
+                  ubicación, fecha y hora, qué pasó, quiénes intervienen y qué
+                  empresa
+                </strong>{" "}
+                presta el servicio. Con esos datos, el equipo del Ente carga el
+                reclamo por vos en el ENCOSEP.
+              </p>
+              <a
+                href={WSP_HREF}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-svc-green text-white font-bold text-sm shadow-lg shadow-svc-green/30 hover:scale-105 transition"
+              >
+                <svg
+                  viewBox="0 0 32 32"
+                  width="20"
+                  height="20"
+                  aria-hidden
+                  className="fill-current"
+                >
+                  <path d="M19.11 17.205c-.372 0-1.088 1.39-1.518 1.39a.63.63 0 01-.315-.1c-.802-.402-1.504-.817-2.163-1.447-.545-.516-1.146-1.29-1.46-1.963a.426.426 0 01-.073-.215c0-.33.99-.945.99-1.49 0-.143-.73-2.09-.832-2.335-.143-.372-.214-.487-.6-.487-.187 0-.36-.043-.53-.043-.302 0-.53.115-.746.315-.688.645-1.032 1.318-1.06 2.264v.114c-.015.99.472 1.977 1.017 2.78 1.23 1.82 2.506 3.41 4.554 4.34.616.287 2.035.888 2.722.888.817 0 2.15-.515 2.521-1.318.13-.27.13-.527.13-.802-.001-.66-1.49-.99-1.637-.99zM16.06 4C9.91 4 4.96 8.95 4.96 15.09c0 1.973.515 3.916 1.504 5.617L4.038 28 11.5 25.69c1.633.847 3.465 1.275 5.297 1.275 6.142 0 11.092-4.95 11.092-11.09 0-2.974-1.16-5.77-3.256-7.864A11.08 11.08 0 0016.06 4zm0 20.318a9.18 9.18 0 01-4.566-1.218l-.33-.187-3.5 1.18 1.166-3.36-.215-.359a9.226 9.226 0 01-1.418-4.892c0-5.094 4.144-9.238 9.243-9.238 2.466 0 4.78.962 6.523 2.706a9.187 9.187 0 012.706 6.532c0 5.099-4.145 9.236-9.61 9.236z" />
+                </svg>
+                Pedir asistencia por WhatsApp
+              </a>
+            </div>
+          </div>
         </div>
       </section>
 
