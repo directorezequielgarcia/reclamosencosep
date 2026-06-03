@@ -77,38 +77,38 @@ export default async function IngresarPage({
 
   return (
     <main className="flex flex-1 flex-col">
-      <div className="grid w-full md:grid-cols-[1fr_440px] items-stretch min-h-screen">
+      <div className="grid w-full md:grid-cols-[1fr_440px] items-stretch">
         {/* PANEL INSTITUCIONAL IZQUIERDO */}
-        <aside className="hidden md:flex flex-col justify-between bg-gradient-to-br from-navy via-navy-2 to-navy text-white p-10 lg:p-14">
+        <aside className="hidden md:flex flex-col justify-between gap-8 bg-gradient-to-br from-navy via-navy-2 to-navy text-white p-8 lg:p-12">
           <div>
             <div className="bg-white rounded-2xl p-3 inline-block">
-              <LogoEncosep size={120} />
+              <LogoEncosep size={92} />
             </div>
-            <h2 className="text-3xl lg:text-4xl font-extrabold leading-tight mt-8">
+            <h2 className="text-3xl font-extrabold leading-tight mt-6">
               Portal de Reclamos
             </h2>
-            <p className="text-base opacity-85 mt-3 leading-relaxed max-w-md">
+            <p className="text-sm opacity-85 mt-2 leading-relaxed max-w-md">
               Registrá un reclamo sobre cualquiera de los servicios públicos
               bajo control del Ente y seguí tu trámite en tiempo real.
             </p>
-            <BrandStripe className="mt-6 max-w-[200px]" />
+            <BrandStripe className="mt-5 max-w-[200px]" />
           </div>
 
-          <div className="mt-10">
-            <div className="text-[10px] font-bold tracking-widest uppercase opacity-70 mb-3">
+          <div>
+            <div className="text-[10px] font-bold tracking-widest uppercase opacity-70 mb-2.5">
               Servicios sobre los que podés reclamar
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2.5">
               {AREAS.map((a) => (
                 <div
                   key={a.src}
-                  className="bg-white/95 rounded-2xl p-3 flex items-center gap-3"
+                  className="bg-white/95 rounded-xl px-3 py-2 flex items-center gap-2.5"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={a.src}
                     alt={a.label}
-                    className="w-14 h-14 object-contain shrink-0"
+                    className="w-9 h-9 object-contain shrink-0"
                   />
                   <div className="text-xs font-bold text-navy leading-tight">
                     {a.label}
@@ -118,13 +118,13 @@ export default async function IngresarPage({
             </div>
           </div>
 
-          <div className="text-[11px] opacity-60 mt-8">
+          <div className="text-[11px] opacity-60">
             EnCoSeP · Ente de Control de Servicios Públicos · Comodoro Rivadavia
           </div>
         </aside>
 
         {/* FORM DE LOGIN DERECHA */}
-        <div className="flex flex-col justify-center bg-paper px-6 py-12 lg:py-16">
+        <div className="flex flex-col justify-center bg-paper px-6 py-10">
           <div className="w-full max-w-sm mx-auto flex flex-col gap-6">
             {/* Logo arriba — visible solo en mobile (en desktop está en el aside) */}
             <div className="md:hidden flex justify-center">
@@ -237,9 +237,9 @@ export default async function IngresarPage({
       </div>
 
       {/* GUÍA DE PROCEDIMIENTO — cartilla institucional, paso a paso */}
-      <section className="bg-paper-2 border-t border-line px-6 py-14">
-        <div className="max-w-3xl mx-auto">
-          <div className="text-center mb-10">
+      <section className="bg-paper-2 border-t border-line px-6 py-12">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-9">
             <div className="text-[10px] font-bold tracking-[0.18em] uppercase text-muted">
               Antes de empezar
             </div>
@@ -253,7 +253,7 @@ export default async function IngresarPage({
             <BrandStripe className="mx-auto mt-4 max-w-[160px]" />
           </div>
 
-          <ol className="flex flex-col">
+          <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {PASOS_GUIA.map((p, i) => (
               <PasoGuia
                 key={i}
@@ -261,12 +261,11 @@ export default async function IngresarPage({
                 titulo={p.titulo}
                 texto={p.texto}
                 destacado={p.destacado}
-                ultimo={i === PASOS_GUIA.length - 1}
               />
             ))}
           </ol>
 
-          <p className="text-center text-xs text-muted mt-10 leading-relaxed">
+          <p className="text-center text-xs text-muted mt-9 leading-relaxed">
             ENCOSEP · Pasaje Valdivia 435 · info@encosepcomodoro.gob.ar
             <br />
             <span className="font-semibold">encosepcomodoro.gob.ar</span>
@@ -282,36 +281,25 @@ function PasoGuia({
   titulo,
   texto,
   destacado,
-  ultimo,
 }: {
   n: number;
   titulo: string;
   texto: string;
   destacado?: string;
-  ultimo: boolean;
 }) {
   return (
-    <li className="flex gap-4">
-      {/* Columna del número + línea conectora del timeline */}
-      <div className="flex flex-col items-center">
-        <div className="w-10 h-10 shrink-0 rounded-full bg-navy text-white font-extrabold flex items-center justify-center shadow-md">
-          {n}
-        </div>
-        {!ultimo && <div className="w-px flex-1 bg-line my-1" aria-hidden />}
+    <li className="relative rounded-2xl border border-line bg-paper p-5 pt-7">
+      {/* Número del paso, sobresaliendo del borde superior */}
+      <div className="absolute -top-3.5 left-5 w-9 h-9 rounded-full bg-navy text-white text-sm font-extrabold flex items-center justify-center shadow-md ring-4 ring-paper-2">
+        {n}
       </div>
-
-      {/* Contenido del paso */}
-      <div className={`flex-1 ${ultimo ? "" : "pb-6"}`}>
-        <div className="rounded-2xl border border-line bg-paper p-5">
-          <h3 className="text-base font-extrabold text-navy">{titulo}</h3>
-          <p className="text-sm text-navy/90 leading-relaxed mt-1">{texto}</p>
-          {destacado ? (
-            <p className="text-sm font-semibold text-svc-red bg-svc-red/10 border border-svc-red/25 rounded-lg px-3 py-2 mt-3">
-              {destacado}
-            </p>
-          ) : null}
-        </div>
-      </div>
+      <h3 className="text-sm font-extrabold text-navy">{titulo}</h3>
+      <p className="text-xs text-navy/85 leading-relaxed mt-1.5">{texto}</p>
+      {destacado ? (
+        <p className="text-xs font-semibold text-svc-red bg-svc-red/10 border border-svc-red/25 rounded-lg px-2.5 py-1.5 mt-2.5">
+          {destacado}
+        </p>
+      ) : null}
     </li>
   );
 }
