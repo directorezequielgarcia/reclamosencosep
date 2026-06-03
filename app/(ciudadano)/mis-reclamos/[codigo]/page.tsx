@@ -9,9 +9,9 @@ import { Galeria } from "@/components/ui/Galeria";
 import { svcFromKind } from "@/lib/servicios";
 import { ESTADO_META } from "@/lib/admin";
 import {
-  habilitarRecursoDirecto,
   solicitarCopiaExpediente,
   calificarReclamo,
+  responderReclamo,
 } from "./actions";
 
 export const metadata = { title: "Mi reclamo · ENCOSEP" };
@@ -48,6 +48,11 @@ export default async function DetalleMiReclamoPage({
   const fotos = reclamo.adjuntos.filter((a) => a.tipo === "FOTO");
   const eventosVisibles = reclamo.eventos.filter((e) =>
     TIPOS_VISIBLES.includes(e.tipo),
+  );
+  // Conversación ida y vuelta: comentarios marcados como visibles para el vecino
+  // (respuestas del Ente + los mensajes que el propio vecino fue dejando).
+  const conversacion = reclamo.eventos.filter(
+    (e) => e.tipo === "COMENTARIO" && e.visibleVecino,
   );
 
   const fechaLarga = reclamo.createdAt.toLocaleString("es-AR", {
@@ -167,6 +172,76 @@ export default async function DetalleMiReclamoPage({
         </ol>
       </section>
 
+      {/* CONVERSACIÓN — ida y vuelta con el ENCOSEP */}
+      <section className="rounded-2xl border border-line bg-paper p-4">
+        <div className="text-[11px] font-bold text-muted uppercase tracking-wider mb-1">
+          Conversación con el ENCOSEP
+        </div>
+        <div className="text-xs text-muted leading-relaxed mb-3">
+          Acá ves las respuestas del Ente y podés contestar o sumar información
+          en cualquier momento.
+        </div>
+
+        {conversacion.length > 0 ? (
+          <ol className="flex flex-col gap-2 mb-3">
+            {conversacion.map((ev) => {
+              const esVecino = ev.autorId === reclamo.ciudadanoId;
+              return (
+                <li
+                  key={ev.id}
+                  className={`flex flex-col ${esVecino ? "items-end" : "items-start"}`}
+                >
+                  <div
+                    className={`max-w-[85%] rounded-2xl px-3 py-2 ${
+                      esVecino
+                        ? "bg-navy-2 text-white rounded-br-sm"
+                        : "bg-paper-2 text-navy rounded-bl-sm"
+                    }`}
+                  >
+                    <div
+                      className={`text-[10px] font-bold mb-0.5 ${esVecino ? "text-white/70" : "text-muted"}`}
+                    >
+                      {esVecino ? "Vos" : "ENCOSEP"} ·{" "}
+                      {ev.createdAt.toLocaleString("es-AR", {
+                        day: "2-digit",
+                        month: "short",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </div>
+                    <div className="text-sm whitespace-pre-wrap leading-snug">
+                      {ev.mensaje}
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+        ) : (
+          <p className="text-sm text-muted mb-3">
+            Todavía no hay mensajes. Si necesitás aclarar algo, escribinos acá
+            abajo.
+          </p>
+        )}
+
+        <form action={responderReclamo} className="flex flex-col gap-2">
+          <input type="hidden" name="codigo" value={reclamo.codigo} />
+          <textarea
+            name="mensaje"
+            rows={3}
+            required
+            placeholder="Escribí tu mensaje al ENCOSEP…"
+            className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper resize-y"
+          />
+          <button
+            type="submit"
+            className="self-end inline-flex items-center justify-center px-4 py-2 rounded-lg bg-navy-2 text-white font-bold text-sm"
+          >
+            Enviar mensaje
+          </button>
+        </form>
+      </section>
+
       <section className="rounded-2xl border border-line bg-paper p-4">
         <div className="text-[11px] font-bold text-muted uppercase tracking-wider mb-1">
           Prestadora responsable
@@ -174,14 +249,11 @@ export default async function DetalleMiReclamoPage({
         <div className="text-sm font-semibold text-navy">
           {reclamo.prestadora?.razonSocial ?? "Por asignar"}
         </div>
-        {reclamo.slaDeadline && !reclamo.cerradoEn && (
-          <div className="text-xs text-muted mt-1">
-            Plazo para resolver:{" "}
-            {reclamo.slaDeadline.toLocaleDateString("es-AR", {
-              day: "2-digit",
-              month: "long",
-              year: "numeric",
-            })}
+        {!reclamo.cerradoEn && (
+          <div className="text-xs text-muted mt-2 leading-relaxed">
+            Si ya reclamaste a la prestadora, tené presente que la empresa debe
+            responderte dentro del plazo previsto (en general, 15 días). De
+            todos modos, el ENCOSEP puede consultar el estado de tu reclamo.
           </div>
         )}
         {reclamo.cerradoEn && (
@@ -214,44 +286,7 @@ export default async function DetalleMiReclamoPage({
         </section>
       )}
 
-      {/* ACCIONES DEL VECINO — recurso directo / copia expediente */}
-      {!reclamo.recursoDirecto && (
-        <section className="rounded-2xl border-2 border-svc-orange/40 bg-svc-orange/5 p-4">
-          <div className="text-[11px] font-bold text-svc-orange uppercase tracking-wider mb-1">
-            ¿Querés reclamar directo a la prestadora?
-          </div>
-          <p className="text-sm text-navy mt-1 leading-relaxed">
-            Podés habilitar el <strong>recurso directo</strong> a la
-            prestadora. La empresa tiene 5 días hábiles para responderte por
-            escrito sin pasar por el Ente. El Ente sigue siendo notificado.
-          </p>
-          <form
-            action={habilitarRecursoDirecto}
-            className="mt-2"
-          >
-            <input type="hidden" name="codigo" value={reclamo.codigo} />
-            <button
-              type="submit"
-              className="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-svc-orange text-white font-bold text-sm"
-            >
-              Habilitar recurso directo
-            </button>
-          </form>
-        </section>
-      )}
-
-      {reclamo.recursoDirecto && (
-        <section className="rounded-2xl border border-svc-orange bg-svc-orange/10 p-4 text-sm text-navy">
-          <strong>Recurso directo habilitado</strong>{" "}
-          {reclamo.recursoDirectoEn && (
-            <span className="text-muted">
-              el {reclamo.recursoDirectoEn.toLocaleDateString("es-AR")}
-            </span>
-          )}
-          . La prestadora tiene 5 días hábiles para responderte por escrito.
-        </section>
-      )}
-
+      {/* ACCIONES DEL VECINO — copia expediente */}
       {(reclamo.estado === "CERRADO_SIN_SOLUCION" ||
         reclamo.estado === "RECHAZADO") &&
         !reclamo.copiaExpedienteSolicitada && (

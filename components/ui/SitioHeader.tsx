@@ -46,10 +46,10 @@ export function SitioHeader() {
             <span>0800 333 1175</span>
           </Link>
           <Link
-            href="/ingresar"
+            href="/acceso"
             className="inline-flex items-center justify-center px-3 py-2 rounded-lg border border-line-strong text-navy font-semibold text-xs"
           >
-            Ingresar
+            Acceder
           </Link>
         </div>
       </div>

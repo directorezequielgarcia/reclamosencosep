@@ -426,6 +426,7 @@ function PasoRevision({
   onAtras: () => void;
   onEnviar: () => void;
 }) {
+  const [confirmado, setConfirmado] = useState(false);
   if (!state.svc) return null;
   const m = SVC_META[state.svc];
   return (
@@ -468,6 +469,19 @@ function PasoRevision({
         </div>
       )}
 
+      <label className="flex items-start gap-2 rounded-xl border border-line-strong bg-paper-2 p-3 cursor-pointer mt-1">
+        <input
+          type="checkbox"
+          checked={confirmado}
+          onChange={(e) => setConfirmado(e.target.checked)}
+          className="mt-0.5 w-4 h-4 shrink-0"
+        />
+        <span className="text-sm text-navy leading-snug">
+          Revisé que la información esté <strong>correcta y completa</strong>.
+          Al registrar el reclamo se genera un número para seguirlo.
+        </span>
+      </label>
+
       <div className="flex gap-2 mt-2">
         <button
           type="button"
@@ -480,7 +494,7 @@ function PasoRevision({
         <button
           type="button"
           onClick={onEnviar}
-          disabled={enviando}
+          disabled={enviando || !confirmado}
           className="flex-[2] px-4 py-3 rounded-xl bg-svc-red text-white font-semibold shadow-md shadow-svc-red/30 disabled:opacity-50"
         >
           {enviando ? "Enviando..." : "Registrar reclamo"}

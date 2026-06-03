@@ -5,8 +5,10 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { signIn } from "@/lib/auth";
-import { enviarEmail, plantillaBienvenida } from "@/lib/email";
 
+// Alta simplificada del reclamante: solo nombre + DNI.
+// La contraseña inicial es el propio DNI; el email/teléfono se piden adentro
+// como datos de contacto y la clave se puede cambiar en "Mi cuenta".
 const RegistroSchema = z.object({
   dni: z
     .string()
@@ -23,21 +25,11 @@ const RegistroSchema = z.object({
     .trim()
     .min(2, "El apellido es muy corto")
     .max(60, "El apellido es muy largo"),
-  email: z
-    .string()
-    .trim()
-    .toLowerCase()
-    .email("El email no parece válido — revisá el formato")
-    .max(120),
-  password: z
-    .string()
-    .min(6, "La clave debe tener al menos 6 caracteres")
-    .max(80),
 });
 
 export type CrearCuentaState = {
   error?: string;
-  campos?: { dni?: string; nombre?: string; apellido?: string; email?: string };
+  campos?: { dni?: string; nombre?: string; apellido?: string };
 };
 
 export async function crearCuenta(
@@ -47,81 +39,44 @@ export async function crearCuenta(
   const dni = String(formData.get("dni") ?? "").replace(/[.\s]/g, "");
   const nombre = String(formData.get("nombre") ?? "");
   const apellido = String(formData.get("apellido") ?? "");
-  const email = String(formData.get("email") ?? "");
-  const password = String(formData.get("password") ?? "");
-  const passwordConfirm = String(formData.get("passwordConfirm") ?? "");
 
-  const previo = { dni, nombre, apellido, email };
+  const previo = { dni, nombre, apellido };
 
-  if (password !== passwordConfirm) {
-    return { error: "Las claves no coinciden.", campos: previo };
-  }
-
-  const parsed = RegistroSchema.safeParse({
-    dni,
-    nombre,
-    apellido,
-    email,
-    password,
-  });
-
+  const parsed = RegistroSchema.safeParse({ dni, nombre, apellido });
   if (!parsed.success) {
     const primero = parsed.error.issues[0]?.message ?? "Datos inválidos";
     return { error: primero, campos: previo };
   }
 
-  // Chequear que no exista ya el DNI o el email
+  // No duplicar DNI (no se pierde ningún usuario existente: si ya está, avisamos)
   const existeDni = await prisma.usuario.findUnique({
     where: { dni: parsed.data.dni },
   });
   if (existeDni) {
     return {
       error:
-        "Ya existe una cuenta con ese DNI. Si la clave la olvidaste, usá 'Olvidé mi clave'.",
-      campos: previo,
-    };
-  }
-  const existeEmail = await prisma.usuario.findUnique({
-    where: { email: parsed.data.email },
-  });
-  if (existeEmail) {
-    return {
-      error: "Ese email ya está registrado en otra cuenta.",
+        "Ya existe una cuenta con ese DNI. Ingresá con tu DNI, o usá 'Olvidé mi clave'.",
       campos: previo,
     };
   }
 
-  const passwordHash = await bcrypt.hash(parsed.data.password, 10);
+  // La contraseña inicial es el propio DNI (se puede cambiar luego en Mi cuenta).
+  const passwordHash = await bcrypt.hash(parsed.data.dni, 10);
 
   await prisma.usuario.create({
     data: {
       dni: parsed.data.dni,
       nombre: parsed.data.nombre,
       apellido: parsed.data.apellido,
-      email: parsed.data.email,
       passwordHash,
       rol: "CIUDADANO",
     },
   });
 
-  // Email de bienvenida (no crítico — si falla, no rompe el flujo)
-  const base = process.env.AUTH_URL ?? "http://localhost:3000";
-  const { html, texto } = plantillaBienvenida({
-    nombre: parsed.data.nombre,
-    dni: parsed.data.dni,
-    link: `${base}/ingresar`,
-  });
-  await enviarEmail({
-    para: parsed.data.email,
-    asunto: "Bienvenido al Portal ENCOSEP",
-    html,
-    texto,
-  });
-
-  // Loguear automáticamente al recién creado y redirigir a /inicio
+  // Loguear automáticamente (clave = DNI) y entrar.
   await signIn("credentials", {
     dni: parsed.data.dni,
-    password: parsed.data.password,
+    password: parsed.data.dni,
     redirectTo: "/inicio",
   });
 

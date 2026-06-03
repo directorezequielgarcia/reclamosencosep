@@ -52,47 +52,10 @@ export function FormCrearCuenta() {
         </label>
       </div>
 
-      <label className="flex flex-col gap-1">
-        <span className="text-xs font-semibold text-navy">Email</span>
-        <input
-          name="email"
-          type="email"
-          autoComplete="email"
-          required
-          defaultValue={c.email ?? ""}
-          placeholder="tu@email.com"
-          className="w-full px-3 py-3 rounded-xl border border-line-strong bg-paper text-navy text-base focus:outline-none focus:border-navy-2 focus:ring-2 focus:ring-navy-2/20"
-        />
-        <span className="text-[11px] text-muted">
-          Necesario para recuperar la clave si te la olvidás.
-        </span>
-      </label>
-
-      <div className="grid grid-cols-2 gap-3">
-        <label className="flex flex-col gap-1">
-          <span className="text-xs font-semibold text-navy">Clave</span>
-          <input
-            name="password"
-            type="password"
-            autoComplete="new-password"
-            required
-            minLength={6}
-            placeholder="mín. 6 caracteres"
-            className="w-full px-3 py-3 rounded-xl border border-line-strong bg-paper text-navy text-base focus:outline-none focus:border-navy-2 focus:ring-2 focus:ring-navy-2/20"
-          />
-        </label>
-        <label className="flex flex-col gap-1">
-          <span className="text-xs font-semibold text-navy">Repetí la clave</span>
-          <input
-            name="passwordConfirm"
-            type="password"
-            autoComplete="new-password"
-            required
-            minLength={6}
-            placeholder="••••••"
-            className="w-full px-3 py-3 rounded-xl border border-line-strong bg-paper text-navy text-base focus:outline-none focus:border-navy-2 focus:ring-2 focus:ring-navy-2/20"
-          />
-        </label>
+      <div className="rounded-xl border border-line bg-paper-2 p-3 text-[13px] text-navy leading-snug">
+        Tu <strong>clave para entrar va a ser tu DNI</strong>. Cuando ingreses,
+        podés cambiarla y te pediremos un teléfono o email para avisarte cómo
+        avanza tu reclamo.
       </div>
 
       {state.error ? (

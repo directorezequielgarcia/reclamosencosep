@@ -195,11 +195,24 @@ export default async function ReclamoDetallePage({
                         minute: "2-digit",
                       })}
                     </div>
-                    <div className="text-sm text-navy mt-0.5">
-                      {tipoEventoLabel(ev.tipo)}
-                      {ev.estadoNuevo
-                        ? ` → ${ESTADO_META[ev.estadoNuevo].label}`
-                        : ""}
+                    <div className="text-sm text-navy mt-0.5 flex items-center gap-2 flex-wrap">
+                      <span>
+                        {tipoEventoLabel(ev.tipo)}
+                        {ev.estadoNuevo
+                          ? ` → ${ESTADO_META[ev.estadoNuevo].label}`
+                          : ""}
+                      </span>
+                      {ev.tipo === "COMENTARIO" && (
+                        <span
+                          className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                            ev.visibleVecino
+                              ? "bg-svc-green/15 text-svc-green"
+                              : "bg-paper-3 text-muted"
+                          }`}
+                        >
+                          {ev.visibleVecino ? "Visible al vecino" : "Interno"}
+                        </span>
+                      )}
                     </div>
                     {ev.mensaje && (
                       <div className="text-sm text-navy bg-paper-2 rounded-lg p-2 mt-1.5 whitespace-pre-wrap">
@@ -221,9 +234,20 @@ export default async function ReclamoDetallePage({
                   name="mensaje"
                   required
                   rows={2}
-                  placeholder="Dejar una nota interna…"
+                  placeholder="Nota interna o respuesta al vecino…"
                   className="w-full px-3 py-2 rounded-lg border border-line-strong bg-paper text-sm focus:outline-none focus:border-navy-2 resize-none"
                 />
+                <label className="flex items-start gap-2 text-xs text-navy">
+                  <input
+                    type="checkbox"
+                    name="visibleVecino"
+                    className="mt-0.5 w-4 h-4 shrink-0"
+                  />
+                  <span>
+                    <strong>Visible para el vecino</strong> — lo verá en su
+                    reclamo. Si no lo tildás, queda como <strong>nota interna</strong>.
+                  </span>
+                </label>
                 <div>
                   <button
                     type="submit"

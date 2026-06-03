@@ -41,7 +41,7 @@ export default async function CrearCuentaPage() {
             </li>
             <li className="flex items-start gap-3">
               <span className="text-svc-blue text-lg leading-none">·</span>
-              <span>Recibí avisos por email cuando cambie</span>
+              <span>Recibí avisos cuando cambie su estado</span>
             </li>
             <li className="flex items-start gap-3">
               <span className="text-svc-red text-lg leading-none">·</span>

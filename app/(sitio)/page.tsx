@@ -370,6 +370,40 @@ export default async function HomeInstitucional() {
             color="navy"
           />
         </div>
+
+        {/* Accesos institucionales */}
+        <div className="mt-8">
+          <div className="text-[10px] font-bold uppercase tracking-widest text-muted text-center mb-3">
+            Acceso institucional
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {[
+              { emoji: "🛡️", titulo: "Team EnCoSep", detalle: "Equipo del Ente" },
+              { emoji: "⚖️", titulo: "Autoridad de Aplicación", detalle: "Aplica las sanciones" },
+              { emoji: "🏛️", titulo: "PEM", detalle: "Ejecutivo Municipal" },
+              { emoji: "🗳️", titulo: "Concejo Deliberante", detalle: "Presidencia y concejales" },
+            ].map((a) => (
+              <Link
+                key={a.titulo}
+                href="/ingresar"
+                className="flex flex-col items-center text-center gap-1 rounded-2xl border border-line bg-paper p-4 hover:shadow-md hover:border-navy-2/40 transition"
+              >
+                <span className="text-2xl leading-none" aria-hidden>
+                  {a.emoji}
+                </span>
+                <span className="text-sm font-extrabold text-navy leading-tight">
+                  {a.titulo}
+                </span>
+                <span className="text-[11px] text-muted leading-snug">
+                  {a.detalle}
+                </span>
+                <span className="text-[11px] font-bold text-navy-2 mt-1">
+                  Acceder →
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
       </section>
 
       {/* PRINCIPIOS DEL CONTROL */}

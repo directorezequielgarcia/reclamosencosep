@@ -114,16 +114,23 @@ export async function agregarComentario(formData: FormData) {
     throw new Error("Sin permiso");
   }
 
+  // Checkbox del panel: si está tildado, el comentario es una RESPUESTA visible
+  // para el vecino; si no, queda como nota interna del equipo.
+  const visibleVecino = formData.get("visibleVecino") === "on";
+
   await prisma.reclamoEvento.create({
     data: {
       reclamoId: parsed.data.reclamoId,
       tipo: "COMENTARIO",
       autorId: session.user.id,
       mensaje: parsed.data.mensaje,
+      visibleVecino,
     },
   });
 
   revalidatePath(`/admin/reclamo/${parsed.data.reclamoId}`);
+  // Si es visible, también refrescamos la vista del vecino.
+  if (visibleVecino) revalidatePath(`/mis-reclamos/${reclamo.codigo}`);
 }
 
 const ReasignarSchema = z.object({

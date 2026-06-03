@@ -101,3 +101,34 @@ export async function calificarReclamo(formData: FormData) {
   });
   revalidatePath(`/mis-reclamos/${parsed.data.codigo}`);
 }
+
+const ComentarioSchema = z.object({
+  codigo: z.string().min(1),
+  mensaje: z.string().trim().min(2, "Escribí tu mensaje").max(2000),
+});
+
+// El vecino responde / amplía su reclamo. Queda como comentario visible
+// (ida y vuelta con el Ente). Se puede en cualquier estado del reclamo.
+export async function responderReclamo(formData: FormData) {
+  const session = await auth();
+  if (!session) throw new Error("Sin sesión");
+  const parsed = ComentarioSchema.safeParse({
+    codigo: formData.get("codigo"),
+    mensaje: formData.get("mensaje"),
+  });
+  if (!parsed.success) {
+    throw new Error(parsed.error.issues[0]?.message ?? "Datos inválidos");
+  }
+  const r = await reclamoDelUsuario(parsed.data.codigo, session.user.id);
+  await prisma.reclamoEvento.create({
+    data: {
+      reclamoId: r.id,
+      tipo: "COMENTARIO",
+      autorId: session.user.id,
+      mensaje: parsed.data.mensaje,
+      visibleVecino: true,
+    },
+  });
+  revalidatePath(`/mis-reclamos/${parsed.data.codigo}`);
+  revalidatePath(`/admin/reclamo/${r.id}`);
+}

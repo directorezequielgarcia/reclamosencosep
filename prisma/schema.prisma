@@ -304,6 +304,9 @@ model ReclamoEvento {
   autorId    String?
   autor      Usuario?     @relation(fields: [autorId], references: [id])
   mensaje    String?
+  // Comentario visible para el vecino (respuesta del Ente al reclamante) vs.
+  // nota interna del equipo. Por defecto false = interno (no rompe lo existente).
+  visibleVecino Boolean   @default(false)
   createdAt  DateTime     @default(now())
 
   @@index([reclamoId, createdAt])
