@@ -15,6 +15,7 @@ import {
   agregarDocumental,
 } from "./actions";
 import { BorrarReclamo } from "./BorrarReclamo";
+import { Solucionado } from "./Solucionado";
 
 export const metadata = { title: "Mi reclamo · ENCOSEP" };
 
@@ -179,6 +180,20 @@ export default async function DetalleMiReclamoPage({
           ))}
         </ol>
       </section>
+
+      {!["RESUELTO", "CERRADO_SIN_SOLUCION", "RECHAZADO"].includes(
+        reclamo.estado,
+      ) && (
+        <section className="rounded-2xl border-2 border-svc-green/40 bg-svc-green/5 p-4 flex flex-col gap-2">
+          <div className="text-[11px] font-bold text-svc-green uppercase tracking-wider">
+            ¿Ya se resolvió?
+          </div>
+          <p className="text-sm text-navy leading-relaxed">
+            Si el problema se solucionó, avisanos y cerramos el reclamo.
+          </p>
+          <Solucionado codigo={reclamo.codigo} />
+        </section>
+      )}
 
       {/* SUMAR DOCUMENTACIÓN — ampliar declaratoria, en cualquier estado */}
       <section className="rounded-2xl border border-line bg-paper p-4">

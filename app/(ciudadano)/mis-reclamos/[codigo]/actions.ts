@@ -197,3 +197,33 @@ export async function borrarReclamo(formData: FormData) {
   revalidatePath("/mis-reclamos");
   redirect("/mis-reclamos");
 }
+
+// El vecino informa que su reclamo SE SOLUCIONÓ. Lo marca como resuelto y queda
+// registrado (el Ente lo ve y puede reabrir si hiciera falta).
+export async function marcarSolucionado(formData: FormData) {
+  const session = await auth();
+  if (!session) throw new Error("Sin sesión");
+  const codigo = String(formData.get("codigo") ?? "");
+  const r = await reclamoDelUsuario(codigo, session.user.id);
+  if (["RESUELTO", "CERRADO_SIN_SOLUCION", "RECHAZADO"].includes(r.estado)) {
+    throw new Error("El reclamo ya está cerrado.");
+  }
+  await prisma.$transaction([
+    prisma.reclamo.update({
+      where: { id: r.id },
+      data: { estado: "RESUELTO", cerradoEn: new Date() },
+    }),
+    prisma.reclamoEvento.create({
+      data: {
+        reclamoId: r.id,
+        tipo: "CAMBIO_ESTADO",
+        estadoNuevo: "RESUELTO",
+        autorId: session.user.id,
+        mensaje: "El vecino informó que su reclamo se solucionó.",
+        visibleVecino: true,
+      },
+    }),
+  ]);
+  revalidatePath(`/mis-reclamos/${codigo}`);
+  revalidatePath(`/admin/reclamo/${r.id}`);
+}
