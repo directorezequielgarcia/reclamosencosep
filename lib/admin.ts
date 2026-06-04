@@ -32,6 +32,9 @@ export const ROL_LABEL: Record<Rol, string> = {
   EXPEDIENTES: "Expedientes",
   INSPECCIONES: "Inspecciones de campo",
   AUDIENCIAS_MEDIOS: "Audiencias y medios",
+  PEM: "Poder Ejecutivo Municipal",
+  CONCEJO_DELIBERANTE: "Concejo Deliberante",
+  AUTORIDAD_APLICACION: "Autoridad de Aplicación",
 };
 
 // Roles que tienen acceso al panel admin
