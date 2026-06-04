@@ -27,6 +27,10 @@ enum Rol {
   EXPEDIENTES          // Yanina — gestión de expedientes
   INSPECCIONES         // Julieta — inspecciones de campo
   AUDIENCIAS_MEDIOS    // Marcos — audiencias públicas y comunicación / clipping de medios
+  // ─ Perfiles institucionales (consulta / aplicación de sanciones) ─
+  PEM                  // Poder Ejecutivo Municipal (Secretario de Gobierno)
+  CONCEJO_DELIBERANTE  // Presidencia y concejales
+  AUTORIDAD_APLICACION // Aplica las sanciones (UGEM / Subsec. Redes / Subsec. Transporte)
 }
 
 model Usuario {
