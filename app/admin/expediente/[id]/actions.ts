@@ -111,6 +111,36 @@ export async function agregarActo(formData: FormData) {
   revalidatePath(`/admin/expedientes`);
 }
 
+export async function notificarActo(formData: FormData) {
+  const session = await auth();
+  if (
+    !session ||
+    (session.user.rol !== "GESTOR_ENTE" && session.user.rol !== "SUPER_ADMIN")
+  ) {
+    throw new Error("Solo el Ente puede notificar");
+  }
+
+  const actoId = String(formData.get("actoId") ?? "");
+  if (!actoId) throw new Error("Falta el acto");
+
+  const acto = await prisma.actoAdministrativo.findUnique({
+    where: { id: actoId },
+    include: { expediente: { include: { prestadora: true } } },
+  });
+  if (!acto) throw new Error("Acto inexistente");
+  if (acto.notificadoEn) throw new Error("Este acto ya fue notificado");
+
+  await prisma.actoAdministrativo.update({
+    where: { id: actoId },
+    data: {
+      notificadoEn: new Date(),
+      notificadoA: acto.expediente.prestadora.razonSocial,
+    },
+  });
+
+  revalidatePath(`/admin/expediente/${acto.expedienteId}`);
+}
+
 const CambiarEstadoExpSchema = z.object({
   expedienteId: z.string().min(1),
   estado: z.enum(["ABIERTO", "EN_TRAMITE", "RESUELTO", "ARCHIVADO"]),

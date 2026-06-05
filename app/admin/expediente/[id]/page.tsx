@@ -8,7 +8,24 @@ import { EstadoBadge } from "@/components/ui/EstadoBadge";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { SvcIcon } from "@/components/servicios/SvcIcon";
 import { svcFromKind } from "@/lib/servicios";
-import { agregarActo, cambiarEstadoExpediente } from "./actions";
+import {
+  agregarActo,
+  cambiarEstadoExpediente,
+  notificarActo,
+} from "./actions";
+
+// Actos que se comunican a la prestadora (no se notifican notas internas,
+// la caratulación ni el descargo de la propia prestadora).
+const ACTOS_NOTIFICABLES = [
+  "ACTA_RECEPCION",
+  "NOTIFICACION",
+  "INTIMACION",
+  "CONSTATACION",
+  "AMPLIACION",
+  "DISPOSICION",
+  "RESOLUCION",
+  "CIERRE",
+];
 
 export const metadata = { title: "Expediente · Panel ENCOSEP" };
 
@@ -128,6 +145,36 @@ export default async function ExpedienteDetallePage({
                     <div className="text-sm text-navy mt-1 whitespace-pre-wrap leading-relaxed">
                       {a.cuerpo}
                     </div>
+                    {ACTOS_NOTIFICABLES.includes(a.tipo) &&
+                      (a.notificadoEn ? (
+                        <div className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-semibold text-svc-green">
+                          <span>✓</span>
+                          <span>
+                            Notificado a {a.notificadoA} ·{" "}
+                            {a.notificadoEn.toLocaleString("es-AR", {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                        </div>
+                      ) : esEnte ? (
+                        <form action={notificarActo} className="mt-2">
+                          <input type="hidden" name="actoId" value={a.id} />
+                          <button
+                            type="submit"
+                            className="text-xs px-3 py-1.5 rounded-lg border border-svc-blue text-svc-blue font-semibold hover:bg-svc-blue/10"
+                          >
+                            📨 Notificar a la prestadora
+                          </button>
+                        </form>
+                      ) : (
+                        <div className="mt-2 text-[11px] text-muted italic">
+                          Sin notificar
+                        </div>
+                      ))}
                     {a.adjuntos.length > 0 && (
                       <div className="mt-2 flex flex-wrap gap-2">
                         {a.adjuntos.map((adj) => {
