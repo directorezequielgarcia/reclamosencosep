@@ -357,6 +357,56 @@ export async function confirmarActo(formData: FormData) {
   revalidatePath(`/admin/expediente/${acto.expedienteId}`);
 }
 
+// Importa al expediente la documental que el vecino aportó en el/los reclamos,
+// sin volver a subirla: crea un acto con esos adjuntos referenciados.
+export async function importarDocumentalReclamo(formData: FormData) {
+  const session = await auth();
+  if (
+    !session ||
+    (session.user.rol !== "GESTOR_ENTE" && session.user.rol !== "SUPER_ADMIN")
+  ) {
+    throw new Error("Solo el Ente puede importar la documental");
+  }
+
+  const expedienteId = String(formData.get("expedienteId") ?? "");
+  if (!expedienteId) throw new Error("Falta el expediente");
+
+  const exp = await prisma.expediente.findUnique({
+    where: { id: expedienteId },
+    include: { reclamos: { include: { adjuntos: true } } },
+  });
+  if (!exp) throw new Error("Expediente inexistente");
+
+  const adjuntos = exp.reclamos.flatMap((r) => r.adjuntos);
+  if (adjuntos.length === 0) {
+    throw new Error("El reclamo no tiene documental para importar");
+  }
+
+  await prisma.actoAdministrativo.create({
+    data: {
+      expedienteId,
+      tipo: "ACTA_RECEPCION",
+      titulo: "Documental aportada por el usuario en el reclamo",
+      cuerpo:
+        "Se incorpora al expediente la documental que el reclamante adjuntó " +
+        "al presentar el reclamo (fotos, videos y/o archivos).",
+      autorId: session.user.id,
+      confirmadoEn: new Date(),
+      adjuntos: {
+        create: adjuntos.map((a) => ({
+          tipo: a.tipo,
+          url: a.url,
+          nombre: null,
+          mimeType: a.mimeType,
+          bytes: a.bytes,
+        })),
+      },
+    },
+  });
+
+  revalidatePath(`/admin/expediente/${expedienteId}`);
+}
+
 const CaratulaSchema = z.object({
   expedienteId: z.string().min(1),
   numero: z.string().min(1).max(40),

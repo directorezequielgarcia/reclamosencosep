@@ -8,7 +8,10 @@ import { EstadoBadge } from "@/components/ui/EstadoBadge";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { SvcIcon } from "@/components/servicios/SvcIcon";
 import { svcFromKind } from "@/lib/servicios";
-import { cambiarEstadoExpediente } from "./actions";
+import {
+  cambiarEstadoExpediente,
+  importarDocumentalReclamo,
+} from "./actions";
 import { Workspace, type ActoView, type MensajeView } from "./Workspace";
 
 export const metadata = { title: "Expediente · Panel ENCOSEP" };
@@ -88,7 +91,13 @@ export default async function ExpedienteDetallePage({
     include: {
       prestadora: true,
       iniciador: true,
-      reclamos: { include: { servicio: true, ciudadano: true } },
+      reclamos: {
+        include: {
+          servicio: true,
+          ciudadano: true,
+          _count: { select: { adjuntos: true } },
+        },
+      },
       actos: {
         include: { autor: true, adjuntos: true },
         orderBy: { createdAt: "asc" },
@@ -109,6 +118,11 @@ export default async function ExpedienteDetallePage({
         select: { id: true, razonSocial: true },
       })
     : [];
+
+  const docsReclamo = exp.reclamos.reduce(
+    (s, r) => s + r._count.adjuntos,
+    0,
+  );
   const esOperadorEstaPrestadora =
     session!.user.rol === "OPERADOR_PRESTADORA" &&
     session!.user.prestadoraId === exp.prestadoraId;
@@ -219,13 +233,26 @@ export default async function ExpedienteDetallePage({
             })}
           </div>
         </div>
-        <Link
-          href={`/admin/expediente/${exp.id}/imprimir`}
-          target="_blank"
-          className="px-4 py-2 rounded-lg bg-svc-orange text-white font-bold text-sm shrink-0"
-        >
-          📄 Emitir expediente
-        </Link>
+        <div className="flex flex-col gap-2 shrink-0">
+          <Link
+            href={`/admin/expediente/${exp.id}/imprimir`}
+            target="_blank"
+            className="px-4 py-2 rounded-lg bg-svc-orange text-white font-bold text-sm text-center"
+          >
+            📄 Emitir expediente
+          </Link>
+          {esEnte && docsReclamo > 0 && (
+            <form action={importarDocumentalReclamo}>
+              <input type="hidden" name="expedienteId" value={exp.id} />
+              <button
+                type="submit"
+                className="w-full px-4 py-2 rounded-lg border border-navy-2 text-navy-2 font-bold text-sm hover:bg-navy-2/5"
+              >
+                📎 Importar documental del reclamo ({docsReclamo})
+              </button>
+            </form>
+          )}
+        </div>
       </header>
 
       {/* Vista de 3 zonas: crónica · mesa de trabajo · mensajería */}

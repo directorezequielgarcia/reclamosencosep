@@ -273,6 +273,26 @@ export async function elevarAExpediente(formData: FormData) {
     });
   }
 
+  // Arrastrar al expediente la conversación con el vecino (los comentarios
+  // visibles del reclamo se convierten en el chat con el usuario del expediente).
+  const comentarios = await prisma.reclamoEvento.findMany({
+    where: { reclamoId: reclamo.id, tipo: "COMENTARIO", visibleVecino: true },
+    orderBy: { createdAt: "asc" },
+    include: { autor: true },
+  });
+  if (comentarios.length > 0) {
+    await prisma.mensajeExpediente.createMany({
+      data: comentarios.map((c) => ({
+        expedienteId: exp.id,
+        canal: "USUARIO" as const,
+        autorId: c.autorId ?? session.user.id,
+        autorNombre: c.autor ? `${c.autor.nombre} ${c.autor.apellido}` : "—",
+        esEnte: c.autor ? c.autor.rol !== "CIUDADANO" : true,
+        cuerpo: c.mensaje ?? "",
+      })),
+    });
+  }
+
   revalidatePath(`/admin/reclamo/${reclamo.id}`);
   revalidatePath(`/admin/expedientes`);
   redirect(`/admin/expediente/${exp.id}`);
