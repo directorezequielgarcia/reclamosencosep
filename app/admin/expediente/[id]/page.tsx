@@ -31,7 +31,10 @@ export default async function ExpedienteDetallePage({
       prestadora: true,
       iniciador: true,
       reclamos: { include: { servicio: true, ciudadano: true } },
-      actos: { include: { autor: true }, orderBy: { createdAt: "asc" } },
+      actos: {
+        include: { autor: true, adjuntos: true },
+        orderBy: { createdAt: "asc" },
+      },
     },
   });
   if (!exp) notFound();
@@ -125,6 +128,34 @@ export default async function ExpedienteDetallePage({
                     <div className="text-sm text-navy mt-1 whitespace-pre-wrap leading-relaxed">
                       {a.cuerpo}
                     </div>
+                    {a.adjuntos.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {a.adjuntos.map((adj) => {
+                          const icono =
+                            adj.tipo === "FOTO"
+                              ? "🖼️"
+                              : adj.tipo === "VIDEO"
+                                ? "🎬"
+                                : adj.tipo === "AUDIO"
+                                  ? "🔊"
+                                  : "📎";
+                          return (
+                            <a
+                              key={adj.id}
+                              href={adj.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-line bg-paper-2 text-xs text-navy hover:bg-paper-3"
+                            >
+                              <span>{icono}</span>
+                              <span className="max-w-[160px] truncate">
+                                {adj.nombre ?? "Archivo"}
+                              </span>
+                            </a>
+                          );
+                        })}
+                      </div>
+                    )}
                   </li>
                 );
               })}
@@ -134,7 +165,11 @@ export default async function ExpedienteDetallePage({
           {(esEnte || esOperadorEstaPrestadora) &&
             exp.estado !== "ARCHIVADO" && (
               <Card titulo="Labrar nuevo acto">
-                <form action={agregarActo} className="flex flex-col gap-2">
+                <form
+                  action={agregarActo}
+                  encType="multipart/form-data"
+                  className="flex flex-col gap-2"
+                >
                   <input type="hidden" name="expedienteId" value={exp.id} />
                   <div className="grid grid-cols-1 gap-2">
                     <label className="text-[10px] uppercase tracking-wider text-muted font-semibold">
@@ -151,10 +186,20 @@ export default async function ExpedienteDetallePage({
                       </option>
                       {esEnte && (
                         <>
+                          <option value="ACTA_RECEPCION">
+                            📋 Acta de recepción
+                          </option>
                           <option value="NOTIFICACION">
                             📨 Notificación
                           </option>
                           <option value="INTIMACION">⚖️ Intimación</option>
+                          <option value="CONSTATACION">
+                            🔎 Acta de constatación
+                          </option>
+                          <option value="AMPLIACION">➕ Ampliación</option>
+                          <option value="DISPOSICION">
+                            🖋️ Disposición (proveído)
+                          </option>
                           <option value="RESOLUCION">📜 Resolución</option>
                           <option value="NOTA">📝 Nota interna</option>
                           <option value="CIERRE">🔒 Cierre</option>
@@ -186,6 +231,19 @@ export default async function ExpedienteDetallePage({
                     placeholder="Visto el reclamo #… y considerando que… SE RESUELVE: …"
                     className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper resize-y"
                   />
+                  <label className="text-[10px] uppercase tracking-wider text-muted font-semibold mt-2">
+                    Documental (opcional)
+                  </label>
+                  <input
+                    type="file"
+                    name="archivos"
+                    multiple
+                    accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx"
+                    className="text-xs text-navy file:mr-3 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-navy-2 file:text-white file:text-xs file:font-semibold"
+                  />
+                  <p className="text-[10px] text-muted">
+                    Fotos, videos, audios o documentos (PDF/Word/Excel).
+                  </p>
                   <button
                     type="submit"
                     className="px-4 py-2.5 rounded-lg bg-svc-orange text-white font-bold text-sm mt-2"

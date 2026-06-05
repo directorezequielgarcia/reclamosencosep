@@ -273,3 +273,77 @@ function extAudioFromMime(mime: string): string {
       return "";
   }
 }
+
+const MAX_VIDEO_BYTES = 50 * 1024 * 1024; // 50 MB
+const ALLOWED_VIDEO = new Set([
+  "video/mp4",
+  "video/webm",
+  "video/quicktime",
+  "video/3gpp",
+]);
+
+export type AdjuntoKind = "FOTO" | "VIDEO" | "AUDIO" | "DOCUMENTO";
+
+function clasificarAdjunto(mime: string): AdjuntoKind | null {
+  if (ALLOWED_IMAGE.has(mime)) return "FOTO";
+  if (ALLOWED_VIDEO.has(mime)) return "VIDEO";
+  if (ALLOWED_AUDIO.has(mime)) return "AUDIO";
+  if (ALLOWED_DOC.has(mime)) return "DOCUMENTO";
+  return null;
+}
+
+/**
+ * Guarda un adjunto de un acto administrativo (foto, video, audio o documento).
+ * Clasifica el tipo según el MIME y aplica el límite de tamaño correspondiente.
+ * Blob si hay token, fs local si no — misma estrategia que el resto.
+ */
+export async function guardarAdjuntoActo(
+  actoId: string,
+  file: File,
+): Promise<UploadedFile & { tipo: AdjuntoKind; nombre: string }> {
+  if (file.size === 0) throw new Error("Archivo vacío");
+  const mime = file.type || "application/octet-stream";
+  const tipo = clasificarAdjunto(mime);
+  if (!tipo) throw new Error(`Tipo de archivo no soportado: ${mime}`);
+
+  const limites: Record<AdjuntoKind, number> = {
+    FOTO: MAX_BYTES,
+    VIDEO: MAX_VIDEO_BYTES,
+    AUDIO: MAX_AUDIO_BYTES,
+    DOCUMENTO: MAX_DOC_BYTES,
+  };
+  if (file.size > limites[tipo]) {
+    throw new Error(
+      `Archivo demasiado grande (máx ${Math.round(limites[tipo] / 1024 / 1024)} MB)`,
+    );
+  }
+
+  const punto = file.name.lastIndexOf(".");
+  const ext = punto >= 0 ? file.name.slice(punto) : "";
+  const nombreArchivo = `${randomUUID()}${ext}`;
+
+  if (process.env.BLOB_READ_WRITE_TOKEN) {
+    const key = `actos/${actoId}/${nombreArchivo}`;
+    const blob = await put(key, file, { access: "public", contentType: mime });
+    return {
+      url: blob.url,
+      mimeType: mime,
+      bytes: file.size,
+      tipo,
+      nombre: file.name,
+    };
+  }
+
+  const dir = path.join(UPLOAD_ROOT, "actos", actoId);
+  await fs.mkdir(dir, { recursive: true });
+  const dest = path.join(dir, nombreArchivo);
+  const buf = Buffer.from(await file.arrayBuffer());
+  await fs.writeFile(dest, buf);
+  return {
+    url: `/uploads/actos/${actoId}/${nombreArchivo}`,
+    mimeType: mime,
+    bytes: file.size,
+    tipo,
+    nombre: file.name,
+  };
+}

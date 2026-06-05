@@ -256,9 +256,13 @@ enum ExpedienteEstado {
 
 enum TipoActo {
   CARATULACION
+  ACTA_RECEPCION
   NOTIFICACION
   INTIMACION
   DESCARGO_PRESTADORA
+  CONSTATACION
+  AMPLIACION
+  DISPOSICION
   RESOLUCION
   CIERRE
   NOTA
@@ -296,9 +300,27 @@ model ActoAdministrativo {
   cuerpo       String                             // texto del acto (puede ser extenso)
   autorId      String
   autor        Usuario    @relation("ActoAutor", fields: [autorId], references: [id])
+  adjuntos     ActoAdjunto[]
+  // Notificación por botón: hasta que no se notifica, el acto no se comunica.
+  notificadoEn DateTime?
+  notificadoA  String?                            // a quién se notificó (prestadora, AA, etc.)
   createdAt    DateTime   @default(now())
 
   @@index([expedienteId, createdAt])
+}
+
+model ActoAdjunto {
+  id        String             @id @default(cuid())
+  actoId    String
+  acto      ActoAdministrativo @relation(fields: [actoId], references: [id], onDelete: Cascade)
+  tipo      AdjuntoTipo
+  url       String                       // ruta local en dev, S3 en prod
+  nombre    String?                      // nombre original del archivo
+  mimeType  String?
+  bytes     Int?
+  createdAt DateTime           @default(now())
+
+  @@index([actoId])
 }
 
 model ReclamoEvento {
@@ -320,6 +342,7 @@ model ReclamoEvento {
 
 enum AdjuntoTipo {
   FOTO
+  VIDEO
   AUDIO
   DOCUMENTO
 }

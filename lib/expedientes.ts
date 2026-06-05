@@ -15,9 +15,13 @@ export const TIPO_ACTO_META: Record<
   { label: string; icon: string }
 > = {
   CARATULACION: { label: "Caratulación", icon: "📁" },
+  ACTA_RECEPCION: { label: "Acta de recepción", icon: "📋" },
   NOTIFICACION: { label: "Notificación", icon: "📨" },
   INTIMACION: { label: "Intimación", icon: "⚖️" },
   DESCARGO_PRESTADORA: { label: "Descargo de la prestadora", icon: "🛡️" },
+  CONSTATACION: { label: "Acta de constatación", icon: "🔎" },
+  AMPLIACION: { label: "Ampliación", icon: "➕" },
+  DISPOSICION: { label: "Disposición", icon: "🖋️" },
   RESOLUCION: { label: "Resolución", icon: "📜" },
   CIERRE: { label: "Cierre", icon: "🔒" },
   NOTA: { label: "Nota interna", icon: "📝" },

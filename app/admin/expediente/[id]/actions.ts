@@ -4,13 +4,18 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import type { ExpedienteEstado, TipoActo } from "@prisma/client";
+import { guardarAdjuntoActo } from "@/lib/uploads";
+import type { AdjuntoTipo, ExpedienteEstado, TipoActo } from "@prisma/client";
 
 const ActoSchema = z.object({
   expedienteId: z.string().min(1),
   tipo: z.enum([
+    "ACTA_RECEPCION",
     "NOTIFICACION",
     "INTIMACION",
+    "CONSTATACION",
+    "AMPLIACION",
+    "DISPOSICION",
     "RESOLUCION",
     "CIERRE",
     "NOTA",
@@ -55,34 +60,52 @@ export async function agregarActo(formData: FormData) {
     }
   }
 
-  const esCierre = parsed.data.tipo === "CIERRE";
-  const actualizaciones: Promise<unknown>[] = [
-    prisma.actoAdministrativo.create({
-      data: {
-        expedienteId: parsed.data.expedienteId,
-        tipo: parsed.data.tipo as TipoActo,
-        titulo: parsed.data.titulo,
-        cuerpo: parsed.data.cuerpo,
-        autorId: session.user.id,
-      },
-    }),
-  ];
-  if (esCierre) {
-    actualizaciones.push(
-      prisma.expediente.update({
-        where: { id: parsed.data.expedienteId },
-        data: { estado: "RESUELTO", cerradoEn: new Date() },
-      }),
-    );
-  } else if (exp.estado === "ABIERTO") {
-    actualizaciones.push(
-      prisma.expediente.update({
-        where: { id: parsed.data.expedienteId },
-        data: { estado: "EN_TRAMITE" },
-      }),
-    );
+  // Creamos el acto primero para tener su id (necesario para los adjuntos).
+  const acto = await prisma.actoAdministrativo.create({
+    data: {
+      expedienteId: parsed.data.expedienteId,
+      tipo: parsed.data.tipo as TipoActo,
+      titulo: parsed.data.titulo,
+      cuerpo: parsed.data.cuerpo,
+      autorId: session.user.id,
+    },
+  });
+
+  // Adjuntos opcionales (fotos, videos, audios, documentos).
+  const archivos = formData
+    .getAll("archivos")
+    .filter((f): f is File => f instanceof File && f.size > 0);
+  for (const file of archivos) {
+    try {
+      const guardado = await guardarAdjuntoActo(acto.id, file);
+      await prisma.actoAdjunto.create({
+        data: {
+          actoId: acto.id,
+          tipo: guardado.tipo as AdjuntoTipo,
+          url: guardado.url,
+          nombre: guardado.nombre,
+          mimeType: guardado.mimeType,
+          bytes: guardado.bytes,
+        },
+      });
+    } catch {
+      // Un archivo inválido no debe tumbar el acto completo; se ignora.
+    }
   }
-  await Promise.all(actualizaciones);
+
+  // Estado del expediente según el acto.
+  const esCierre = parsed.data.tipo === "CIERRE";
+  if (esCierre) {
+    await prisma.expediente.update({
+      where: { id: parsed.data.expedienteId },
+      data: { estado: "RESUELTO", cerradoEn: new Date() },
+    });
+  } else if (exp.estado === "ABIERTO") {
+    await prisma.expediente.update({
+      where: { id: parsed.data.expedienteId },
+      data: { estado: "EN_TRAMITE" },
+    });
+  }
 
   revalidatePath(`/admin/expediente/${parsed.data.expedienteId}`);
   revalidatePath(`/admin/expedientes`);
