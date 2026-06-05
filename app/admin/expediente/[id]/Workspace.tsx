@@ -169,6 +169,7 @@ export function Workspace({
             acto={actoSel}
             esEnte={esEnte}
             notificable={notificables.includes(actoSel.tipo)}
+            expedienteId={expedienteId}
           />
         ) : (
           <p className="text-sm text-muted">
@@ -284,10 +285,12 @@ function DetalleActo({
   acto,
   esEnte,
   notificable,
+  expedienteId,
 }: {
   acto: ActoView;
   esEnte: boolean;
   notificable: boolean;
+  expedienteId: string;
 }) {
   const ti = TIPO_ACTO_META[acto.tipo];
   return (
@@ -374,6 +377,26 @@ function DetalleActo({
           ) : null}
         </div>
       )}
+
+      {/* Emisión en DOC/PDF */}
+      <div className="mt-2 pt-2 border-t border-line flex flex-wrap gap-1.5">
+        <a
+          href={`/admin/expediente/${expedienteId}/imprimir?solo=${acto.id}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xs px-3 py-1.5 rounded-lg border border-line-strong text-navy font-semibold hover:bg-paper-2"
+        >
+          📄 Emitir esta etapa
+        </a>
+        <a
+          href={`/admin/expediente/${expedienteId}/imprimir?hasta=${acto.id}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xs px-3 py-1.5 rounded-lg border border-line-strong text-navy font-semibold hover:bg-paper-2"
+        >
+          📄 Emitir hasta esta foja
+        </a>
+      </div>
     </div>
   );
 }

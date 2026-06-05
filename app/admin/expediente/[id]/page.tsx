@@ -16,6 +16,7 @@ export const metadata = { title: "Expediente · Panel ENCOSEP" };
 // Actos que se comunican a las partes (no notas internas, caratulación ni
 // el descargo de la propia prestadora).
 const ACTOS_NOTIFICABLES = [
+  "CARATULACION",
   "ACTA_RECEPCION",
   "NOTIFICACION",
   "INTIMACION",
@@ -158,6 +159,13 @@ export default async function ExpedienteDetallePage({
             })}
           </div>
         </div>
+        <Link
+          href={`/admin/expediente/${exp.id}/imprimir`}
+          target="_blank"
+          className="px-4 py-2 rounded-lg bg-svc-orange text-white font-bold text-sm shrink-0"
+        >
+          📄 Emitir expediente
+        </Link>
       </header>
 
       {/* Vista de 3 zonas: crónica · mesa de trabajo · mensajería */}
