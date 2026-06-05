@@ -32,6 +32,7 @@ export type ActoView = {
   fecha: string;
   autor: string;
   notificadoTexto: string | null;
+  visiblePrestadora: boolean;
   adjuntos: AdjuntoView[];
 };
 
@@ -329,27 +330,48 @@ function DetalleActo({
         </div>
       )}
 
-      {/* Notificación (transversal, no es una etapa) */}
+      {/* Notificación (transversal, no es una etapa): comunica la etapa a la
+          prestadora. Dos alcances — solo esta etapa o todo hasta acá. */}
       {notificable && (
-        <div className="mt-2 pt-2 border-t border-line">
-          {acto.notificadoTexto ? (
+        <div className="mt-2 pt-2 border-t border-line flex flex-col gap-1.5">
+          {acto.notificadoTexto && (
             <div className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-svc-green">
               <span>✓</span>
               <span>{acto.notificadoTexto}</span>
             </div>
-          ) : esEnte ? (
-            <form action={notificarActo}>
-              <input type="hidden" name="actoId" value={acto.id} />
-              <button
-                type="submit"
-                className="text-xs px-3 py-1.5 rounded-lg border border-svc-blue text-svc-blue font-semibold hover:bg-svc-blue/10"
-              >
-                📨 Notificar a la prestadora
-              </button>
-            </form>
-          ) : (
-            <div className="text-[11px] text-muted italic">Sin notificar</div>
           )}
+          {!acto.notificadoTexto && acto.visiblePrestadora && (
+            <div className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-svc-green">
+              <span>👁️</span>
+              <span>Visible para la prestadora</span>
+            </div>
+          )}
+          {esEnte ? (
+            <div className="flex flex-wrap gap-1.5">
+              <form action={notificarActo}>
+                <input type="hidden" name="actoId" value={acto.id} />
+                <input type="hidden" name="alcance" value="SOLO" />
+                <button
+                  type="submit"
+                  className="text-xs px-3 py-1.5 rounded-lg border border-svc-blue text-svc-blue font-semibold hover:bg-svc-blue/10"
+                >
+                  📨 Notificar solo esta etapa
+                </button>
+              </form>
+              <form action={notificarActo}>
+                <input type="hidden" name="actoId" value={acto.id} />
+                <input type="hidden" name="alcance" value="HASTA" />
+                <button
+                  type="submit"
+                  className="text-xs px-3 py-1.5 rounded-lg border border-svc-blue bg-svc-blue/10 text-svc-blue font-semibold hover:bg-svc-blue/20"
+                >
+                  📨 Notificar todo hasta acá
+                </button>
+              </form>
+            </div>
+          ) : !acto.notificadoTexto && !acto.visiblePrestadora ? (
+            <div className="text-[11px] text-muted italic">Sin notificar</div>
+          ) : null}
         </div>
       )}
     </div>

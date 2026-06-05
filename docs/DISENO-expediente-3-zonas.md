@@ -63,3 +63,30 @@
   actos notificados a su parte. (Refina permisos de lectura.)
 - **F3 · Mensajería (Zona III):** chat con usuario y chat con prestadora
   (modelo de mensajes + UI). (Lleva migración.)
+
+## Mejoras pedidas (ronda 2)
+
+1. **Notificación con alcance (la notif comunica, no es etapa).** En cada etapa,
+   dos botones:
+   - **Notificar solo esta etapa** → la parte ve **solo ese acto**.
+   - **Notificar hasta acá** → la parte ve **el expediente completo hasta ese
+     acto**.
+   *(Estado: IMPLEMENTADO — G1.)*
+
+2. **Carátula editable.** La carátula es la formalización del reclamo en
+   expediente; en esa sección poder cargar/cambiar:
+   - **Objeto** · **Prestadora** (viene la asociada, se puede cambiar) ·
+     **Usuario/reclamante** (viene del reclamo, se puede cambiar). *(Pendiente — G2.)*
+
+3. **Un reclamo → un solo expediente**, salvo apretar un botón que **dispare
+   otro** expediente del mismo reclamo. *(Pendiente — G3.)*
+
+4. **Estados automáticos del reclamo.** Al abrir = "Visto" (automático);
+   "En revisión" manual al analizar; al **elevar a expediente** pasa automático a
+   derivado/en proceso; el estado igual se puede cambiar a mano.
+   *(Estado: IMPLEMENTADO al elevar — G4.)*
+
+5. **Expediente aislado (sin reclamo previo).** Originado por la Autoridad de
+   Aplicación, el Concejo u otro. Tipos: readecuación tarifaria, cambio de cuadro
+   tarifario, etc. Campo **"solicitado por"**: Autoridad de Aplicación / Concejo
+   Deliberante / Otro (especificar). *(Pendiente — G5.)*

@@ -73,13 +73,13 @@ export default async function ExpedienteDetallePage({
 
   const m = EXPEDIENTE_ESTADO_META[exp.estado];
 
-  // Visibilidad por notificación: la prestadora ve SOLO los actos que le fueron
-  // notificados; el descargo de la propia prestadora siempre lo ve. El Ente ve
-  // todo. (La notificación es la que "abre" el expediente a la parte.)
+  // Visibilidad por notificación: la prestadora ve SOLO los actos marcados
+  // visibles al notificar (solo esa etapa, o todo hasta cierta foja). Su propio
+  // descargo siempre lo ve. El Ente ve todo.
   const actosFuente = esEnte
     ? exp.actos
     : exp.actos.filter(
-        (a) => a.notificadoEn !== null || a.tipo === "DESCARGO_PRESTADORA",
+        (a) => a.visiblePrestadora || a.tipo === "DESCARGO_PRESTADORA",
       );
 
   // Mapear actos a un shape serializable (fechas ya formateadas) para el cliente.
@@ -93,6 +93,7 @@ export default async function ExpedienteDetallePage({
     notificadoTexto: a.notificadoEn
       ? `Notificado a ${a.notificadoA} · ${fmt(a.notificadoEn)}`
       : null,
+    visiblePrestadora: a.visiblePrestadora,
     adjuntos: a.adjuntos.map((adj) => ({
       id: adj.id,
       tipo: adj.tipo,

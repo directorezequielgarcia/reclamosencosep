@@ -122,19 +122,44 @@ export async function notificarActo(formData: FormData) {
 
   const actoId = String(formData.get("actoId") ?? "");
   if (!actoId) throw new Error("Falta el acto");
+  // Alcance: "SOLO" = solo esta etapa · "HASTA" = todo el expediente hasta acá.
+  const alcance = formData.get("alcance") === "HASTA" ? "HASTA" : "SOLO";
 
   const acto = await prisma.actoAdministrativo.findUnique({
     where: { id: actoId },
     include: { expediente: { include: { prestadora: true } } },
   });
   if (!acto) throw new Error("Acto inexistente");
-  if (acto.notificadoEn) throw new Error("Este acto ya fue notificado");
 
+  const razon = acto.expediente.prestadora.razonSocial;
+  const ahora = new Date();
+
+  if (alcance === "HASTA") {
+    // La prestadora ve el expediente completo hasta este acto (inclusive).
+    await prisma.actoAdministrativo.updateMany({
+      where: {
+        expedienteId: acto.expedienteId,
+        createdAt: { lte: acto.createdAt },
+      },
+      data: { visiblePrestadora: true },
+    });
+  } else {
+    // Solo esta etapa.
+    await prisma.actoAdministrativo.update({
+      where: { id: actoId },
+      data: { visiblePrestadora: true },
+    });
+  }
+
+  // Sello de notificación en el acto comunicado.
   await prisma.actoAdministrativo.update({
     where: { id: actoId },
     data: {
-      notificadoEn: new Date(),
-      notificadoA: acto.expediente.prestadora.razonSocial,
+      notificadoEn: ahora,
+      notificadoA:
+        alcance === "HASTA"
+          ? `${razon} (expediente hasta esta foja)`
+          : razon,
     },
   });
 

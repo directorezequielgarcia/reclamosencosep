@@ -324,6 +324,10 @@ model ActoAdministrativo {
   // Notificación por botón: hasta que no se notifica, el acto no se comunica.
   notificadoEn DateTime?
   notificadoA  String?                            // a quién se notificó (prestadora, AA, etc.)
+  // Visibilidad para la prestadora. Se enciende al notificar:
+  //  - "solo esta etapa": marca este acto.
+  //  - "hasta acá": marca todos los actos hasta este.
+  visiblePrestadora Boolean @default(false)
   createdAt    DateTime   @default(now())
 
   @@index([expedienteId, createdAt])

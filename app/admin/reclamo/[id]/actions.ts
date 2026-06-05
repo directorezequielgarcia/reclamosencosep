@@ -263,6 +263,15 @@ export async function elevarAExpediente(formData: FormData) {
     },
   });
 
+  // Estado automático al elevar: el reclamo pasa a DERIVADO (igual se puede
+  // cambiar a mano después).
+  if (reclamo.estado !== "DERIVADO") {
+    await prisma.reclamo.update({
+      where: { id: reclamo.id },
+      data: { estado: "DERIVADO" },
+    });
+  }
+
   revalidatePath(`/admin/reclamo/${reclamo.id}`);
   revalidatePath(`/admin/expedientes`);
   redirect(`/admin/expediente/${exp.id}`);
