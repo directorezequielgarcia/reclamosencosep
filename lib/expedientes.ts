@@ -22,6 +22,10 @@ export const TIPO_ACTO_META: Record<
   CONSTATACION: { label: "Acta de constatación", icon: "🔎" },
   AMPLIACION: { label: "Ampliación", icon: "➕" },
   DISPOSICION: { label: "Disposición", icon: "🖋️" },
+  CONVOCATORIA_AUDIENCIA: { label: "Convocatoria a audiencia", icon: "📢" },
+  AUDIENCIA: { label: "Audiencia pública", icon: "🗣️" },
+  DICTAMEN: { label: "Dictamen técnico", icon: "📑" },
+  DERIVACION: { label: "Derivación / remisión", icon: "↪️" },
   RESOLUCION: { label: "Resolución", icon: "📜" },
   CIERRE: { label: "Cierre", icon: "🔒" },
   NOTA: { label: "Nota interna", icon: "📝" },
@@ -45,6 +49,14 @@ export const GUIA_ETAPA: Record<TipoActo, string> = {
     "Ampliación: sumá nueva información, hechos o documental al expediente.",
   DISPOSICION:
     "Proveído simple: orden de trámite. Se pueden dictar varias a lo largo del expediente.",
+  CONVOCATORIA_AUDIENCIA:
+    "Convocá a audiencia pública: fijá fecha, lugar y temario para escuchar a los vecinos.",
+  AUDIENCIA:
+    "Audiencia pública: dejá constancia de lo expuesto por los vecinos y las partes.",
+  DICTAMEN:
+    "Dictamen técnico del Ente: análisis fundado y opinión (p. ej. sobre el cuadro tarifario).",
+  DERIVACION:
+    "Derivá / remití las actuaciones a una Secretaría, Autoridad de Aplicación u otro ente para su intervención.",
   RESOLUCION:
     "Resolución fundada que decide la cuestión. Conviene notificarla a las partes.",
   CIERRE: "Cierre del expediente: dejá constancia del resultado.",

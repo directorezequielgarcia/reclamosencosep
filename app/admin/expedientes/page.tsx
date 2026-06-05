@@ -25,6 +25,9 @@ export default async function ExpedientesPage() {
     },
   });
 
+  const esEnte =
+    session!.user.rol === "GESTOR_ENTE" || session!.user.rol === "SUPER_ADMIN";
+
   return (
     <div className="flex flex-col gap-5">
       <header className="flex items-baseline justify-between gap-4 flex-wrap">
@@ -38,6 +41,14 @@ export default async function ExpedientesPage() {
             .
           </p>
         </div>
+        {esEnte && (
+          <Link
+            href="/admin/expedientes/nuevo"
+            className="px-4 py-2 rounded-lg bg-svc-orange text-white font-bold text-sm shrink-0"
+          >
+            + Nuevo expediente
+          </Link>
+        )}
       </header>
 
       <div className="rounded-2xl border border-line bg-paper overflow-hidden">

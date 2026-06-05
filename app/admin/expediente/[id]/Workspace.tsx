@@ -443,6 +443,12 @@ function NuevoActo({
             <option value="CONSTATACION">🔎 Acta de constatación</option>
             <option value="AMPLIACION">➕ Ampliación</option>
             <option value="DISPOSICION">🖋️ Disposición (proveído)</option>
+            <option value="CONVOCATORIA_AUDIENCIA">
+              📢 Convocatoria a audiencia
+            </option>
+            <option value="AUDIENCIA">🗣️ Audiencia pública</option>
+            <option value="DICTAMEN">📑 Dictamen técnico</option>
+            <option value="DERIVACION">↪️ Derivación / remisión</option>
             <option value="RESOLUCION">📜 Resolución</option>
             <option value="NOTA">📝 Nota interna</option>
             <option value="CIERRE">🔒 Cierre</option>
