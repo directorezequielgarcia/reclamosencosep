@@ -462,6 +462,82 @@ export async function importarReclamoAntecedente(formData: FormData) {
   revalidatePath(`/admin/expediente/${expedienteId}`);
 }
 
+// Referencia otro expediente dentro de este (no copia sus actos).
+export async function importarExpedienteReferencia(formData: FormData) {
+  const session = await auth();
+  if (
+    !session ||
+    (session.user.rol !== "GESTOR_ENTE" && session.user.rol !== "SUPER_ADMIN")
+  ) {
+    throw new Error("Solo el Ente puede referenciar expedientes");
+  }
+  const expedienteId = String(formData.get("expedienteId") ?? "");
+  const numero = String(formData.get("numero") ?? "").trim();
+  if (!expedienteId || !numero) throw new Error("Faltan datos");
+
+  const otro = await prisma.expediente.findFirst({
+    where: { numero },
+    include: { prestadora: true },
+  });
+  if (!otro) throw new Error(`No existe un expediente ${numero}`);
+  if (otro.id === expedienteId) throw new Error("Es el mismo expediente");
+
+  await prisma.actoAdministrativo.create({
+    data: {
+      expedienteId,
+      tipo: "NOTA",
+      titulo: `Referencia — expediente ${otro.numero}`,
+      cuerpo:
+        `Se referencia el expediente ${otro.numero}: ${otro.caratula}. ` +
+        `Prestadora: ${otro.prestadora.razonSocial}. Tipo: ${otro.tipoExpediente}.`,
+      autorId: session.user.id,
+      confirmadoEn: new Date(),
+    },
+  });
+  revalidatePath(`/admin/expediente/${expedienteId}`);
+}
+
+// Incorpora un snapshot de indicadores (estadística) como acto del expediente.
+export async function importarEstadistica(formData: FormData) {
+  const session = await auth();
+  if (
+    !session ||
+    (session.user.rol !== "GESTOR_ENTE" && session.user.rol !== "SUPER_ADMIN")
+  ) {
+    throw new Error("Solo el Ente puede importar estadística");
+  }
+  const expedienteId = String(formData.get("expedienteId") ?? "");
+  if (!expedienteId) throw new Error("Falta el expediente");
+
+  const total = await prisma.reclamo.count();
+  const grupos = await prisma.reclamo.groupBy({
+    by: ["estado"],
+    _count: { _all: true },
+  });
+  const fecha = new Date().toLocaleDateString("es-AR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+  const lineas = grupos
+    .map((g) => `- ${g.estado}: ${g._count._all}`)
+    .join("\n");
+
+  await prisma.actoAdministrativo.create({
+    data: {
+      expedienteId,
+      tipo: "NOTA",
+      titulo: `Estadística de reclamos al ${fecha}`,
+      cuerpo:
+        `Snapshot de indicadores al ${fecha}.\n\n` +
+        `Total de reclamos registrados: ${total}.\n\nPor estado:\n${lineas}`,
+      autorId: session.user.id,
+      confirmadoEn: new Date(),
+    },
+  });
+  revalidatePath(`/admin/expediente/${expedienteId}`);
+}
+
 // Importa una inspección de campo (la que hace el inspector) como un acto de
 // CONSTATACIÓN del expediente, trayendo su texto, fotos y audio.
 export async function importarConstatacionInspeccion(formData: FormData) {

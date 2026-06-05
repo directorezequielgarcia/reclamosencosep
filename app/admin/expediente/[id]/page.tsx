@@ -13,6 +13,8 @@ import {
   importarDocumentalReclamo,
   importarConstatacionInspeccion,
   importarReclamoAntecedente,
+  importarExpedienteReferencia,
+  importarEstadistica,
 } from "./actions";
 import { Workspace, type ActoView, type MensajeView } from "./Workspace";
 
@@ -358,11 +360,46 @@ export default async function ExpedienteDetallePage({
               ↪️ Importar como antecedente
             </button>
           </form>
+          <form
+            action={importarExpedienteReferencia}
+            className="flex flex-wrap items-end gap-2 mt-3 pt-3 border-t border-line"
+          >
+            <input type="hidden" name="expedienteId" value={exp.id} />
+            <label className="flex flex-col gap-1">
+              <span className="text-[10px] uppercase tracking-wider text-muted font-semibold">
+                Otro expediente (por número)
+              </span>
+              <input
+                name="numero"
+                required
+                placeholder="ej: EXP-2026-003"
+                className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper font-mono"
+              />
+            </label>
+            <button
+              type="submit"
+              className="px-4 py-2 rounded-lg border border-navy-2 text-navy-2 font-bold text-sm hover:bg-navy-2/5"
+            >
+              🔗 Referenciar expediente
+            </button>
+          </form>
+
+          <form
+            action={importarEstadistica}
+            className="mt-3 pt-3 border-t border-line"
+          >
+            <input type="hidden" name="expedienteId" value={exp.id} />
+            <button
+              type="submit"
+              className="px-4 py-2 rounded-lg border border-navy-2 text-navy-2 font-bold text-sm hover:bg-navy-2/5"
+            >
+              📊 Importar estadística actual de reclamos
+            </button>
+          </form>
+
           <p className="text-[11px] text-muted mt-2">
-            Trae el resumen y la documental de otro reclamo, sin moverlo. La
-            documental del reclamo de origen y las inspecciones se importan desde
-            sus botones. Próximamente: otro expediente, estadísticas e informe
-            mensual.
+            La documental del reclamo de origen y las inspecciones se importan
+            desde sus botones. Próximamente: informe mensual.
           </p>
         </div>
       )}
