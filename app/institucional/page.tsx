@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
+import { ROL_LABEL } from "@/lib/admin";
 import { LogoEncosep } from "@/components/ui/LogoEncosep";
 import { BrandStripe } from "@/components/ui/BrandStripe";
 
@@ -25,30 +26,10 @@ type Acceso = {
 };
 
 const REPORTES: Acceso[] = [
-  {
-    emoji: "📊",
-    titulo: "Indicadores",
-    detalle: "Estado de los servicios y métricas de reclamos.",
-    href: "/indicadores",
-  },
-  {
-    emoji: "📝",
-    titulo: "Encuestas de satisfacción",
-    detalle: "Cómo evalúan los vecinos cada servicio público.",
-    href: "/encuesta",
-  },
-  {
-    emoji: "📍",
-    titulo: "Problemas por barrio y servicio",
-    detalle: "Reclamos agregados por zona y por servicio.",
-    href: "/indicadores",
-  },
-  {
-    emoji: "📣",
-    titulo: "Agenda y audiencias públicas",
-    detalle: "Calendario de audiencias y actividades del Ente.",
-    href: "/audiencias",
-  },
+  { emoji: "📊", titulo: "Indicadores", detalle: "Estado de los servicios y métricas de reclamos.", href: "/indicadores" },
+  { emoji: "📝", titulo: "Encuestas de satisfacción", detalle: "Cómo evalúan los vecinos cada servicio público.", href: "/encuesta" },
+  { emoji: "📍", titulo: "Problemas por barrio y servicio", detalle: "Reclamos agregados por zona y por servicio.", href: "/indicadores" },
+  { emoji: "📣", titulo: "Agenda y audiencias públicas", detalle: "Calendario de audiencias y actividades del Ente.", href: "/audiencias" },
 ];
 
 const NORMATIVA: Acceso[] = [
@@ -58,21 +39,16 @@ const NORMATIVA: Acceso[] = [
   { emoji: "🚌", titulo: "Transporte urbano", detalle: "Marco regulatorio — Patagonia / Diadema", href: "/areas-fiscalizadas/transporte" },
 ];
 
+// Específico de la Autoridad de Aplicación: fiscalización.
+const FISCALIZACION: Acceso[] = [
+  { emoji: "📁", titulo: "Expedientes del Ente", detalle: "Actuaciones administrativas que arma el ENCOSEP.", href: "#", proximamente: true },
+  { emoji: "⚖️", titulo: "Recomendaciones de sanción", detalle: "Recomendaciones de aplicación de sanciones a las prestadoras.", href: "#", proximamente: true },
+];
+
+// Específico de Concejo / PEM: canales institucionales.
 const CANALES: Acceso[] = [
-  {
-    emoji: "✉️",
-    titulo: "Presentar nota",
-    detalle: "Enviar una nota formal al ENCOSEP.",
-    href: "#",
-    proximamente: true,
-  },
-  {
-    emoji: "🛠️",
-    titulo: "Solicitar asistencia técnica",
-    detalle: "Pedir asistencia técnica al Ente.",
-    href: "#",
-    proximamente: true,
-  },
+  { emoji: "✉️", titulo: "Presentar nota", detalle: "Enviar una nota formal al ENCOSEP.", href: "#", proximamente: true },
+  { emoji: "🛠️", titulo: "Solicitar asistencia técnica", detalle: "Pedir asistencia técnica o una agenda de trabajo.", href: "#", proximamente: true },
 ];
 
 function Grilla({ items }: { items: Acceso[] }) {
@@ -116,10 +92,34 @@ function Grilla({ items }: { items: Acceso[] }) {
   );
 }
 
+function Seccion({ titulo, items }: { titulo: string; items: Acceso[] }) {
+  return (
+    <section className="flex flex-col gap-3">
+      <h2 className="text-[11px] font-bold uppercase tracking-widest text-muted">
+        {titulo}
+      </h2>
+      <Grilla items={items} />
+    </section>
+  );
+}
+
 export default async function InstitucionalPage() {
   const session = await auth();
   if (!session) redirect("/ingresar");
-  if (!ROLES_INSTITUCIONALES.includes(session.user.rol)) redirect("/inicio");
+  const rol = session.user.rol;
+  if (!ROLES_INSTITUCIONALES.includes(rol)) redirect("/inicio");
+
+  const esAutoridad = rol === "AUTORIDAD_APLICACION";
+  const esConcejoOPem = rol === "CONCEJO_DELIBERANTE" || rol === "PEM";
+  const esEnte =
+    rol === "DIRECTOR" || rol === "GESTOR_ENTE" || rol === "SUPER_ADMIN";
+
+  // Qué le toca a cada ámbito.
+  const subtitulo = esAutoridad
+    ? "Autoridad de Aplicación — fiscalización y normativa."
+    : esConcejoOPem
+      ? "Información para la toma de decisiones de tu ámbito."
+      : "Vista institucional del Ente.";
 
   return (
     <main className="flex flex-1 flex-col items-center bg-paper px-6 py-10">
@@ -128,7 +128,7 @@ export default async function InstitucionalPage() {
           <LogoEncosep size={64} />
           <div className="flex flex-col">
             <div className="text-[10px] font-bold tracking-widest text-muted uppercase">
-              ENCOSEP · Comodoro Rivadavia
+              ENCOSEP · {ROL_LABEL[rol]}
             </div>
             <h1 className="text-2xl font-extrabold text-navy leading-tight">
               Panel institucional
@@ -137,32 +137,23 @@ export default async function InstitucionalPage() {
           </div>
         </header>
 
-        <p className="text-sm text-muted leading-relaxed -mt-2">
-          Acceso de consulta para autoridades. Acá tenés en un solo lugar los
-          reportes del Ente, la normativa de cada servicio concesionado y los
-          canales para comunicarte con el ENCOSEP.
-        </p>
+        <p className="text-sm text-muted leading-relaxed -mt-2">{subtitulo}</p>
 
-        <section className="flex flex-col gap-3">
-          <h2 className="text-[11px] font-bold uppercase tracking-widest text-muted">
-            Reportes
-          </h2>
-          <Grilla items={REPORTES} />
-        </section>
+        {/* Reportes: para todos los perfiles */}
+        <Seccion titulo="Reportes" items={REPORTES} />
 
-        <section className="flex flex-col gap-3">
-          <h2 className="text-[11px] font-bold uppercase tracking-widest text-muted">
-            Normativa por servicio concesionado
-          </h2>
-          <Grilla items={NORMATIVA} />
-        </section>
+        {/* Fiscalización: solo Autoridad de Aplicación (y el Ente) */}
+        {(esAutoridad || esEnte) && (
+          <Seccion titulo="Fiscalización" items={FISCALIZACION} />
+        )}
 
-        <section className="flex flex-col gap-3">
-          <h2 className="text-[11px] font-bold uppercase tracking-widest text-muted">
-            Canales con el ENCOSEP
-          </h2>
-          <Grilla items={CANALES} />
-        </section>
+        {/* Normativa por servicio: para todos */}
+        <Seccion titulo="Normativa por servicio concesionado" items={NORMATIVA} />
+
+        {/* Canales institucionales: Concejo / PEM (y el Ente) */}
+        {(esConcejoOPem || esEnte) && (
+          <Seccion titulo="Canales con el ENCOSEP" items={CANALES} />
+        )}
 
         <Link
           href="/inicio"
