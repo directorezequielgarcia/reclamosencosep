@@ -8,18 +8,22 @@ import type { TipoInspeccion } from "@prisma/client";
 
 type Servicio = { id: string; nombre: string };
 type Prestadora = { id: string; razonSocial: string };
+type Expediente = { id: string; numero: string; caratula: string };
 
 type Props = {
   servicios: Servicio[];
   prestadoras: Prestadora[];
+  expedientes: Expediente[];
   fechaPorDefecto: string;
 };
 
 export function NuevaInspeccionForm({
   servicios,
   prestadoras,
+  expedientes,
   fechaPorDefecto,
 }: Props) {
+  const [tipo, setTipo] = useState<string>("OFICIO");
   const [coord, setCoord] = useState<{ lat: number; lng: number } | null>(null);
   const [gpsLoading, setGpsLoading] = useState(false);
   const [gpsError, setGpsError] = useState<string | null>(null);
@@ -82,7 +86,8 @@ export function NuevaInspeccionForm({
           <select
             name="tipo"
             required
-            defaultValue="OFICIO"
+            value={tipo}
+            onChange={(e) => setTipo(e.target.value)}
             className="px-3 py-2 rounded-lg border border-line-strong bg-paper text-navy"
           >
             {(Object.keys(TIPO_INSPECCION_META) as TipoInspeccion[]).map((t) => (
@@ -118,6 +123,35 @@ export function NuevaInspeccionForm({
           </select>
         </Field>
       </div>
+
+      {expedientes.length > 0 && (
+        <Field
+          label={
+            tipo === "SEGUIMIENTO_EXPEDIENTE"
+              ? "Expediente que se sigue"
+              : "Expediente vinculado (opcional)"
+          }
+        >
+          <select
+            name="expedienteId"
+            defaultValue=""
+            className="px-3 py-2 rounded-lg border border-line-strong bg-paper text-navy"
+          >
+            <option value="">— Sin vincular —</option>
+            {expedientes.map((e) => (
+              <option key={e.id} value={e.id}>
+                {e.numero} — {e.caratula}
+              </option>
+            ))}
+          </select>
+          {tipo === "SEGUIMIENTO_EXPEDIENTE" && (
+            <span className="text-[11px] text-svc-blue mt-1">
+              Vinculá el expediente para que Expedientes pueda importar esta
+              constatación.
+            </span>
+          )}
+        </Field>
+      )}
 
       <Field label="Título" required>
         <input

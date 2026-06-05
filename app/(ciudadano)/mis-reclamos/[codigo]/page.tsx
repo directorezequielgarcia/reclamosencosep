@@ -334,6 +334,12 @@ export default async function DetalleMiReclamoPage({
             El Ente elevó tu reclamo a un expediente administrativo formal
             contra la prestadora.
           </div>
+          <Link
+            href={`/mis-reclamos/${reclamo.codigo}/expediente`}
+            className="inline-block mt-3 px-4 py-2 rounded-lg bg-svc-orange text-white font-bold text-sm"
+          >
+            📄 Ver / descargar el expediente
+          </Link>
         </section>
       )}
 

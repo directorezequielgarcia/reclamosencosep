@@ -26,6 +26,7 @@ const CrearInspeccionSchema = z.object({
   direccion: z.string().max(200).optional().or(z.literal("")),
   barrio: z.string().max(120).optional().or(z.literal("")),
   prestadoraId: z.string().optional().or(z.literal("")),
+  expedienteId: z.string().optional().or(z.literal("")),
   lat: z
     .string()
     .optional()
@@ -54,6 +55,7 @@ export async function crearInspeccion(formData: FormData) {
     direccion: String(formData.get("direccion") ?? "").trim(),
     barrio: String(formData.get("barrio") ?? "").trim(),
     prestadoraId: String(formData.get("prestadoraId") ?? "").trim(),
+    expedienteId: String(formData.get("expedienteId") ?? "").trim(),
     lat: String(formData.get("lat") ?? "").trim(),
     lng: String(formData.get("lng") ?? "").trim(),
   };
@@ -78,6 +80,7 @@ export async function crearInspeccion(formData: FormData) {
       inspectorId: session.user.id,
       servicioId: datos.servicioId,
       prestadoraId: datos.prestadoraId?.length ? datos.prestadoraId : null,
+      expedienteId: datos.expedienteId?.length ? datos.expedienteId : null,
       tipo: datos.tipo,
       estado: "BORRADOR",
       titulo: datos.titulo,

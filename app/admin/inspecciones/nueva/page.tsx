@@ -14,7 +14,7 @@ export default async function NuevaInspeccionPage() {
     redirect("/admin");
   }
 
-  const [servicios, prestadoras] = await Promise.all([
+  const [servicios, prestadoras, expedientes] = await Promise.all([
     prisma.servicio.findMany({
       orderBy: { nombreCorto: "asc" },
       select: { id: true, nombre: true },
@@ -23,6 +23,11 @@ export default async function NuevaInspeccionPage() {
       where: { activa: true },
       orderBy: { razonSocial: "asc" },
       select: { id: true, razonSocial: true },
+    }),
+    prisma.expediente.findMany({
+      where: { estado: { in: ["ABIERTO", "EN_TRAMITE"] } },
+      orderBy: { createdAt: "desc" },
+      select: { id: true, numero: true, caratula: true },
     }),
   ]);
 
@@ -57,6 +62,7 @@ export default async function NuevaInspeccionPage() {
       <NuevaInspeccionForm
         servicios={servicios}
         prestadoras={prestadoras}
+        expedientes={expedientes}
         fechaPorDefecto={fechaPorDefecto}
       />
     </div>
