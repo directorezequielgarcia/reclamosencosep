@@ -76,6 +76,14 @@ export default async function NotaDetallePage({
             {NOTA_AMBITO_LABEL[nota.ambito]} · {nota.destinatario}
           </p>
 
+          <Link
+            href={`/notas/${nota.id}/imprimir`}
+            target="_blank"
+            className="inline-block mt-3 px-4 py-2 rounded-lg bg-svc-orange text-white font-bold text-sm"
+          >
+            📄 Exportar nota (PDF)
+          </Link>
+
           {esEnte && nota.estado !== "CERRADA" && (
             <form action={cambiarEstadoNota} className="flex gap-2 mt-3">
               <input type="hidden" name="notaId" value={nota.id} />
