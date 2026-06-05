@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { SvcIcon } from "@/components/servicios/SvcIcon";
@@ -6,8 +7,15 @@ import { SVC_META, SVC_ORDER } from "@/lib/servicios";
 
 export const metadata = { title: "Inicio · Portal de Reclamos" };
 
+// Roles institucionales: al ingresar van directo a su tablero de consulta,
+// no a la vista de carga de reclamos del vecino.
+const ROLES_INSTITUCIONALES = ["PEM", "CONCEJO_DELIBERANTE", "AUTORIDAD_APLICACION"];
+
 export default async function InicioPage() {
   const session = await auth();
+  if (ROLES_INSTITUCIONALES.includes(session!.user.rol)) {
+    redirect("/institucional");
+  }
   const userId = session!.user.id;
 
   const recientes = await prisma.reclamo.findMany({

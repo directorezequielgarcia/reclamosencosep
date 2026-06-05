@@ -33,6 +33,9 @@ export default async function CrearUsuarioPage() {
         "AUDIENCIAS_MEDIOS",
         "GESTOR_ENTE",
         "AUDITOR",
+        "AUTORIDAD_APLICACION",
+        "CONCEJO_DELIBERANTE",
+        "PEM",
         "OPERADOR_PRESTADORA",
         "CIUDADANO",
       ]
