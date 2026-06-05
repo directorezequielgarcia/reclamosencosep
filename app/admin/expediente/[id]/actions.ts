@@ -141,6 +141,64 @@ export async function notificarActo(formData: FormData) {
   revalidatePath(`/admin/expediente/${acto.expedienteId}`);
 }
 
+const MensajeSchema = z.object({
+  expedienteId: z.string().min(1),
+  canal: z.enum(["USUARIO", "PRESTADORA"]),
+  cuerpo: z.string().min(1).max(4000),
+});
+
+export async function enviarMensajeExpediente(formData: FormData) {
+  const session = await auth();
+  if (!session) throw new Error("Sin sesión");
+
+  const parsed = MensajeSchema.safeParse({
+    expedienteId: formData.get("expedienteId"),
+    canal: formData.get("canal"),
+    cuerpo: formData.get("cuerpo"),
+  });
+  if (!parsed.success) throw new Error("Mensaje inválido");
+
+  const exp = await prisma.expediente.findUnique({
+    where: { id: parsed.data.expedienteId },
+  });
+  if (!exp) throw new Error("Expediente inexistente");
+
+  const esEnte =
+    session.user.rol === "GESTOR_ENTE" || session.user.rol === "SUPER_ADMIN";
+  const esOperadorEstaPrestadora =
+    session.user.rol === "OPERADOR_PRESTADORA" &&
+    session.user.prestadoraId === exp.prestadoraId;
+
+  // El Ente escribe en ambos canales; la prestadora solo en el suyo.
+  if (!esEnte) {
+    if (!(esOperadorEstaPrestadora && parsed.data.canal === "PRESTADORA")) {
+      throw new Error("Sin permiso para escribir en este canal");
+    }
+  }
+
+  const nombre =
+    session.user.name && session.user.name.trim().length > 0
+      ? session.user.name
+      : esEnte
+        ? "ENCOSEP"
+        : exp.prestadoraId
+          ? "Prestadora"
+          : "Usuario";
+
+  await prisma.mensajeExpediente.create({
+    data: {
+      expedienteId: parsed.data.expedienteId,
+      canal: parsed.data.canal,
+      autorId: session.user.id,
+      autorNombre: nombre,
+      esEnte,
+      cuerpo: parsed.data.cuerpo,
+    },
+  });
+
+  revalidatePath(`/admin/expediente/${parsed.data.expedienteId}`);
+}
+
 const CambiarEstadoExpSchema = z.object({
   expedienteId: z.string().min(1),
   estado: z.enum(["ABIERTO", "EN_TRAMITE", "RESUELTO", "ARCHIVADO"]),

@@ -9,7 +9,7 @@ import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { SvcIcon } from "@/components/servicios/SvcIcon";
 import { svcFromKind } from "@/lib/servicios";
 import { cambiarEstadoExpediente } from "./actions";
-import { Workspace, type ActoView } from "./Workspace";
+import { Workspace, type ActoView, type MensajeView } from "./Workspace";
 
 export const metadata = { title: "Expediente · Panel ENCOSEP" };
 
@@ -59,6 +59,7 @@ export default async function ExpedienteDetallePage({
         include: { autor: true, adjuntos: true },
         orderBy: { createdAt: "asc" },
       },
+      mensajes: { orderBy: { createdAt: "asc" } },
     },
   });
   if (!exp) notFound();
@@ -99,6 +100,26 @@ export default async function ExpedienteDetallePage({
       nombre: adj.nombre,
     })),
   }));
+
+  const mapMensaje = (msg: {
+    id: string;
+    autorNombre: string;
+    esEnte: boolean;
+    cuerpo: string;
+    createdAt: Date;
+  }): MensajeView => ({
+    id: msg.id,
+    autorNombre: msg.autorNombre,
+    esEnte: msg.esEnte,
+    cuerpo: msg.cuerpo,
+    fecha: fmt(msg.createdAt),
+  });
+  const mensajesUsuario = exp.mensajes
+    .filter((m) => m.canal === "USUARIO")
+    .map(mapMensaje);
+  const mensajesPrestadora = exp.mensajes
+    .filter((m) => m.canal === "PRESTADORA")
+    .map(mapMensaje);
 
   return (
     <div className="flex flex-col gap-5">
@@ -146,6 +167,8 @@ export default async function ExpedienteDetallePage({
         esOperadorEstaPrestadora={esOperadorEstaPrestadora}
         archivado={exp.estado === "ARCHIVADO"}
         notificables={ACTOS_NOTIFICABLES}
+        mensajesUsuario={mensajesUsuario}
+        mensajesPrestadora={mensajesPrestadora}
       />
 
       {/* Datos del expediente */}

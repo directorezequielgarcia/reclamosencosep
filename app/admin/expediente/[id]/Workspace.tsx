@@ -3,13 +3,25 @@
 import { useState } from "react";
 import type { TipoActo } from "@prisma/client";
 import { TIPO_ACTO_META, GUIA_ETAPA } from "@/lib/expedientes";
-import { agregarActo, notificarActo } from "./actions";
+import {
+  agregarActo,
+  notificarActo,
+  enviarMensajeExpediente,
+} from "./actions";
 
 export type AdjuntoView = {
   id: string;
   tipo: string;
   url: string;
   nombre: string | null;
+};
+
+export type MensajeView = {
+  id: string;
+  autorNombre: string;
+  esEnte: boolean;
+  cuerpo: string;
+  fecha: string;
 };
 
 export type ActoView = {
@@ -30,6 +42,8 @@ type Props = {
   esOperadorEstaPrestadora: boolean;
   archivado: boolean;
   notificables: string[];
+  mensajesUsuario: MensajeView[];
+  mensajesPrestadora: MensajeView[];
 };
 
 const NUEVO = "__nuevo__";
@@ -48,6 +62,8 @@ export function Workspace({
   esOperadorEstaPrestadora,
   archivado,
   notificables,
+  mensajesUsuario,
+  mensajesPrestadora,
 }: Props) {
   const puedeLabrar = (esEnte || esOperadorEstaPrestadora) && !archivado;
   // Por defecto mostramos el último acto; si no hay, la mesa de "nuevo acto".
@@ -161,31 +177,104 @@ export function Workspace({
       </section>
 
       {/* ───────── ZONA III · Mensajería ───────── */}
-      <aside className="rounded-2xl border border-line bg-paper p-4 flex flex-col gap-4">
+      <aside className="rounded-2xl border border-line bg-paper p-4 flex flex-col gap-4 lg:sticky lg:top-4">
         <h2 className="text-[11px] font-bold text-muted uppercase tracking-wider">
           Mensajería
         </h2>
-        <div className="rounded-xl border border-line bg-paper-2 p-3">
-          <div className="text-xs font-bold text-navy">💬 Chat con el usuario</div>
-          <p className="text-[11px] text-muted mt-1">
-            Conversación con el vecino reclamante.
-          </p>
-          <div className="mt-2 text-[10px] uppercase tracking-wider font-bold text-muted bg-paper px-2 py-1 rounded-full inline-block">
-            Próximamente
-          </div>
-        </div>
-        <div className="rounded-xl border border-line bg-paper-2 p-3">
-          <div className="text-xs font-bold text-navy">
-            🏢 Chat con la prestadora
-          </div>
-          <p className="text-[11px] text-muted mt-1">
-            Conversación con la empresa prestadora del servicio.
-          </p>
-          <div className="mt-2 text-[10px] uppercase tracking-wider font-bold text-muted bg-paper px-2 py-1 rounded-full inline-block">
-            Próximamente
-          </div>
-        </div>
+        {/* El chat con el usuario lo maneja el Ente; la prestadora no lo ve. */}
+        {esEnte && (
+          <ChatPanel
+            titulo="💬 Chat con el usuario"
+            expedienteId={expedienteId}
+            canal="USUARIO"
+            mensajes={mensajesUsuario}
+            puedeEscribir={esEnte}
+          />
+        )}
+        {(esEnte || esOperadorEstaPrestadora) && (
+          <ChatPanel
+            titulo="🏢 Chat con la prestadora"
+            expedienteId={expedienteId}
+            canal="PRESTADORA"
+            mensajes={mensajesPrestadora}
+            puedeEscribir={esEnte || esOperadorEstaPrestadora}
+          />
+        )}
       </aside>
+    </div>
+  );
+}
+
+function ChatPanel({
+  titulo,
+  expedienteId,
+  canal,
+  mensajes,
+  puedeEscribir,
+}: {
+  titulo: string;
+  expedienteId: string;
+  canal: "USUARIO" | "PRESTADORA";
+  mensajes: MensajeView[];
+  puedeEscribir: boolean;
+}) {
+  return (
+    <div className="rounded-xl border border-line bg-paper-2 p-3 flex flex-col gap-2">
+      <div className="text-xs font-bold text-navy">{titulo}</div>
+
+      <div className="flex flex-col gap-2 max-h-72 overflow-y-auto pr-1">
+        {mensajes.length === 0 ? (
+          <p className="text-[11px] text-muted italic">
+            Todavía no hay mensajes.
+          </p>
+        ) : (
+          mensajes.map((msg) => (
+            <div
+              key={msg.id}
+              className={`flex flex-col ${msg.esEnte ? "items-end" : "items-start"}`}
+            >
+              <div
+                className={`max-w-[88%] px-2.5 py-1.5 rounded-2xl text-xs ${
+                  msg.esEnte
+                    ? "bg-svc-blue/15 text-navy rounded-br-sm"
+                    : "bg-paper border border-line text-navy rounded-bl-sm"
+                }`}
+              >
+                <div className="text-[9px] uppercase tracking-wide font-bold text-muted mb-0.5">
+                  {msg.autorNombre}
+                </div>
+                <div className="whitespace-pre-wrap leading-snug">
+                  {msg.cuerpo}
+                </div>
+              </div>
+              <div className="text-[9px] text-muted mt-0.5">{msg.fecha}</div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {puedeEscribir && (
+        <form
+          action={enviarMensajeExpediente}
+          className="flex flex-col gap-1.5 mt-1"
+        >
+          <input type="hidden" name="expedienteId" value={expedienteId} />
+          <input type="hidden" name="canal" value={canal} />
+          <textarea
+            name="cuerpo"
+            required
+            rows={2}
+            placeholder="Escribí un mensaje…"
+            className="px-2.5 py-1.5 rounded-lg border border-line-strong text-xs bg-paper resize-y"
+          />
+          <button
+            type="submit"
+            className="self-end px-3 py-1.5 rounded-lg bg-navy-2 text-white text-xs font-semibold"
+          >
+            Enviar
+          </button>
+        </form>
+      )}
     </div>
   );
 }

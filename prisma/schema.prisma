@@ -283,12 +283,32 @@ model Expediente {
   reclamos     Reclamo[]
   actos        ActoAdministrativo[]
   inspecciones Inspeccion[]
+  mensajes     MensajeExpediente[]
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
   cerradoEn    DateTime?
 
   @@index([prestadoraId, estado])
   @@index([estado])
+}
+
+enum CanalMensaje {
+  USUARIO    // chat con el vecino reclamante
+  PRESTADORA // chat con la empresa prestadora
+}
+
+model MensajeExpediente {
+  id           String       @id @default(cuid())
+  expedienteId String
+  expediente   Expediente   @relation(fields: [expedienteId], references: [id], onDelete: Cascade)
+  canal        CanalMensaje
+  autorId      String                            // quién lo escribió
+  autorNombre  String                            // nombre desnormalizado para mostrar
+  esEnte       Boolean                           // true = lo escribió el Ente
+  cuerpo       String
+  createdAt    DateTime     @default(now())
+
+  @@index([expedienteId, canal, createdAt])
 }
 
 model ActoAdministrativo {
