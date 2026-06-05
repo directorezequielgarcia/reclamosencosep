@@ -86,6 +86,19 @@ export default async function ImprimirExpedientePage({
       ? `${exp.reclamos[0].ciudadano.nombre} ${exp.reclamos[0].ciudadano.apellido}`
       : exp.intervinientes ?? "—";
 
+  // Anexo de imágenes: todas las fotos adjuntas se agregan al final del documento.
+  const imagenesAnexo = actos.flatMap((a, i) =>
+    a.adjuntos
+      .filter((adj) => adj.tipo === "FOTO")
+      .map((adj) => ({
+        url: adj.url,
+        foja: i + 2,
+        acto: TIPO_ACTO_META[a.tipo].label,
+        nombre: adj.nombre,
+      })),
+  );
+  const fojaAnexo = actos.length + 2;
+
   // Conserva el alcance al cambiar de hoja.
   const baseQuery: Record<string, string> = {};
   if (sp.solo) baseQuery.solo = sp.solo;
@@ -187,8 +200,7 @@ export default async function ImprimirExpedientePage({
               day: "2-digit",
               month: "long",
               year: "numeric",
-            })}{" "}
-            por {exp.iniciador.nombre} {exp.iniciador.apellido}
+            })}
           </div>
         </div>
 
@@ -205,7 +217,7 @@ export default async function ImprimirExpedientePage({
                 </div>
                 <h2 className="text-xl font-bold mt-1">{a.titulo}</h2>
                 <div className="text-xs text-gray-600 mt-1">
-                  {fmt(a.createdAt)} · {a.autor.nombre} {a.autor.apellido}
+                  {fmt(a.createdAt)}
                 </div>
                 <div className="mt-4 text-[15px] leading-relaxed whitespace-pre-wrap text-justify">
                   {a.cuerpo}
@@ -222,6 +234,17 @@ export default async function ImprimirExpedientePage({
                   </div>
                 )}
 
+                {/* Firmas del Directorio al pie de la resolución */}
+                {a.tipo === "RESOLUCION" && (
+                  <div className="mt-20 grid grid-cols-3 gap-8 text-center text-xs">
+                    <div className="pt-1 border-t border-black">Presidente</div>
+                    <div className="pt-1 border-t border-black">
+                      Vicepresidente
+                    </div>
+                    <div className="pt-1 border-t border-black">Vocal</div>
+                  </div>
+                )}
+
                 {a.notificadoEn && (
                   <div className="mt-5 text-xs text-gray-700 border-t border-gray-300 pt-2">
                     Notificado a {a.notificadoA} el {fmt(a.notificadoEn)}.
@@ -231,6 +254,37 @@ export default async function ImprimirExpedientePage({
             </div>
           );
         })}
+
+        {/* Anexo: las imágenes se agregan al final del documento */}
+        {imagenesAnexo.length > 0 && (
+          <div className="foja pt-4">
+            <FojaHeader nro={nro} anio={anio} foja={fojaAnexo} />
+            <h2 className="text-lg font-bold mt-6 mb-4">
+              Anexo — Documental gráfica
+            </h2>
+            <div className="flex flex-col gap-6">
+              {imagenesAnexo.map((img, idx) => (
+                <figure
+                  key={idx}
+                  className="text-center"
+                  style={{ breakInside: "avoid" }}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={img.url}
+                    alt={img.nombre ?? `Imagen ${idx + 1}`}
+                    className="mx-auto max-w-full border border-gray-300"
+                    style={{ maxHeight: "20cm", objectFit: "contain" }}
+                  />
+                  <figcaption className="text-xs text-gray-600 mt-1">
+                    Imagen {idx + 1} — {img.acto} (foja {String(img.foja).padStart(3, "0")})
+                    {img.nombre ? ` · ${img.nombre}` : ""}
+                  </figcaption>
+                </figure>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
