@@ -27,6 +27,30 @@ export const TIPO_ACTO_META: Record<
   NOTA: { label: "Nota interna", icon: "📝" },
 };
 
+// Guía breve por etapa: se muestra arriba de la mesa de trabajo para orientar
+// qué corresponde hacer en cada acto del expediente.
+export const GUIA_ETAPA: Record<TipoActo, string> = {
+  CARATULACION:
+    "Apertura del expediente: quedan fijados el tipo, las partes y el objeto.",
+  ACTA_RECEPCION:
+    "Dejá constancia de la pretensión, el reclamo y la documental aportada por el reclamante.",
+  NOTIFICACION: "Comunicación formal a una de las partes.",
+  INTIMACION:
+    "Intimá a la prestadora a cumplir o regularizar dentro de un plazo.",
+  DESCARGO_PRESTADORA:
+    "Descargo o respuesta de la prestadora frente a lo actuado.",
+  CONSTATACION:
+    "Acta de constatación: dejá registro de lo verificado (inspección, hechos, estado del servicio).",
+  AMPLIACION:
+    "Ampliación: sumá nueva información, hechos o documental al expediente.",
+  DISPOSICION:
+    "Proveído simple: orden de trámite. Se pueden dictar varias a lo largo del expediente.",
+  RESOLUCION:
+    "Resolución fundada que decide la cuestión. Conviene notificarla a las partes.",
+  CIERRE: "Cierre del expediente: dejá constancia del resultado.",
+  NOTA: "Nota interna del equipo. No se notifica a las partes.",
+};
+
 // Tipos de acto que el Ente puede labrar
 export const TIPOS_ACTO_ENTE: TipoActo[] = [
   "NOTIFICACION",

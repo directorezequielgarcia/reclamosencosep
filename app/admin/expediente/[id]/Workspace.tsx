@@ -1,0 +1,373 @@
+"use client";
+
+import { useState } from "react";
+import type { TipoActo } from "@prisma/client";
+import { TIPO_ACTO_META, GUIA_ETAPA } from "@/lib/expedientes";
+import { agregarActo, notificarActo } from "./actions";
+
+export type AdjuntoView = {
+  id: string;
+  tipo: string;
+  url: string;
+  nombre: string | null;
+};
+
+export type ActoView = {
+  id: string;
+  tipo: TipoActo;
+  titulo: string;
+  cuerpo: string;
+  fecha: string;
+  autor: string;
+  notificadoTexto: string | null;
+  adjuntos: AdjuntoView[];
+};
+
+type Props = {
+  expedienteId: string;
+  actos: ActoView[];
+  esEnte: boolean;
+  esOperadorEstaPrestadora: boolean;
+  archivado: boolean;
+  notificables: string[];
+};
+
+const NUEVO = "__nuevo__";
+
+function iconoAdjunto(tipo: string): string {
+  if (tipo === "FOTO") return "🖼️";
+  if (tipo === "VIDEO") return "🎬";
+  if (tipo === "AUDIO") return "🔊";
+  return "📎";
+}
+
+export function Workspace({
+  expedienteId,
+  actos,
+  esEnte,
+  esOperadorEstaPrestadora,
+  archivado,
+  notificables,
+}: Props) {
+  const puedeLabrar = (esEnte || esOperadorEstaPrestadora) && !archivado;
+  // Por defecto mostramos el último acto; si no hay, la mesa de "nuevo acto".
+  const [sel, setSel] = useState<string>(
+    actos.length ? actos[actos.length - 1].id : puedeLabrar ? NUEVO : "",
+  );
+
+  const actoSel = actos.find((a) => a.id === sel) ?? null;
+
+  return (
+    <div className="grid lg:grid-cols-[240px_1fr_300px] gap-4 items-start">
+      {/* ───────── ZONA I · Crónica / hoja de ruta ───────── */}
+      <aside className="rounded-2xl border border-line bg-paper p-3 lg:sticky lg:top-4">
+        <h2 className="text-[11px] font-bold text-muted uppercase tracking-wider mb-2 px-1">
+          Crónica del expediente
+        </h2>
+        <ol className="flex flex-col gap-1">
+          {actos.map((a, i) => {
+            const ti = TIPO_ACTO_META[a.tipo];
+            const activo = a.id === sel;
+            return (
+              <li key={a.id}>
+                <button
+                  type="button"
+                  onClick={() => setSel(a.id)}
+                  className={`w-full text-left flex items-start gap-2 px-2 py-1.5 rounded-lg border transition ${
+                    activo
+                      ? "border-svc-orange bg-svc-orange/10"
+                      : "border-transparent hover:bg-paper-2"
+                  }`}
+                >
+                  <span className="text-[10px] font-mono font-bold text-muted mt-0.5 w-8 shrink-0">
+                    f.{String(i + 1).padStart(2, "0")}
+                  </span>
+                  <span className="text-base leading-none mt-0.5">
+                    {ti.icon}
+                  </span>
+                  <span className="flex flex-col min-w-0">
+                    <span className="text-[10px] uppercase tracking-wider font-bold text-svc-orange leading-tight">
+                      {ti.label}
+                    </span>
+                    <span className="text-xs text-navy truncate leading-tight">
+                      {a.titulo}
+                    </span>
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ol>
+
+        {puedeLabrar && (
+          <button
+            type="button"
+            onClick={() => setSel(NUEVO)}
+            className={`w-full mt-2 px-2 py-2 rounded-lg border-2 border-dashed text-xs font-bold transition ${
+              sel === NUEVO
+                ? "border-svc-orange text-svc-orange bg-svc-orange/5"
+                : "border-line-strong text-muted hover:border-svc-orange hover:text-svc-orange"
+            }`}
+          >
+            + Labrar nuevo acto
+          </button>
+        )}
+      </aside>
+
+      {/* ───────── ZONA II · Mesa de trabajo ───────── */}
+      <section className="rounded-2xl border border-line bg-paper p-5 min-h-[300px]">
+        {/* Tira horizontal de etapas (atajo) */}
+        {actos.length > 0 && (
+          <div className="flex gap-1.5 overflow-x-auto pb-3 mb-3 border-b border-line">
+            {actos.map((a, i) => {
+              const ti = TIPO_ACTO_META[a.tipo];
+              const activo = a.id === sel;
+              return (
+                <button
+                  key={a.id}
+                  type="button"
+                  onClick={() => setSel(a.id)}
+                  title={`f.${i + 1} · ${ti.label}`}
+                  className={`shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap border transition ${
+                    activo
+                      ? "bg-svc-orange text-white border-svc-orange"
+                      : "bg-paper-2 text-navy border-line hover:border-svc-orange"
+                  }`}
+                >
+                  {ti.icon} {ti.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {sel === NUEVO ? (
+          <NuevoActo
+            expedienteId={expedienteId}
+            esEnte={esEnte}
+            esOperadorEstaPrestadora={esOperadorEstaPrestadora}
+          />
+        ) : actoSel ? (
+          <DetalleActo
+            acto={actoSel}
+            esEnte={esEnte}
+            notificable={notificables.includes(actoSel.tipo)}
+          />
+        ) : (
+          <p className="text-sm text-muted">
+            Seleccioná una etapa de la crónica para verla acá.
+          </p>
+        )}
+      </section>
+
+      {/* ───────── ZONA III · Mensajería ───────── */}
+      <aside className="rounded-2xl border border-line bg-paper p-4 flex flex-col gap-4">
+        <h2 className="text-[11px] font-bold text-muted uppercase tracking-wider">
+          Mensajería
+        </h2>
+        <div className="rounded-xl border border-line bg-paper-2 p-3">
+          <div className="text-xs font-bold text-navy">💬 Chat con el usuario</div>
+          <p className="text-[11px] text-muted mt-1">
+            Conversación con el vecino reclamante.
+          </p>
+          <div className="mt-2 text-[10px] uppercase tracking-wider font-bold text-muted bg-paper px-2 py-1 rounded-full inline-block">
+            Próximamente
+          </div>
+        </div>
+        <div className="rounded-xl border border-line bg-paper-2 p-3">
+          <div className="text-xs font-bold text-navy">
+            🏢 Chat con la prestadora
+          </div>
+          <p className="text-[11px] text-muted mt-1">
+            Conversación con la empresa prestadora del servicio.
+          </p>
+          <div className="mt-2 text-[10px] uppercase tracking-wider font-bold text-muted bg-paper px-2 py-1 rounded-full inline-block">
+            Próximamente
+          </div>
+        </div>
+      </aside>
+    </div>
+  );
+}
+
+function DetalleActo({
+  acto,
+  esEnte,
+  notificable,
+}: {
+  acto: ActoView;
+  esEnte: boolean;
+  notificable: boolean;
+}) {
+  const ti = TIPO_ACTO_META[acto.tipo];
+  return (
+    <div className="flex flex-col gap-2">
+      {/* Encabezado contextual: en qué etapa estás + qué hacer */}
+      <div className="rounded-xl bg-svc-orange/10 border border-svc-orange/30 px-3 py-2">
+        <div className="flex items-center gap-2">
+          <span className="text-lg">{ti.icon}</span>
+          <span className="text-[11px] uppercase tracking-wider font-bold text-svc-orange">
+            Estás en: {ti.label}
+          </span>
+        </div>
+        <p className="text-xs text-navy mt-1">{GUIA_ETAPA[acto.tipo]}</p>
+      </div>
+
+      <div className="text-xs text-muted mt-1">
+        {acto.fecha} · {acto.autor}
+      </div>
+      <h3 className="text-lg font-bold text-navy">{acto.titulo}</h3>
+      <div className="text-sm text-navy whitespace-pre-wrap leading-relaxed">
+        {acto.cuerpo}
+      </div>
+
+      {acto.adjuntos.length > 0 && (
+        <div className="mt-1 flex flex-wrap gap-2">
+          {acto.adjuntos.map((adj) => (
+            <a
+              key={adj.id}
+              href={adj.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-line bg-paper-2 text-xs text-navy hover:bg-paper-3"
+            >
+              <span>{iconoAdjunto(adj.tipo)}</span>
+              <span className="max-w-[160px] truncate">
+                {adj.nombre ?? "Archivo"}
+              </span>
+            </a>
+          ))}
+        </div>
+      )}
+
+      {/* Notificación (transversal, no es una etapa) */}
+      {notificable && (
+        <div className="mt-2 pt-2 border-t border-line">
+          {acto.notificadoTexto ? (
+            <div className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-svc-green">
+              <span>✓</span>
+              <span>{acto.notificadoTexto}</span>
+            </div>
+          ) : esEnte ? (
+            <form action={notificarActo}>
+              <input type="hidden" name="actoId" value={acto.id} />
+              <button
+                type="submit"
+                className="text-xs px-3 py-1.5 rounded-lg border border-svc-blue text-svc-blue font-semibold hover:bg-svc-blue/10"
+              >
+                📨 Notificar a la prestadora
+              </button>
+            </form>
+          ) : (
+            <div className="text-[11px] text-muted italic">Sin notificar</div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function NuevoActo({
+  expedienteId,
+  esEnte,
+  esOperadorEstaPrestadora,
+}: {
+  expedienteId: string;
+  esEnte: boolean;
+  esOperadorEstaPrestadora: boolean;
+}) {
+  const [tipo, setTipo] = useState<string>("");
+  const guia = tipo ? GUIA_ETAPA[tipo as TipoActo] : null;
+
+  return (
+    <form
+      action={agregarActo}
+      encType="multipart/form-data"
+      className="flex flex-col gap-2"
+    >
+      <h3 className="text-lg font-bold text-navy">Labrar nuevo acto</h3>
+      <input type="hidden" name="expedienteId" value={expedienteId} />
+
+      <label className="text-[10px] uppercase tracking-wider text-muted font-semibold mt-1">
+        Tipo de acto
+      </label>
+      <select
+        name="tipo"
+        required
+        value={tipo}
+        onChange={(e) => setTipo(e.target.value)}
+        className="px-2 py-2 rounded-lg border border-line-strong text-sm bg-paper"
+      >
+        <option value="" disabled>
+          Seleccionar…
+        </option>
+        {esEnte && (
+          <>
+            <option value="ACTA_RECEPCION">📋 Acta de recepción</option>
+            <option value="NOTIFICACION">📨 Notificación</option>
+            <option value="INTIMACION">⚖️ Intimación</option>
+            <option value="CONSTATACION">🔎 Acta de constatación</option>
+            <option value="AMPLIACION">➕ Ampliación</option>
+            <option value="DISPOSICION">🖋️ Disposición (proveído)</option>
+            <option value="RESOLUCION">📜 Resolución</option>
+            <option value="NOTA">📝 Nota interna</option>
+            <option value="CIERRE">🔒 Cierre</option>
+          </>
+        )}
+        {esOperadorEstaPrestadora && (
+          <option value="DESCARGO_PRESTADORA">
+            🛡️ Descargo de la prestadora
+          </option>
+        )}
+      </select>
+
+      {guia && (
+        <p className="text-xs text-navy bg-svc-orange/10 border border-svc-orange/30 rounded-lg px-3 py-2">
+          {guia}
+        </p>
+      )}
+
+      <label className="text-[10px] uppercase tracking-wider text-muted font-semibold mt-2">
+        Título
+      </label>
+      <input
+        name="titulo"
+        required
+        placeholder="ej: Intímase a la prestadora a regularizar el servicio…"
+        className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper"
+      />
+
+      <label className="text-[10px] uppercase tracking-wider text-muted font-semibold mt-2">
+        Cuerpo del acto
+      </label>
+      <textarea
+        name="cuerpo"
+        required
+        rows={6}
+        placeholder="Visto el reclamo #… y considerando que… SE RESUELVE: …"
+        className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper resize-y"
+      />
+
+      <label className="text-[10px] uppercase tracking-wider text-muted font-semibold mt-2">
+        Documental (opcional)
+      </label>
+      <input
+        type="file"
+        name="archivos"
+        multiple
+        accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx"
+        className="text-xs text-navy file:mr-3 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-navy-2 file:text-white file:text-xs file:font-semibold"
+      />
+      <p className="text-[10px] text-muted">
+        Fotos, videos, audios o documentos (PDF/Word/Excel).
+      </p>
+
+      <button
+        type="submit"
+        className="px-4 py-2.5 rounded-lg bg-svc-orange text-white font-bold text-sm mt-2"
+      >
+        Labrar acto y agregar al expediente
+      </button>
+    </form>
+  );
+}
