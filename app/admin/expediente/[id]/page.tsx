@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { EXPEDIENTE_ESTADO_META } from "@/lib/expedientes";
+import { EXPEDIENTE_ESTADO_META, TIPO_ACTO_META } from "@/lib/expedientes";
 import { TONE_CLASS } from "@/lib/admin";
 import { EstadoBadge } from "@/components/ui/EstadoBadge";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
@@ -40,6 +40,35 @@ function fmt(d: Date): string {
     minute: "2-digit",
   });
 }
+
+// Duración legible entre dos momentos.
+function formatDur(ms: number): string {
+  const min = Math.max(0, Math.floor(ms / 60000));
+  const dias = Math.floor(min / 1440);
+  const horas = Math.floor((min % 1440) / 60);
+  if (dias > 0) return `${dias} día${dias === 1 ? "" : "s"} ${horas} h`;
+  if (horas > 0) return `${horas} h`;
+  return `${min} min`;
+}
+
+// Según el último acto, quién debería emitir el próximo (quién está demorando).
+const ESPERA_DE: Record<string, string> = {
+  CARATULACION: "ENCOSEP — labrar el acta de recepción / notificar",
+  ACTA_RECEPCION: "ENCOSEP — notificar a la prestadora",
+  NOTIFICACION: "la parte notificada — debe responder",
+  INTIMACION: "la prestadora — debe cumplir o descargar",
+  DESCARGO_PRESTADORA: "ENCOSEP — proveer / disponer",
+  CONSTATACION: "ENCOSEP — continuar el trámite",
+  AMPLIACION: "ENCOSEP — proveer",
+  DISPOSICION: "la parte / ENCOSEP — según lo dispuesto",
+  CONVOCATORIA_AUDIENCIA: "realizar la audiencia pública",
+  AUDIENCIA: "ENCOSEP — emitir dictamen",
+  DICTAMEN: "la Secretaría / Autoridad de Aplicación",
+  DERIVACION: "la repartición a la que se derivó",
+  RESOLUCION: "ENCOSEP — notificar / archivar",
+  CIERRE: "—",
+  NOTA: "ENCOSEP",
+};
 
 export default async function ExpedienteDetallePage({
   params,
@@ -135,6 +164,24 @@ export default async function ExpedienteDetallePage({
     .filter((m) => m.canal === "PRESTADORA")
     .map(mapMensaje);
 
+  // Contadores de tiempo y detección de demora.
+  const ahora = new Date();
+  const ultimoActo = exp.actos[exp.actos.length - 1] ?? null;
+  const tiempoTramite = formatDur(ahora.getTime() - exp.createdAt.getTime());
+  const tiempoEtapa = ultimoActo
+    ? formatDur(ahora.getTime() - ultimoActo.createdAt.getTime())
+    : "—";
+  const diasEtapa = ultimoActo
+    ? Math.floor((ahora.getTime() - ultimoActo.createdAt.getTime()) / 86400000)
+    : 0;
+  const tonoDemora: "success" | "warning" | "danger" =
+    diasEtapa > 15 ? "danger" : diasEtapa >= 7 ? "warning" : "success";
+  const espera = ultimoActo ? (ESPERA_DE[ultimoActo.tipo] ?? "—") : "—";
+  const reclamoIniciante = exp.reclamos[0] ?? null;
+  const reclamanteNombre = reclamoIniciante?.ciudadano
+    ? `${reclamoIniciante.ciudadano.nombre} ${reclamoIniciante.ciudadano.apellido}`
+    : (exp.intervinientes ?? "—");
+
   return (
     <div className="flex flex-col gap-5">
       <Breadcrumbs
@@ -200,6 +247,50 @@ export default async function ExpedienteDetallePage({
         }}
         prestadoras={prestadoras}
       />
+
+      {/* Estado del trámite: contexto + contadores + demora */}
+      <div className="rounded-2xl border border-line bg-paper p-5">
+        <h2 className="text-[11px] font-bold text-muted uppercase tracking-wider mb-3">
+          Estado del trámite
+        </h2>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-2 text-sm">
+          <Dato label="Objeto" valor={exp.asunto} />
+          <Dato label="Usuario / reclamante" valor={reclamanteNombre} />
+          <Dato label="Prestadora" valor={exp.prestadora.razonSocial} />
+          <Dato
+            label="N° reclamo iniciante"
+            valor={reclamoIniciante ? `#${reclamoIniciante.codigo}` : "—"}
+          />
+          <Dato label="N° expediente" valor={exp.numero} />
+          <Dato
+            label="Inicio"
+            valor={exp.createdAt.toLocaleDateString("es-AR", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+            })}
+          />
+          <Dato label="Tiempo del trámite" valor={tiempoTramite} />
+          <Dato label="Tiempo en esta etapa" valor={tiempoEtapa} />
+          <Dato
+            label="Última actividad"
+            valor={ultimoActo ? TIPO_ACTO_META[ultimoActo.tipo].label : "—"}
+          />
+        </div>
+        <div
+          className={`mt-3 rounded-xl border px-3 py-2 text-sm ${TONE_CLASS[tonoDemora]}`}
+        >
+          <strong>Esperando:</strong> {espera}
+          {ultimoActo && (
+            <>
+              {" "}
+              · hace <strong>{tiempoEtapa}</strong>
+              {diasEtapa > 15 && " · ⚠️ demora alta"}
+              {diasEtapa >= 7 && diasEtapa <= 15 && " · ⏳ atención"}
+            </>
+          )}
+        </div>
+      </div>
 
       {/* Datos del expediente */}
       <div className="grid md:grid-cols-3 gap-4 items-start">
@@ -272,6 +363,17 @@ export default async function ExpedienteDetallePage({
           </Card>
         )}
       </div>
+    </div>
+  );
+}
+
+function Dato({ label, valor }: { label: string; valor: string }) {
+  return (
+    <div className="flex flex-col">
+      <span className="text-[10px] uppercase tracking-wider text-muted font-semibold">
+        {label}
+      </span>
+      <span className="text-navy font-medium">{valor}</span>
     </div>
   );
 }
