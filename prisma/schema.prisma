@@ -275,6 +275,7 @@ model Expediente {
   asunto       String
   tipoExpediente String         @default("Reclamo individual")
   intervinientes String?                          // texto: reclamante, prestadora, otros
+  solicitadoPor  String?                          // origen: Autoridad de Aplicación, Concejo, otro
   prestadoraId String
   prestadora   Prestadora       @relation(fields: [prestadoraId], references: [id])
   estado       ExpedienteEstado @default(ABIERTO)

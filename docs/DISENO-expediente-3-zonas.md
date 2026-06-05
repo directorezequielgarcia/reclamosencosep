@@ -90,3 +90,45 @@
    Aplicación, el Concejo u otro. Tipos: readecuación tarifaria, cambio de cuadro
    tarifario, etc. Campo **"solicitado por"**: Autoridad de Aplicación / Concejo
    Deliberante / Otro (especificar). *(Pendiente — G5.)*
+
+## Modelo: el expediente como PROCESO ADMINISTRATIVO
+
+El expediente es una **carpeta** que se abre cuando el reclamo se eleva a
+carácter de expediente. Adentro viven **etapas (actos)** encadenadas, con idas
+y vueltas — como un proceso administrativo real:
+
+```
+Apertura → Acta de recepción (pretensión + documental) → Notificación →
+Constatación → Contestación prestadora → Disposición (proveído) →
+[ Ampliación (el usuario pide/aporta) | otra Disposición |
+  Derivación a Secretaría/Autoridad de Aplicación/otro Ente →
+  Contestación de esa repartición | Prueba (pericia, no documental) ] (ciclos)
+→ Resolución → Archivo
+```
+
+- **Disposición** = proveído simple (pueden dictarse varias).
+- **Ampliación** = el usuario habla / pide / aporta.
+- **Derivación** = se gira a una Secretaría / Autoridad de Aplicación / otro ente
+  para su intervención; esa parte contesta. *(Falta tipo de acto DERIVACION +
+  rol que contesta.)*
+- **Prueba** = se puede sumar prueba no documental (p. ej. una pericia).
+
+### Reglas de trabajo por rol (cada parte vuelca en SU etapa)
+- Cada rol con **intervención en el expediente** (usuario, prestadora, ENCOSEP,
+  Secretaría/Autoridad de Aplicación), al abrir su etapa, **puede generar /
+  volcar / modificar** contenido en ella, según su rol.
+- **ENCOSEP** puede **modificar la carátula** (G2).
+- El **acta de recepción del reclamo NO va pegada a la carátula**: es un acto
+  **separado**, y ahí se adjunta **toda la documental a la fecha**. *(YA está:
+  CARATULACION y ACTA_RECEPCION son actos distintos.)*
+- Se puede **incorporar más prueba documental en CUALQUIER etapa**. *(YA está:
+  cada acto admite adjuntos foto/video/audio/documento.)*
+
+### Estado vs. lo ya construido
+- ✅ Etapas como actos encadenados · adjuntos en cada etapa · acta separada de
+  la carátula · disposiciones múltiples · ampliación · contestación de la
+  prestadora · resolución · notificación transversal.
+- ⏳ **Derivación** a Secretaría/Autoridad de Aplicación + que esa repartición
+  **conteste** (rol en el expediente).
+- ⏳ **Permisos finos por rol/etapa** (quién vuelca en qué).
+- ⏳ **G2** carátula editable por ENCOSEP.

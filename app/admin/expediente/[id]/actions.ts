@@ -224,6 +224,68 @@ export async function enviarMensajeExpediente(formData: FormData) {
   revalidatePath(`/admin/expediente/${parsed.data.expedienteId}`);
 }
 
+const CaratulaSchema = z.object({
+  expedienteId: z.string().min(1),
+  numero: z.string().min(1).max(40),
+  tipoExpediente: z.string().min(1).max(60),
+  asunto: z.string().min(3).max(200),
+  caratula: z.string().min(3).max(300),
+  intervinientes: z.string().max(400).optional(),
+  prestadoraId: z.string().min(1),
+});
+
+export async function editarCaratula(formData: FormData) {
+  const session = await auth();
+  if (
+    !session ||
+    (session.user.rol !== "GESTOR_ENTE" && session.user.rol !== "SUPER_ADMIN")
+  ) {
+    throw new Error("Solo el Ente puede editar la carátula");
+  }
+
+  const parsed = CaratulaSchema.safeParse({
+    expedienteId: formData.get("expedienteId"),
+    numero: formData.get("numero"),
+    tipoExpediente: formData.get("tipoExpediente"),
+    asunto: formData.get("asunto"),
+    caratula: formData.get("caratula"),
+    intervinientes: formData.get("intervinientes") || undefined,
+    prestadoraId: formData.get("prestadoraId"),
+  });
+  if (!parsed.success) throw new Error("Datos inválidos");
+
+  // El número de expediente debe seguir siendo único.
+  const otro = await prisma.expediente.findFirst({
+    where: {
+      numero: parsed.data.numero,
+      id: { not: parsed.data.expedienteId },
+    },
+    select: { id: true },
+  });
+  if (otro) throw new Error("Ya existe un expediente con ese número");
+
+  // La prestadora debe existir.
+  const prestadora = await prisma.prestadora.findUnique({
+    where: { id: parsed.data.prestadoraId },
+    select: { id: true },
+  });
+  if (!prestadora) throw new Error("Prestadora inexistente");
+
+  await prisma.expediente.update({
+    where: { id: parsed.data.expedienteId },
+    data: {
+      numero: parsed.data.numero,
+      tipoExpediente: parsed.data.tipoExpediente,
+      asunto: parsed.data.asunto,
+      caratula: parsed.data.caratula,
+      intervinientes: parsed.data.intervinientes ?? null,
+      prestadoraId: parsed.data.prestadoraId,
+    },
+  });
+
+  revalidatePath(`/admin/expediente/${parsed.data.expedienteId}`);
+}
+
 const CambiarEstadoExpSchema = z.object({
   expedienteId: z.string().min(1),
   estado: z.enum(["ABIERTO", "EN_TRAMITE", "RESUELTO", "ARCHIVADO"]),
