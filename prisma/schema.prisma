@@ -333,6 +333,9 @@ model ActoAdministrativo {
   //  - "solo esta etapa": marca este acto.
   //  - "hasta acá": marca todos los actos hasta este.
   visiblePrestadora Boolean @default(false)
+  // Borrador vs. confirmado. null = borrador (se puede editar y no se notifica);
+  // con fecha = trabajo confirmado (se puede notificar; solo ENCOSEP lo modifica).
+  confirmadoEn DateTime?
   createdAt    DateTime   @default(now())
 
   @@index([expedienteId, createdAt])

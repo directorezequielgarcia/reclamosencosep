@@ -134,6 +134,9 @@ export async function notificarActo(formData: FormData) {
     include: { expediente: { include: { prestadora: true } } },
   });
   if (!acto) throw new Error("Acto inexistente");
+  if (!acto.confirmadoEn) {
+    throw new Error("Confirmá el trabajo antes de notificar a la otra parte");
+  }
 
   const razon = acto.expediente.prestadora.razonSocial;
   const ahora = new Date();
@@ -248,6 +251,108 @@ export async function eliminarActo(formData: FormData) {
 
   // Los adjuntos se borran en cascada (onDelete: Cascade).
   await prisma.actoAdministrativo.delete({ where: { id: actoId } });
+
+  revalidatePath(`/admin/expediente/${acto.expedienteId}`);
+}
+
+const EditarActoSchema = z.object({
+  actoId: z.string().min(1),
+  titulo: z.string().min(3).max(200),
+  cuerpo: z.string().min(5).max(20000),
+});
+
+// Modifica un acto: solo si está en borrador (lo edita su autor o el Ente), o
+// siempre que sea el Ente (puede corregir incluso lo ya confirmado/notificado).
+export async function editarActo(formData: FormData) {
+  const session = await auth();
+  if (!session) throw new Error("Sin sesión");
+
+  const parsed = EditarActoSchema.safeParse({
+    actoId: formData.get("actoId"),
+    titulo: formData.get("titulo"),
+    cuerpo: formData.get("cuerpo"),
+  });
+  if (!parsed.success) throw new Error("Datos inválidos");
+
+  const acto = await prisma.actoAdministrativo.findUnique({
+    where: { id: parsed.data.actoId },
+    include: { expediente: true },
+  });
+  if (!acto) throw new Error("Acto inexistente");
+
+  const esEnte =
+    session.user.rol === "GESTOR_ENTE" || session.user.rol === "SUPER_ADMIN";
+  const esAutor = acto.autorId === session.user.id;
+
+  if (acto.confirmadoEn) {
+    if (!esEnte) {
+      throw new Error("El acto ya fue confirmado: solo el ENCOSEP puede modificarlo");
+    }
+  } else if (!esAutor && !esEnte) {
+    throw new Error("Sin permiso para editar este borrador");
+  }
+
+  await prisma.actoAdministrativo.update({
+    where: { id: acto.id },
+    data: { titulo: parsed.data.titulo, cuerpo: parsed.data.cuerpo },
+  });
+
+  // Adjuntos nuevos (se suman a los existentes).
+  const archivos = formData
+    .getAll("archivos")
+    .filter((f): f is File => f instanceof File && f.size > 0);
+  for (const file of archivos) {
+    try {
+      const guardado = await guardarAdjuntoActo(acto.id, file);
+      await prisma.actoAdjunto.create({
+        data: {
+          actoId: acto.id,
+          tipo: guardado.tipo as AdjuntoTipo,
+          url: guardado.url,
+          nombre: guardado.nombre,
+          mimeType: guardado.mimeType,
+          bytes: guardado.bytes,
+        },
+      });
+    } catch {
+      // archivo inválido: se ignora sin tumbar la edición
+    }
+  }
+
+  revalidatePath(`/admin/expediente/${acto.expedienteId}`);
+}
+
+// Confirma el trabajo de un acto en borrador. Recién confirmado se puede
+// notificar a la otra parte.
+export async function confirmarActo(formData: FormData) {
+  const session = await auth();
+  if (!session) throw new Error("Sin sesión");
+
+  const actoId = String(formData.get("actoId") ?? "");
+  if (!actoId) throw new Error("Falta el acto");
+
+  const acto = await prisma.actoAdministrativo.findUnique({
+    where: { id: actoId },
+    include: { expediente: true },
+  });
+  if (!acto) throw new Error("Acto inexistente");
+  if (acto.confirmadoEn) throw new Error("El acto ya estaba confirmado");
+
+  const esEnte =
+    session.user.rol === "GESTOR_ENTE" || session.user.rol === "SUPER_ADMIN";
+  const esAutor = acto.autorId === session.user.id;
+  const esOperadorEstaPrestadora =
+    session.user.rol === "OPERADOR_PRESTADORA" &&
+    session.user.prestadoraId === acto.expediente.prestadoraId;
+
+  if (!esAutor && !esEnte && !esOperadorEstaPrestadora) {
+    throw new Error("Sin permiso para confirmar este acto");
+  }
+
+  await prisma.actoAdministrativo.update({
+    where: { id: acto.id },
+    data: { confirmadoEn: new Date() },
+  });
 
   revalidatePath(`/admin/expediente/${acto.expedienteId}`);
 }

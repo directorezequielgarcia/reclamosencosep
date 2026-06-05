@@ -249,6 +249,7 @@ export async function elevarAExpediente(formData: FormData) {
             `con domicilio en ${reclamo.direccion}. Se intima a la prestadora ` +
             `${reclamo.prestadora.razonSocial} a tomar conocimiento.`,
           autorId: session.user.id,
+          confirmadoEn: new Date(),
         },
       },
     },

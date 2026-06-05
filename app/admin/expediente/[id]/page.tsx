@@ -136,6 +136,7 @@ export default async function ExpedienteDetallePage({
       ? `Notificado a ${a.notificadoA} · ${fmt(a.notificadoEn)}`
       : null,
     visiblePrestadora: a.visiblePrestadora,
+    confirmado: a.confirmadoEn !== null,
     adjuntos: a.adjuntos.map((adj) => ({
       id: adj.id,
       tipo: adj.tipo,

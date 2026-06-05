@@ -10,6 +10,8 @@ import {
   enviarMensajeExpediente,
   eliminarActo,
   editarCaratula,
+  editarActo,
+  confirmarActo,
 } from "./actions";
 
 export type CaratulaView = {
@@ -70,6 +72,7 @@ export type ActoView = {
   autor: string;
   notificadoTexto: string | null;
   visiblePrestadora: boolean;
+  confirmado: boolean;
   adjuntos: AdjuntoView[];
 };
 
@@ -146,6 +149,11 @@ export function Workspace({
                   <span className="flex flex-col min-w-0">
                     <span className="text-[10px] uppercase tracking-wider font-bold text-svc-orange leading-tight">
                       {ti.label}
+                      {!a.confirmado && (
+                        <span className="ml-1 text-[9px] text-svc-yellow">
+                          ● borrador
+                        </span>
+                      )}
                     </span>
                     <span className="text-xs text-navy truncate leading-tight">
                       {a.titulo}
@@ -209,6 +217,7 @@ export function Workspace({
           <DetalleActo
             acto={actoSel}
             esEnte={esEnte}
+            puedeEditar={esEnte || esOperadorEstaPrestadora}
             notificable={notificables.includes(actoSel.tipo)}
             expedienteId={expedienteId}
             previos={actos.slice(
@@ -331,6 +340,7 @@ function ChatPanel({
 function DetalleActo({
   acto,
   esEnte,
+  puedeEditar,
   notificable,
   expedienteId,
   previos,
@@ -339,6 +349,7 @@ function DetalleActo({
 }: {
   acto: ActoView;
   esEnte: boolean;
+  puedeEditar: boolean;
   notificable: boolean;
   expedienteId: string;
   previos: ActoView[];
@@ -347,15 +358,28 @@ function DetalleActo({
 }) {
   const ti = TIPO_ACTO_META[acto.tipo];
   const esCaratula = acto.tipo === "CARATULACION";
+  // En borrador y con permiso → se trabaja la hoja (editable).
+  const enBorrador = !acto.confirmado;
   return (
     <div className="flex flex-col gap-2">
-      {/* Encabezado contextual: en qué etapa estás + qué hacer */}
+      {/* Encabezado contextual: en qué etapa estás + qué hacer + estado */}
       <div className="rounded-xl bg-svc-orange/10 border border-svc-orange/30 px-3 py-2">
-        <div className="flex items-center gap-2">
-          <span className="text-lg">{ti.icon}</span>
-          <span className="text-[11px] uppercase tracking-wider font-bold text-svc-orange">
-            Estás en: {ti.label}
-          </span>
+        <div className="flex items-center gap-2 justify-between flex-wrap">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">{ti.icon}</span>
+            <span className="text-[11px] uppercase tracking-wider font-bold text-svc-orange">
+              Estás en: {ti.label}
+            </span>
+          </div>
+          {acto.confirmado ? (
+            <span className="text-[10px] uppercase tracking-wider font-bold text-svc-green bg-svc-green/15 border border-svc-green/40 rounded-full px-2 py-0.5">
+              ✓ Confirmado
+            </span>
+          ) : (
+            <span className="text-[10px] uppercase tracking-wider font-bold text-navy bg-svc-yellow/30 border border-svc-yellow/60 rounded-full px-2 py-0.5">
+              ● Borrador
+            </span>
+          )}
         </div>
         <p className="text-xs text-navy mt-1">
           <strong>Qué hacer:</strong> {GUIA_ETAPA[acto.tipo]}
@@ -397,11 +421,8 @@ function DetalleActo({
       <div className="text-xs text-muted mt-1">
         {acto.fecha} · {acto.autor}
       </div>
-      <h3 className="text-lg font-bold text-navy">{acto.titulo}</h3>
-      <div className="text-sm text-navy whitespace-pre-wrap leading-relaxed">
-        {acto.cuerpo}
-      </div>
 
+      {/* Documental ya cargada */}
       {acto.adjuntos.length > 0 && (
         <div className="mt-1 flex flex-wrap gap-2">
           {acto.adjuntos.map((adj) => (
@@ -421,9 +442,45 @@ function DetalleActo({
         </div>
       )}
 
+      {/* En borrador se trabaja la hoja (editable, como un Word).
+          Confirmado se muestra fijo; solo el Ente puede modificarlo. */}
+      {enBorrador && puedeEditar ? (
+        <FormEditarActo acto={acto} guardarLabel="💾 Guardar borrador" />
+      ) : (
+        <>
+          <h3 className="text-lg font-bold text-navy mt-1">{acto.titulo}</h3>
+          <div className="text-sm text-navy whitespace-pre-wrap leading-relaxed">
+            {acto.cuerpo}
+          </div>
+          {esEnte && (
+            <details className="mt-1 rounded-xl border border-line bg-paper-2 px-3 py-2">
+              <summary className="text-xs font-bold text-navy cursor-pointer">
+                ✏️ Modificar (solo ENCOSEP)
+              </summary>
+              <div className="mt-2">
+                <FormEditarActo acto={acto} guardarLabel="💾 Guardar cambios" />
+              </div>
+            </details>
+          )}
+        </>
+      )}
+
+      {/* Confirmar el trabajo: pasa de borrador a confirmado y habilita notificar */}
+      {enBorrador && puedeEditar && (
+        <form action={confirmarActo} className="mt-1">
+          <input type="hidden" name="actoId" value={acto.id} />
+          <BotonEnviar
+            className="px-4 py-2 rounded-lg bg-svc-green text-white font-bold text-sm"
+            pendingText="Confirmando…"
+          >
+            ✅ Confirmar trabajo
+          </BotonEnviar>
+        </form>
+      )}
+
       {/* Notificación (transversal, no es una etapa): comunica la etapa a la
-          prestadora. Dos alcances — solo esta etapa o todo hasta acá. */}
-      {notificable && (
+          prestadora. Solo disponible una vez confirmado el trabajo. */}
+      {notificable && acto.confirmado && (
         <div className="mt-2 pt-2 border-t border-line flex flex-col gap-1.5">
           {acto.notificadoTexto && (
             <div className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-svc-green">
@@ -511,6 +568,56 @@ function DetalleActo({
         </form>
       )}
     </div>
+  );
+}
+
+function FormEditarActo({
+  acto,
+  guardarLabel,
+}: {
+  acto: ActoView;
+  guardarLabel: string;
+}) {
+  return (
+    <form
+      action={editarActo}
+      encType="multipart/form-data"
+      className="flex flex-col gap-2 mt-1"
+    >
+      <input type="hidden" name="actoId" value={acto.id} />
+      <label className="text-[10px] uppercase tracking-wider text-muted font-semibold">
+        Título
+      </label>
+      <input
+        name="titulo"
+        required
+        defaultValue={acto.titulo}
+        className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper"
+      />
+      <label className="text-[10px] uppercase tracking-wider text-muted font-semibold">
+        Cuerpo de la etapa
+      </label>
+      <textarea
+        name="cuerpo"
+        required
+        rows={6}
+        defaultValue={acto.cuerpo}
+        className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper resize-y"
+      />
+      <label className="text-[10px] uppercase tracking-wider text-muted font-semibold">
+        Sumar documental (opcional)
+      </label>
+      <input
+        type="file"
+        name="archivos"
+        multiple
+        accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx"
+        className="text-xs text-navy file:mr-3 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-navy-2 file:text-white file:text-xs file:font-semibold"
+      />
+      <BotonEnviar className="self-start px-4 py-2 rounded-lg bg-navy-2 text-white font-bold text-sm">
+        {guardarLabel}
+      </BotonEnviar>
+    </form>
   );
 }
 

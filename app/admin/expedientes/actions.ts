@@ -71,6 +71,7 @@ export async function crearExpedienteAislado(formData: FormData) {
             `Objeto: ${parsed.data.asunto}. ` +
             `Prestadora involucrada: ${prestadora.razonSocial}.`,
           autorId: session.user.id,
+          confirmadoEn: new Date(),
         },
       },
     },
