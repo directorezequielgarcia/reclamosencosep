@@ -12,6 +12,7 @@ import {
   cambiarEstadoExpediente,
   importarDocumentalReclamo,
   importarConstatacionInspeccion,
+  importarReclamoAntecedente,
 } from "./actions";
 import { Workspace, type ActoView, type MensajeView } from "./Workspace";
 
@@ -327,6 +328,44 @@ export default async function ExpedienteDetallePage({
           )}
         </div>
       </div>
+
+      {/* Importar antecedentes de otras fuentes */}
+      {esEnte && (
+        <div className="rounded-2xl border border-line bg-paper p-5">
+          <h2 className="text-[11px] font-bold text-muted uppercase tracking-wider mb-3">
+            Importar al expediente
+          </h2>
+          <form
+            action={importarReclamoAntecedente}
+            className="flex flex-wrap items-end gap-2"
+          >
+            <input type="hidden" name="expedienteId" value={exp.id} />
+            <label className="flex flex-col gap-1">
+              <span className="text-[10px] uppercase tracking-wider text-muted font-semibold">
+                Otro reclamo (por código)
+              </span>
+              <input
+                name="codigo"
+                required
+                placeholder="ej: 2026-000123"
+                className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper font-mono"
+              />
+            </label>
+            <button
+              type="submit"
+              className="px-4 py-2 rounded-lg border border-navy-2 text-navy-2 font-bold text-sm hover:bg-navy-2/5"
+            >
+              ↪️ Importar como antecedente
+            </button>
+          </form>
+          <p className="text-[11px] text-muted mt-2">
+            Trae el resumen y la documental de otro reclamo, sin moverlo. La
+            documental del reclamo de origen y las inspecciones se importan desde
+            sus botones. Próximamente: otro expediente, estadísticas e informe
+            mensual.
+          </p>
+        </div>
+      )}
 
       {/* Inspecciones de campo vinculadas — se importan como constatación */}
       {esEnte && exp.inspecciones.length > 0 && (

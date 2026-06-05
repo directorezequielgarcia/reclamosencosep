@@ -407,6 +407,61 @@ export async function importarDocumentalReclamo(formData: FormData) {
   revalidatePath(`/admin/expediente/${expedienteId}`);
 }
 
+// Incorpora otro reclamo como ANTECEDENTE del expediente: trae su resumen y su
+// documental, sin moverlo (no cambia su expediente).
+export async function importarReclamoAntecedente(formData: FormData) {
+  const session = await auth();
+  if (
+    !session ||
+    (session.user.rol !== "GESTOR_ENTE" && session.user.rol !== "SUPER_ADMIN")
+  ) {
+    throw new Error("Solo el Ente puede importar antecedentes");
+  }
+
+  const expedienteId = String(formData.get("expedienteId") ?? "");
+  const codigo = String(formData.get("codigo") ?? "").trim();
+  if (!expedienteId || !codigo) throw new Error("Faltan datos");
+
+  const reclamo = await prisma.reclamo.findFirst({
+    where: { codigo },
+    include: { adjuntos: true, servicio: true, ciudadano: true },
+  });
+  if (!reclamo) throw new Error(`No existe un reclamo con código ${codigo}`);
+
+  const fecha = reclamo.createdAt.toLocaleDateString("es-AR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+  const cuerpo =
+    `Se incorpora como antecedente el reclamo #${reclamo.codigo} ` +
+    `(${reclamo.titulo}), del servicio ${reclamo.servicio.nombre}, presentado ` +
+    `por ${reclamo.ciudadano.nombre} ${reclamo.ciudadano.apellido} el ${fecha}.` +
+    `\n\n${reclamo.descripcion}`;
+
+  await prisma.actoAdministrativo.create({
+    data: {
+      expedienteId,
+      tipo: "AMPLIACION",
+      titulo: `Antecedente — reclamo #${reclamo.codigo}`,
+      cuerpo,
+      autorId: session.user.id,
+      confirmadoEn: new Date(),
+      adjuntos: {
+        create: reclamo.adjuntos.map((a) => ({
+          tipo: a.tipo,
+          url: a.url,
+          nombre: null,
+          mimeType: a.mimeType,
+          bytes: a.bytes,
+        })),
+      },
+    },
+  });
+
+  revalidatePath(`/admin/expediente/${expedienteId}`);
+}
+
 // Importa una inspección de campo (la que hace el inspector) como un acto de
 // CONSTATACIÓN del expediente, trayendo su texto, fotos y audio.
 export async function importarConstatacionInspeccion(formData: FormData) {
