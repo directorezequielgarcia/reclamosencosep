@@ -54,6 +54,7 @@ export default async function AdminLayout({
             {puedeGestionarExpedientes(rol) && (
               <NavLink href="/admin/expedientes">Expedientes</NavLink>
             )}
+            <NavLink href="/notas">Notas</NavLink>
             {puedeVerDocumentos(rol) && (
               <NavLink href="/admin/documentacion">Documentación</NavLink>
             )}

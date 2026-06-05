@@ -45,9 +45,14 @@ const FISCALIZACION: Acceso[] = [
   { emoji: "⚖️", titulo: "Recomendaciones de sanción", detalle: "Recomendaciones de aplicación de sanciones a las prestadoras.", href: "#", proximamente: true },
 ];
 
+// Notas: bandeja de comunicación, para todos los perfiles institucionales.
+const NOTAS: Acceso[] = [
+  { emoji: "📥", titulo: "Bandeja de notas", detalle: "Notas recibidas y enviadas con el ENCOSEP.", href: "/notas" },
+  { emoji: "✉️", titulo: "Presentar nota", detalle: "Enviar una nota formal al ENCOSEP.", href: "/notas/nueva" },
+];
+
 // Específico de Concejo / PEM: canales institucionales.
 const CANALES: Acceso[] = [
-  { emoji: "✉️", titulo: "Presentar nota", detalle: "Enviar una nota formal al ENCOSEP.", href: "#", proximamente: true },
   { emoji: "🛠️", titulo: "Solicitar asistencia técnica", detalle: "Pedir asistencia técnica o una agenda de trabajo.", href: "#", proximamente: true },
 ];
 
@@ -146,6 +151,9 @@ export default async function InstitucionalPage() {
         {(esAutoridad || esEnte) && (
           <Seccion titulo="Fiscalización" items={FISCALIZACION} />
         )}
+
+        {/* Notas: bandeja de comunicación, para todos los perfiles */}
+        <Seccion titulo="Notas" items={NOTAS} />
 
         {/* Normativa por servicio: para todos */}
         <Seccion titulo="Normativa por servicio concesionado" items={NORMATIVA} />
