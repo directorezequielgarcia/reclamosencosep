@@ -173,6 +173,87 @@ export default async function ReclamoDetallePage({
             </div>
           </Card>
 
+          {/* Chat con el vecino: el mismo ida y vuelta que ve el ciudadano
+              (comentarios visibles), en formato conversación. */}
+          <Card titulo="Chat con el vecino">
+            {(() => {
+              const chat = reclamo.eventos.filter(
+                (e) => e.tipo === "COMENTARIO" && e.visibleVecino,
+              );
+              if (chat.length === 0) {
+                return (
+                  <p className="text-xs text-muted italic">
+                    Todavía no hay conversación visible con el vecino. Lo que
+                    escribas acá lo verá en su reclamo.
+                  </p>
+                );
+              }
+              return (
+                <div className="flex flex-col gap-2 max-h-80 overflow-y-auto pr-1">
+                  {chat.map((ev) => {
+                    const delEnte = ev.autor
+                      ? ev.autor.rol !== "CIUDADANO"
+                      : true;
+                    return (
+                      <div
+                        key={ev.id}
+                        className={`flex flex-col ${delEnte ? "items-end" : "items-start"}`}
+                      >
+                        <div
+                          className={`max-w-[85%] px-3 py-2 rounded-2xl text-sm ${
+                            delEnte
+                              ? "bg-svc-blue/15 text-navy rounded-br-sm"
+                              : "bg-paper-2 border border-line text-navy rounded-bl-sm"
+                          }`}
+                        >
+                          <div className="text-[10px] uppercase tracking-wide font-bold text-muted mb-0.5">
+                            {ev.autor
+                              ? `${ev.autor.nombre} ${ev.autor.apellido}`
+                              : "Vecino"}
+                          </div>
+                          <div className="whitespace-pre-wrap leading-snug">
+                            {ev.mensaje}
+                          </div>
+                        </div>
+                        <div className="text-[9px] text-muted mt-0.5">
+                          {ev.createdAt.toLocaleString("es-AR", {
+                            day: "2-digit",
+                            month: "short",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+
+            {puedeEditar && (
+              <form
+                action={agregarComentario}
+                className="mt-3 pt-3 border-t border-line flex flex-col gap-2"
+              >
+                <input type="hidden" name="reclamoId" value={reclamo.id} />
+                <input type="hidden" name="visibleVecino" value="on" />
+                <textarea
+                  name="mensaje"
+                  required
+                  rows={2}
+                  placeholder="Escribile al vecino…"
+                  className="w-full px-3 py-2 rounded-lg border border-line-strong bg-paper text-sm focus:outline-none focus:border-navy-2 resize-none"
+                />
+                <button
+                  type="submit"
+                  className="self-end px-4 py-2 rounded-lg bg-navy-2 text-white text-sm font-semibold"
+                >
+                  Responder al vecino
+                </button>
+              </form>
+            )}
+          </Card>
+
           <Card
             titulo={`Historial · ${reclamo.eventos.length} evento${reclamo.eventos.length === 1 ? "" : "s"}`}
           >
