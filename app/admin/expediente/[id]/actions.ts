@@ -407,6 +407,81 @@ export async function importarDocumentalReclamo(formData: FormData) {
   revalidatePath(`/admin/expediente/${expedienteId}`);
 }
 
+// Importa una inspección de campo (la que hace el inspector) como un acto de
+// CONSTATACIÓN del expediente, trayendo su texto, fotos y audio.
+export async function importarConstatacionInspeccion(formData: FormData) {
+  const session = await auth();
+  if (
+    !session ||
+    (session.user.rol !== "GESTOR_ENTE" && session.user.rol !== "SUPER_ADMIN")
+  ) {
+    throw new Error("Solo el Ente puede importar la constatación");
+  }
+
+  const expedienteId = String(formData.get("expedienteId") ?? "");
+  const inspeccionId = String(formData.get("inspeccionId") ?? "");
+  if (!expedienteId || !inspeccionId) throw new Error("Faltan datos");
+
+  const insp = await prisma.inspeccion.findUnique({
+    where: { id: inspeccionId },
+    include: { fotos: { orderBy: { orden: "asc" } }, inspector: true },
+  });
+  if (!insp) throw new Error("Inspección inexistente");
+
+  const fecha = insp.fecha.toLocaleString("es-AR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  const ubic = [insp.direccion, insp.barrio].filter(Boolean).join(", ");
+
+  const partes: string[] = [
+    `Constatación realizada en la inspección ${insp.codigo} del ${fecha}.`,
+    insp.observaciones,
+  ];
+  if (insp.transcripcionAudio) {
+    partes.push(`Registro de audio (transcripción): ${insp.transcripcionAudio}`);
+  }
+  if (ubic) partes.push(`Lugar: ${ubic}.`);
+
+  await prisma.actoAdministrativo.create({
+    data: {
+      expedienteId,
+      tipo: "CONSTATACION",
+      titulo: `Constatación de inspección — ${insp.titulo}`,
+      cuerpo: partes.join("\n\n"),
+      autorId: session.user.id,
+      confirmadoEn: new Date(),
+      adjuntos: {
+        create: [
+          ...insp.fotos.map((f) => ({
+            tipo: "FOTO" as AdjuntoTipo,
+            url: f.url,
+            nombre: f.descripcion ?? null,
+            mimeType: f.mimeType,
+            bytes: f.bytes,
+          })),
+          ...(insp.audioUrl
+            ? [
+                {
+                  tipo: "AUDIO" as AdjuntoTipo,
+                  url: insp.audioUrl,
+                  nombre: "Audio de campo",
+                  mimeType: insp.audioMimeType,
+                  bytes: insp.audioBytes,
+                },
+              ]
+            : []),
+        ],
+      },
+    },
+  });
+
+  revalidatePath(`/admin/expediente/${expedienteId}`);
+}
+
 const CaratulaSchema = z.object({
   expedienteId: z.string().min(1),
   numero: z.string().min(1).max(40),

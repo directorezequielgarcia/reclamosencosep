@@ -11,6 +11,7 @@ import { svcFromKind } from "@/lib/servicios";
 import {
   cambiarEstadoExpediente,
   importarDocumentalReclamo,
+  importarConstatacionInspeccion,
 } from "./actions";
 import { Workspace, type ActoView, type MensajeView } from "./Workspace";
 
@@ -103,6 +104,13 @@ export default async function ExpedienteDetallePage({
         orderBy: { createdAt: "asc" },
       },
       mensajes: { orderBy: { createdAt: "asc" } },
+      inspecciones: {
+        orderBy: { fecha: "desc" },
+        include: {
+          inspector: true,
+          _count: { select: { fotos: true } },
+        },
+      },
     },
   });
   if (!exp) notFound();
@@ -319,6 +327,52 @@ export default async function ExpedienteDetallePage({
           )}
         </div>
       </div>
+
+      {/* Inspecciones de campo vinculadas — se importan como constatación */}
+      {esEnte && exp.inspecciones.length > 0 && (
+        <div className="rounded-2xl border border-line bg-paper p-5">
+          <h2 className="text-[11px] font-bold text-muted uppercase tracking-wider mb-3">
+            Inspecciones de campo vinculadas
+          </h2>
+          <ul className="flex flex-col gap-2">
+            {exp.inspecciones.map((insp) => (
+              <li
+                key={insp.id}
+                className="flex items-center justify-between gap-3 p-3 rounded-lg border border-line"
+              >
+                <div className="min-w-0">
+                  <div className="font-mono text-xs font-bold text-navy">
+                    {insp.codigo}
+                  </div>
+                  <div className="text-sm text-navy truncate">
+                    {insp.titulo}
+                  </div>
+                  <div className="text-[11px] text-muted">
+                    {insp.inspector.nombre} {insp.inspector.apellido} ·{" "}
+                    {insp.fecha.toLocaleDateString("es-AR", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                    {insp._count.fotos > 0 &&
+                      ` · ${insp._count.fotos} foto${insp._count.fotos === 1 ? "" : "s"}`}
+                  </div>
+                </div>
+                <form action={importarConstatacionInspeccion} className="shrink-0">
+                  <input type="hidden" name="expedienteId" value={exp.id} />
+                  <input type="hidden" name="inspeccionId" value={insp.id} />
+                  <button
+                    type="submit"
+                    className="text-xs px-3 py-2 rounded-lg border border-navy-2 text-navy-2 font-bold hover:bg-navy-2/5 whitespace-nowrap"
+                  >
+                    ↪️ Importar como constatación
+                  </button>
+                </form>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Datos del expediente */}
       <div className="grid md:grid-cols-3 gap-4 items-start">
