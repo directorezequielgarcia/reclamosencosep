@@ -381,6 +381,42 @@ model NotaAdjunto {
   @@index([mensajeId])
 }
 
+// ─────────────────────────────────────────────
+// Capacitación: videos, instructivos y guías por tipo de usuario, para
+// aprender a usar cada módulo del sistema.
+// ─────────────────────────────────────────────
+
+enum AudienciaCapacitacion {
+  TODOS
+  TEAM_ENCOSEP
+  AUTORIDAD_APLICACION
+  CONCEJO_DELIBERANTE
+  PEM
+  PRESTADORAS
+}
+
+enum TipoCapacitacion {
+  VIDEO     // enlace a YouTube / Drive
+  IMAGEN    // instructivo gráfico
+  GUIA      // guía paso a paso en texto
+}
+
+model Capacitacion {
+  id          String                @id @default(cuid())
+  titulo      String
+  descripcion String
+  tipo        TipoCapacitacion      @default(VIDEO)
+  url         String?                               // video o imagen
+  contenido   String?                               // texto de la guía
+  modulo      String?                               // a qué módulo pertenece
+  audiencia   AudienciaCapacitacion @default(TODOS)
+  orden       Int                   @default(0)
+  creadorId   String
+  createdAt   DateTime              @default(now())
+
+  @@index([audiencia, orden])
+}
+
 model ActoAdministrativo {
   id           String     @id @default(cuid())
   expedienteId String

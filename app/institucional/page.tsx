@@ -51,6 +51,11 @@ const NOTAS: Acceso[] = [
   { emoji: "✉️", titulo: "Presentar nota", detalle: "Enviar una nota formal al ENCOSEP.", href: "/notas/nueva" },
 ];
 
+// Capacitación: videos, instructivos y guías.
+const CAPACITACION: Acceso[] = [
+  { emoji: "🎓", titulo: "Capacitación", detalle: "Videos y guías para usar el sistema.", href: "/capacitacion" },
+];
+
 // Específico de Concejo / PEM: canales institucionales.
 const CANALES: Acceso[] = [
   { emoji: "🛠️", titulo: "Solicitar asistencia técnica", detalle: "Pedir asistencia técnica o una agenda de trabajo.", href: "#", proximamente: true },
@@ -154,6 +159,9 @@ export default async function InstitucionalPage() {
 
         {/* Notas: bandeja de comunicación, para todos los perfiles */}
         <Seccion titulo="Notas" items={NOTAS} />
+
+        {/* Capacitación: para todos los perfiles */}
+        <Seccion titulo="Capacitación" items={CAPACITACION} />
 
         {/* Normativa por servicio: para todos */}
         <Seccion titulo="Normativa por servicio concesionado" items={NORMATIVA} />
