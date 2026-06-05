@@ -1,13 +1,50 @@
 "use client";
 
 import { useState } from "react";
+import { useFormStatus } from "react-dom";
 import type { TipoActo } from "@prisma/client";
 import { TIPO_ACTO_META, GUIA_ETAPA } from "@/lib/expedientes";
 import {
   agregarActo,
   notificarActo,
   enviarMensajeExpediente,
+  eliminarActo,
+  editarCaratula,
 } from "./actions";
+
+export type CaratulaView = {
+  numero: string;
+  tipoExpediente: string;
+  caratula: string;
+  asunto: string;
+  intervinientes: string | null;
+  prestadoraId: string;
+};
+
+export type PrestadoraOpt = { id: string; razonSocial: string };
+
+// Botón de envío que se bloquea mientras el servidor procesa, para evitar
+// dobles clics que crean actos/mensajes duplicados.
+function BotonEnviar({
+  children,
+  className,
+  pendingText = "Guardando…",
+}: {
+  children: React.ReactNode;
+  className?: string;
+  pendingText?: string;
+}) {
+  const { pending } = useFormStatus();
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className={`${className ?? ""} disabled:opacity-60 disabled:cursor-not-allowed`}
+    >
+      {pending ? pendingText : children}
+    </button>
+  );
+}
 
 export type AdjuntoView = {
   id: string;
@@ -45,6 +82,8 @@ type Props = {
   notificables: string[];
   mensajesUsuario: MensajeView[];
   mensajesPrestadora: MensajeView[];
+  caratula: CaratulaView;
+  prestadoras: PrestadoraOpt[];
 };
 
 const NUEVO = "__nuevo__";
@@ -65,6 +104,8 @@ export function Workspace({
   notificables,
   mensajesUsuario,
   mensajesPrestadora,
+  caratula,
+  prestadoras,
 }: Props) {
   const puedeLabrar = (esEnte || esOperadorEstaPrestadora) && !archivado;
   // Por defecto mostramos el último acto; si no hay, la mesa de "nuevo acto".
@@ -170,6 +211,12 @@ export function Workspace({
             esEnte={esEnte}
             notificable={notificables.includes(actoSel.tipo)}
             expedienteId={expedienteId}
+            previos={actos.slice(
+              0,
+              actos.findIndex((a) => a.id === actoSel.id),
+            )}
+            caratula={caratula}
+            prestadoras={prestadoras}
           />
         ) : (
           <p className="text-sm text-muted">
@@ -269,12 +316,12 @@ function ChatPanel({
             placeholder="Escribí un mensaje…"
             className="px-2.5 py-1.5 rounded-lg border border-line-strong text-xs bg-paper resize-y"
           />
-          <button
-            type="submit"
+          <BotonEnviar
             className="self-end px-3 py-1.5 rounded-lg bg-navy-2 text-white text-xs font-semibold"
+            pendingText="Enviando…"
           >
             Enviar
-          </button>
+          </BotonEnviar>
         </form>
       )}
     </div>
@@ -286,13 +333,20 @@ function DetalleActo({
   esEnte,
   notificable,
   expedienteId,
+  previos,
+  caratula,
+  prestadoras,
 }: {
   acto: ActoView;
   esEnte: boolean;
   notificable: boolean;
   expedienteId: string;
+  previos: ActoView[];
+  caratula: CaratulaView;
+  prestadoras: PrestadoraOpt[];
 }) {
   const ti = TIPO_ACTO_META[acto.tipo];
+  const esCaratula = acto.tipo === "CARATULACION";
   return (
     <div className="flex flex-col gap-2">
       {/* Encabezado contextual: en qué etapa estás + qué hacer */}
@@ -303,8 +357,42 @@ function DetalleActo({
             Estás en: {ti.label}
           </span>
         </div>
-        <p className="text-xs text-navy mt-1">{GUIA_ETAPA[acto.tipo]}</p>
+        <p className="text-xs text-navy mt-1">
+          <strong>Qué hacer:</strong> {GUIA_ETAPA[acto.tipo]}
+        </p>
       </div>
+
+      {/* Qué se hizo hasta el momento (etapas previas) */}
+      <div className="rounded-xl bg-paper-2 border border-line px-3 py-2">
+        <span className="text-[10px] uppercase tracking-wider font-bold text-muted">
+          Qué se hizo hasta acá
+        </span>
+        {previos.length === 0 ? (
+          <p className="text-xs text-muted mt-1 italic">
+            Es la primera etapa del expediente.
+          </p>
+        ) : (
+          <ol className="text-xs text-navy mt-1 list-decimal ml-4 space-y-0.5">
+            {previos.map((p) => (
+              <li key={p.id}>
+                <span className="font-semibold">
+                  {TIPO_ACTO_META[p.tipo].label}:
+                </span>{" "}
+                {p.titulo}
+              </li>
+            ))}
+          </ol>
+        )}
+      </div>
+
+      {/* La carátula solo se edita en su propia etapa, y solo el Ente */}
+      {esCaratula && esEnte && (
+        <EditarCaratula
+          expedienteId={expedienteId}
+          caratula={caratula}
+          prestadoras={prestadoras}
+        />
+      )}
 
       <div className="text-xs text-muted mt-1">
         {acto.fecha} · {acto.autor}
@@ -397,7 +485,136 @@ function DetalleActo({
           📄 Emitir hasta esta foja
         </a>
       </div>
+
+      {/* Eliminar etapa (p. ej. si quedó duplicada). Solo Ente. */}
+      {esEnte && (
+        <form
+          action={eliminarActo}
+          onSubmit={(e) => {
+            if (
+              !window.confirm(
+                "¿Eliminar esta etapa del expediente? No se puede deshacer.",
+              )
+            ) {
+              e.preventDefault();
+            }
+          }}
+          className="mt-1"
+        >
+          <input type="hidden" name="actoId" value={acto.id} />
+          <BotonEnviar
+            className="text-xs px-3 py-1.5 rounded-lg border border-svc-red text-svc-red font-semibold hover:bg-svc-red/10"
+            pendingText="Eliminando…"
+          >
+            🗑️ Eliminar etapa (duplicada)
+          </BotonEnviar>
+        </form>
+      )}
     </div>
+  );
+}
+
+function EditarCaratula({
+  expedienteId,
+  caratula,
+  prestadoras,
+}: {
+  expedienteId: string;
+  caratula: CaratulaView;
+  prestadoras: PrestadoraOpt[];
+}) {
+  return (
+    <details className="rounded-xl border border-line bg-paper-2 px-3 py-2">
+      <summary className="text-xs font-bold text-navy cursor-pointer">
+        ✏️ Editar carátula (N°/Año, tipo, objeto, prestadora, partes)
+      </summary>
+      <form action={editarCaratula} className="grid sm:grid-cols-2 gap-2 mt-3">
+        <input type="hidden" name="expedienteId" value={expedienteId} />
+        <label className="flex flex-col gap-1">
+          <span className="text-[10px] uppercase tracking-wider text-muted font-semibold">
+            N° / Año
+          </span>
+          <input
+            name="numero"
+            required
+            defaultValue={caratula.numero}
+            className="px-2 py-1.5 rounded-lg border border-line-strong text-sm bg-paper font-mono"
+          />
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-[10px] uppercase tracking-wider text-muted font-semibold">
+            Tipo de expediente
+          </span>
+          <input
+            name="tipoExpediente"
+            required
+            defaultValue={caratula.tipoExpediente}
+            list="tipos-exp-mesa"
+            className="px-2 py-1.5 rounded-lg border border-line-strong text-sm bg-paper"
+          />
+          <datalist id="tipos-exp-mesa">
+            <option value="Reclamo individual" />
+            <option value="Readecuación tarifaria" />
+            <option value="Cambio de cuadro tarifario" />
+            <option value="Actuación de oficio" />
+          </datalist>
+        </label>
+        <label className="flex flex-col gap-1 sm:col-span-2">
+          <span className="text-[10px] uppercase tracking-wider text-muted font-semibold">
+            Carátula
+          </span>
+          <input
+            name="caratula"
+            required
+            defaultValue={caratula.caratula}
+            className="px-2 py-1.5 rounded-lg border border-line-strong text-sm bg-paper"
+          />
+        </label>
+        <label className="flex flex-col gap-1 sm:col-span-2">
+          <span className="text-[10px] uppercase tracking-wider text-muted font-semibold">
+            Objeto
+          </span>
+          <input
+            name="asunto"
+            required
+            defaultValue={caratula.asunto}
+            className="px-2 py-1.5 rounded-lg border border-line-strong text-sm bg-paper"
+          />
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-[10px] uppercase tracking-wider text-muted font-semibold">
+            Prestadora
+          </span>
+          <select
+            name="prestadoraId"
+            required
+            defaultValue={caratula.prestadoraId}
+            className="px-2 py-1.5 rounded-lg border border-line-strong text-sm bg-paper"
+          >
+            {prestadoras.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.razonSocial}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-[10px] uppercase tracking-wider text-muted font-semibold">
+            Intervinientes
+          </span>
+          <input
+            name="intervinientes"
+            defaultValue={caratula.intervinientes ?? ""}
+            className="px-2 py-1.5 rounded-lg border border-line-strong text-sm bg-paper"
+          />
+        </label>
+        <div className="sm:col-span-2">
+          <BotonEnviar className="px-4 py-2 rounded-lg bg-navy-2 text-white font-bold text-sm">
+            Guardar carátula
+          </BotonEnviar>
+        </div>
+      </form>
+    </details>
   );
 }
 
@@ -502,12 +719,9 @@ function NuevoActo({
         Fotos, videos, audios o documentos (PDF/Word/Excel).
       </p>
 
-      <button
-        type="submit"
-        className="px-4 py-2.5 rounded-lg bg-svc-orange text-white font-bold text-sm mt-2"
-      >
+      <BotonEnviar className="px-4 py-2.5 rounded-lg bg-svc-orange text-white font-bold text-sm mt-2">
         Labrar acto y agregar al expediente
-      </button>
+      </BotonEnviar>
     </form>
   );
 }

@@ -8,7 +8,7 @@ import { EstadoBadge } from "@/components/ui/EstadoBadge";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { SvcIcon } from "@/components/servicios/SvcIcon";
 import { svcFromKind } from "@/lib/servicios";
-import { cambiarEstadoExpediente, editarCaratula } from "./actions";
+import { cambiarEstadoExpediente } from "./actions";
 import { Workspace, type ActoView, type MensajeView } from "./Workspace";
 
 export const metadata = { title: "Expediente · Panel ENCOSEP" };
@@ -190,109 +190,16 @@ export default async function ExpedienteDetallePage({
         notificables={ACTOS_NOTIFICABLES}
         mensajesUsuario={mensajesUsuario}
         mensajesPrestadora={mensajesPrestadora}
+        caratula={{
+          numero: exp.numero,
+          tipoExpediente: exp.tipoExpediente,
+          caratula: exp.caratula,
+          asunto: exp.asunto,
+          intervinientes: exp.intervinientes,
+          prestadoraId: exp.prestadoraId,
+        }}
+        prestadoras={prestadoras}
       />
-
-      {/* Editar carátula (solo Ente): N°/Año, tipo, objeto, partes, prestadora */}
-      {esEnte && (
-        <div className="rounded-2xl border border-line bg-paper p-5">
-          <h2 className="text-[11px] font-bold text-muted uppercase tracking-wider mb-3">
-            Carátula del expediente · editar
-          </h2>
-          <form
-            action={editarCaratula}
-            className="grid sm:grid-cols-2 gap-3"
-          >
-            <input type="hidden" name="expedienteId" value={exp.id} />
-            <label className="flex flex-col gap-1">
-              <span className="text-[10px] uppercase tracking-wider text-muted font-semibold">
-                N° / Año (ej: EXP-2026-001)
-              </span>
-              <input
-                name="numero"
-                required
-                defaultValue={exp.numero}
-                className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper font-mono"
-              />
-            </label>
-            <label className="flex flex-col gap-1">
-              <span className="text-[10px] uppercase tracking-wider text-muted font-semibold">
-                Tipo de expediente
-              </span>
-              <input
-                name="tipoExpediente"
-                required
-                defaultValue={exp.tipoExpediente}
-                list="tipos-exp"
-                className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper"
-              />
-              <datalist id="tipos-exp">
-                <option value="Reclamo individual" />
-                <option value="Readecuación tarifaria" />
-                <option value="Cambio de cuadro tarifario" />
-                <option value="Actuación de oficio" />
-              </datalist>
-            </label>
-            <label className="flex flex-col gap-1 sm:col-span-2">
-              <span className="text-[10px] uppercase tracking-wider text-muted font-semibold">
-                Carátula (texto que encabeza el expediente)
-              </span>
-              <input
-                name="caratula"
-                required
-                defaultValue={exp.caratula}
-                className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper"
-              />
-            </label>
-            <label className="flex flex-col gap-1 sm:col-span-2">
-              <span className="text-[10px] uppercase tracking-wider text-muted font-semibold">
-                Objeto
-              </span>
-              <input
-                name="asunto"
-                required
-                defaultValue={exp.asunto}
-                className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper"
-              />
-            </label>
-            <label className="flex flex-col gap-1">
-              <span className="text-[10px] uppercase tracking-wider text-muted font-semibold">
-                Prestadora
-              </span>
-              <select
-                name="prestadoraId"
-                required
-                defaultValue={exp.prestadoraId}
-                className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper"
-              >
-                {prestadoras.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.razonSocial}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="flex flex-col gap-1">
-              <span className="text-[10px] uppercase tracking-wider text-muted font-semibold">
-                Intervinientes / reclamante
-              </span>
-              <input
-                name="intervinientes"
-                defaultValue={exp.intervinientes ?? ""}
-                placeholder="Reclamante: … · Prestadora: …"
-                className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper"
-              />
-            </label>
-            <div className="sm:col-span-2">
-              <button
-                type="submit"
-                className="px-4 py-2.5 rounded-lg bg-navy-2 text-white font-bold text-sm"
-              >
-                Guardar carátula
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
 
       {/* Datos del expediente */}
       <div className="grid md:grid-cols-3 gap-4 items-start">

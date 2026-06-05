@@ -131,4 +131,30 @@ Constatación → Contestación prestadora → Disposición (proveído) →
 - ⏳ **Derivación** a Secretaría/Autoridad de Aplicación + que esa repartición
   **conteste** (rol en el expediente).
 - ⏳ **Permisos finos por rol/etapa** (quién vuelca en qué).
-- ⏳ **G2** carátula editable por ENCOSEP.
+- ✅ **G2** carátula editable por ENCOSEP.
+
+## G6 · Trabajar las etapas como un Word (borrador → confirmar)
+
+Cada etapa/acto se trabaja como un documento de Word, con dos estados:
+
+1. **BORRADOR** — la parte con rol (usuario, prestadora, ENCOSEP) **edita la
+   hoja**, **sube documentación** y **guarda** cuantas veces quiera. El borrador
+   **NO es visible para la otra parte**.
+2. **CONFIRMAR TRABAJO** — al confirmar, la etapa se cierra y **se notifica a la
+   otra parte**.
+
+Reglas:
+- **Una vez enviado a la otra parte, nadie lo modifica** — **excepto ENCOSEP**
+  (puede corregir, p. ej. un error en la carátula o seguir trabajando una
+  respuesta).
+- Cada borrador es de quien lo está trabajando (su rol).
+- Sensación de uso: como editar un documento y recién "publicarlo" cuando está
+  listo.
+
+Implementación (pendiente — G6):
+- `ActoAdministrativo.confirmadoEn DateTime?` (null = borrador).
+- Acciones: guardar borrador · subir documental al borrador · confirmar trabajo.
+- Permisos de edición: solo si está en borrador, o si es ENCOSEP.
+- Visibilidad: la otra parte ve la etapa solo si está confirmada (+ notificada).
+- UI de la mesa de trabajo: estado del acto + botones Guardar borrador /
+  Confirmar trabajo.

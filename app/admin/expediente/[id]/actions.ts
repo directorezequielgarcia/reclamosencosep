@@ -228,6 +228,30 @@ export async function enviarMensajeExpediente(formData: FormData) {
   revalidatePath(`/admin/expediente/${parsed.data.expedienteId}`);
 }
 
+export async function eliminarActo(formData: FormData) {
+  const session = await auth();
+  if (
+    !session ||
+    (session.user.rol !== "GESTOR_ENTE" && session.user.rol !== "SUPER_ADMIN")
+  ) {
+    throw new Error("Solo el Ente puede eliminar un acto");
+  }
+
+  const actoId = String(formData.get("actoId") ?? "");
+  if (!actoId) throw new Error("Falta el acto");
+
+  const acto = await prisma.actoAdministrativo.findUnique({
+    where: { id: actoId },
+    select: { id: true, expedienteId: true },
+  });
+  if (!acto) throw new Error("Acto inexistente");
+
+  // Los adjuntos se borran en cascada (onDelete: Cascade).
+  await prisma.actoAdministrativo.delete({ where: { id: actoId } });
+
+  revalidatePath(`/admin/expediente/${acto.expedienteId}`);
+}
+
 const CaratulaSchema = z.object({
   expedienteId: z.string().min(1),
   numero: z.string().min(1).max(40),
