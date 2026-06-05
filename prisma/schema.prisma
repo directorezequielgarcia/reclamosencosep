@@ -316,6 +316,71 @@ model MensajeExpediente {
   @@index([expedienteId, canal, createdAt])
 }
 
+// ─────────────────────────────────────────────
+// Notas: comunicación formal del Ente con organismos (y viceversa).
+// Una nota es un hilo de ida y vuelta con documental adjunta — como un
+// expediente de comunicación, más liviano.
+// ─────────────────────────────────────────────
+
+enum NotaAmbito {
+  AUTORIDAD_APLICACION
+  CONCEJO_DELIBERANTE
+  PEM
+  PRESTADORA
+  OTRO
+}
+
+enum NotaEstado {
+  BORRADOR    // se está redactando
+  ENVIADA     // comunicada a la contraparte
+  RESPONDIDA  // la contraparte contestó
+  CERRADA     // gestión terminada
+}
+
+model Nota {
+  id           String       @id @default(cuid())
+  numero       String       @unique          // NOTA-2026-001
+  asunto       String
+  ambito       NotaAmbito
+  destinatario String                         // organismo / persona destinataria
+  estado       NotaEstado   @default(BORRADOR)
+  creadorId    String                         // quién la abrió
+  mensajes     NotaMensaje[]
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([ambito, estado])
+  @@index([estado])
+}
+
+model NotaMensaje {
+  id          String        @id @default(cuid())
+  notaId      String
+  nota        Nota          @relation(fields: [notaId], references: [id], onDelete: Cascade)
+  autorId     String
+  autorNombre String                          // desnormalizado para mostrar
+  delEnte     Boolean                         // true = ENCOSEP, false = la contraparte
+  cuerpo      String
+  adjuntos    NotaAdjunto[]
+  createdAt   DateTime      @default(now())
+
+  @@index([notaId, createdAt])
+}
+
+model NotaAdjunto {
+  id        String      @id @default(cuid())
+  mensajeId String
+  mensaje   NotaMensaje @relation(fields: [mensajeId], references: [id], onDelete: Cascade)
+  tipo      AdjuntoTipo
+  url       String
+  nombre    String?
+  mimeType  String?
+  bytes     Int?
+  createdAt DateTime    @default(now())
+
+  @@index([mensajeId])
+}
+
 model ActoAdministrativo {
   id           String     @id @default(cuid())
   expedienteId String

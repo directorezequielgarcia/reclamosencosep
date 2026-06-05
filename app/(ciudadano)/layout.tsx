@@ -12,8 +12,16 @@ export default async function CiudadanoLayout({
   const session = await auth();
   if (!session) redirect("/ingresar");
 
-  // Solo ciudadanos pasan al portal público. Roles institucionales van al panel.
+  // Solo el vecino usa el portal público. Cada otro rol va a SU panel:
+  //  - roles institucionales (PEM, Concejo, Autoridad de Aplicación) → tablero
+  //  - resto (Team ENCOSEP, prestadora, etc.) → panel administrativo
+  // Importante: NO mandar a /admin a quien no es admin, porque /admin lo rebota
+  // a /inicio y se genera un loop de redirección.
   if (session.user.rol !== "CIUDADANO") {
+    const institucionales = ["PEM", "CONCEJO_DELIBERANTE", "AUTORIDAD_APLICACION"];
+    if (institucionales.includes(session.user.rol)) {
+      redirect("/institucional");
+    }
     redirect("/admin");
   }
 
