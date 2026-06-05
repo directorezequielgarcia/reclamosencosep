@@ -269,6 +269,8 @@ model Expediente {
   numero       String           @unique          // ej: EXP-2026-001
   caratula     String                            // ej: "ENCOSEP c/ SCPL s/ servicio de agua"
   asunto       String
+  tipoExpediente String         @default("Reclamo individual")
+  intervinientes String?                          // texto: reclamante, prestadora, otros
   prestadoraId String
   prestadora   Prestadora       @relation(fields: [prestadoraId], references: [id])
   estado       ExpedienteEstado @default(ABIERTO)

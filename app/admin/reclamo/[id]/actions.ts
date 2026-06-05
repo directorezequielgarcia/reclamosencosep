@@ -180,6 +180,7 @@ const ElevarSchema = z.object({
   reclamoId: z.string().min(1),
   asunto: z.string().min(5).max(200),
   caratula: z.string().min(5).max(200).optional(),
+  tipoExpediente: z.string().max(60).optional(),
 });
 
 export async function elevarAExpediente(formData: FormData) {
@@ -195,12 +196,13 @@ export async function elevarAExpediente(formData: FormData) {
     reclamoId: formData.get("reclamoId"),
     asunto: formData.get("asunto"),
     caratula: formData.get("caratula") || undefined,
+    tipoExpediente: formData.get("tipoExpediente") || undefined,
   });
   if (!parsed.success) throw new Error("Datos inválidos");
 
   const reclamo = await prisma.reclamo.findUnique({
     where: { id: parsed.data.reclamoId },
-    include: { prestadora: true, servicio: true },
+    include: { prestadora: true, servicio: true, ciudadano: true },
   });
   if (!reclamo) throw new Error("Reclamo inexistente");
   if (!reclamo.prestadoraId || !reclamo.prestadora) {
@@ -216,15 +218,24 @@ export async function elevarAExpediente(formData: FormData) {
   });
   const numero = siguienteNumero(existentes.map((e) => e.numero));
 
+  const tipoExpediente = parsed.data.tipoExpediente ?? "Reclamo individual";
+  const reclamante = reclamo.origenOficio
+    ? "ENCOSEP (de oficio)"
+    : `${reclamo.ciudadano.nombre} ${reclamo.ciudadano.apellido}`;
+  const intervinientes = `Reclamante: ${reclamante} · Prestadora: ${reclamo.prestadora.razonSocial}`;
+
+  // Carátula enriquecida: Tipo — Reclamante c/ Prestadora s/ Objeto
   const caratula =
     parsed.data.caratula ??
-    `ENCOSEP c/ ${reclamo.prestadora.razonSocial} s/ ${reclamo.servicio.nombreCorto} — reclamo #${reclamo.codigo}`;
+    `${tipoExpediente} — ${reclamante} c/ ${reclamo.prestadora.razonSocial} s/ ${parsed.data.asunto}`;
 
   const exp = await prisma.expediente.create({
     data: {
       numero,
       caratula,
       asunto: parsed.data.asunto,
+      tipoExpediente,
+      intervinientes,
       prestadoraId: reclamo.prestadoraId,
       iniciadorId: session.user.id,
       reclamos: { connect: { id: reclamo.id } },
