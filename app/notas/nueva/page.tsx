@@ -8,6 +8,7 @@ import {
   NOTA_AMBITO_LABEL,
 } from "@/lib/notas";
 import { crearNota } from "../actions";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 
 export const metadata = { title: "Nueva nota · ENCOSEP" };
 
@@ -121,12 +122,12 @@ export default async function NuevaNotaPage() {
           </label>
 
           <div className="flex gap-2">
-            <button
-              type="submit"
+            <SubmitButton
               className="px-5 py-2.5 rounded-lg bg-svc-orange text-white font-bold text-sm"
+              pendingText="Enviando…"
             >
               Enviar nota
-            </button>
+            </SubmitButton>
             <Link
               href="/notas"
               className="px-5 py-2.5 rounded-lg border border-line-strong text-navy font-semibold text-sm"

@@ -11,6 +11,7 @@ import {
 } from "@/lib/notas";
 import { TONE_CLASS } from "@/lib/admin";
 import { responderNota, cambiarEstadoNota } from "../actions";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 
 export const metadata = { title: "Nota · ENCOSEP" };
 
@@ -171,12 +172,12 @@ export default async function NotaDetallePage({
               accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx"
               className="text-xs text-navy file:mr-3 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-navy-2 file:text-white file:text-xs file:font-semibold"
             />
-            <button
-              type="submit"
+            <SubmitButton
               className="self-end px-4 py-2 rounded-lg bg-navy-2 text-white font-bold text-sm"
+              pendingText="Enviando…"
             >
               Responder
-            </button>
+            </SubmitButton>
           </form>
         )}
       </div>

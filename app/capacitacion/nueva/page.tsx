@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { puedeGestionarCapacitacion } from "@/lib/capacitacion";
 import { crearCapacitacion } from "../actions";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 
 export const metadata = { title: "Subir capacitación · ENCOSEP" };
 
@@ -140,12 +141,12 @@ export default async function NuevaCapacitacionPage() {
           </label>
 
           <div className="flex gap-2">
-            <button
-              type="submit"
+            <SubmitButton
               className="px-5 py-2.5 rounded-lg bg-svc-orange text-white font-bold text-sm"
+              pendingText="Guardando…"
             >
               Guardar
-            </button>
+            </SubmitButton>
             <Link
               href="/capacitacion"
               className="px-5 py-2.5 rounded-lg border border-line-strong text-navy font-semibold text-sm"
