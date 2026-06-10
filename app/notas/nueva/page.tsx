@@ -9,6 +9,7 @@ import {
 } from "@/lib/notas";
 import { crearNota } from "../actions";
 import { SubmitButton } from "@/components/ui/SubmitButton";
+import { BarraSesion } from "@/components/ui/BarraSesion";
 
 export const metadata = { title: "Nueva nota · ENCOSEP" };
 
@@ -23,6 +24,7 @@ export default async function NuevaNotaPage() {
   return (
     <main className="flex flex-1 flex-col items-center bg-paper px-6 py-8">
       <div className="w-full max-w-2xl flex flex-col gap-6">
+        <BarraSesion volver="/notas" />
         <header>
           <h1 className="text-2xl font-extrabold text-navy">Nueva nota</h1>
           <p className="text-sm text-muted mt-1">

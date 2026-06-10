@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
+import { auth, signOut } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { BrandHeader } from "@/components/ui/BrandHeader";
 import { FormDatos, FormClave } from "./forms";
@@ -24,18 +24,39 @@ export default async function MiCuentaPage() {
   });
   if (!u) redirect("/ingresar");
 
-  const volverHref = u.rol === "CIUDADANO" ? "/inicio" : "/admin";
+  const institucionales = ["PEM", "CONCEJO_DELIBERANTE", "AUTORIDAD_APLICACION"];
+  const volverHref =
+    u.rol === "CIUDADANO"
+      ? "/inicio"
+      : institucionales.includes(u.rol)
+        ? "/institucional"
+        : "/admin";
+
+  async function logout() {
+    "use server";
+    await signOut({ redirectTo: "/" });
+  }
 
   return (
     <div className="flex flex-1 flex-col w-full max-w-2xl mx-auto px-4 sm:px-6 pb-12">
       <BrandHeader
         right={
-          <Link
-            href={volverHref}
-            className="inline-flex items-center gap-1 px-3 py-1 rounded-full border border-line-strong text-xs font-semibold text-navy hover:bg-paper-2"
-          >
-            ← Volver
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link
+              href={volverHref}
+              className="inline-flex items-center gap-1 px-3 py-1 rounded-full border border-line-strong text-xs font-semibold text-navy hover:bg-paper-2"
+            >
+              ← Volver
+            </Link>
+            <form action={logout}>
+              <button
+                type="submit"
+                className="px-3 py-1 rounded-full border border-line-strong text-xs font-semibold text-navy hover:bg-paper-2"
+              >
+                Salir
+              </button>
+            </form>
+          </div>
         }
       />
 

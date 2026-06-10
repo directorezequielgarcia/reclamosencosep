@@ -12,6 +12,7 @@ import {
 import { TONE_CLASS } from "@/lib/admin";
 import { responderNota, cambiarEstadoNota } from "../actions";
 import { SubmitButton } from "@/components/ui/SubmitButton";
+import { BarraSesion } from "@/components/ui/BarraSesion";
 
 export const metadata = { title: "Nota · ENCOSEP" };
 
@@ -52,6 +53,7 @@ export default async function NotaDetallePage({
   return (
     <main className="flex flex-1 flex-col items-center bg-paper px-6 py-8">
       <div className="w-full max-w-2xl flex flex-col gap-5">
+        <BarraSesion />
         <Link
           href="/notas"
           className="text-xs text-muted underline underline-offset-4"

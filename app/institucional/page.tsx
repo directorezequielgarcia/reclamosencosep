@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { ROL_LABEL } from "@/lib/admin";
 import { LogoEncosep } from "@/components/ui/LogoEncosep";
 import { BrandStripe } from "@/components/ui/BrandStripe";
+import { BarraSesion } from "@/components/ui/BarraSesion";
 
 export const metadata = { title: "Panel institucional · ENCOSEP" };
 
@@ -134,6 +135,7 @@ export default async function InstitucionalPage() {
   return (
     <main className="flex flex-1 flex-col items-center bg-paper px-6 py-10">
       <div className="w-full max-w-3xl flex flex-col gap-8">
+        <BarraSesion />
         <header className="flex items-center gap-3">
           <LogoEncosep size={64} />
           <div className="flex flex-col">
@@ -172,10 +174,10 @@ export default async function InstitucionalPage() {
         )}
 
         <Link
-          href="/inicio"
+          href="/"
           className="text-center text-xs text-muted underline underline-offset-4"
         >
-          ← Volver al inicio
+          ← Ir al sitio público
         </Link>
       </div>
     </main>

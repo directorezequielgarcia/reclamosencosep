@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { LogoEncosep } from "./LogoEncosep";
+import { auth, signOut } from "@/lib/auth";
 
 const NAV = [
   { href: "/", label: "Inicio" },
@@ -13,7 +14,32 @@ const NAV = [
   { href: "/contacto", label: "Contacto" },
 ];
 
-export function SitioHeader() {
+// Destino del panel propio según el rol, para que el usuario logueado
+// pueda volver a "su lado" del sistema desde cualquier página del sitio.
+const INSTITUCIONALES = ["PEM", "CONCEJO_DELIBERANTE", "AUTORIDAD_APLICACION"];
+function panelDeRol(rol: string): { href: string; label: string } {
+  if (rol === "CIUDADANO") return { href: "/inicio", label: "Mis reclamos" };
+  if (INSTITUCIONALES.includes(rol))
+    return { href: "/institucional", label: "Mi panel" };
+  return { href: "/admin", label: "Mi panel" };
+}
+
+export async function SitioHeader() {
+  const session = await auth();
+
+  async function logout() {
+    "use server";
+    await signOut({ redirectTo: "/" });
+  }
+
+  const usuario = session?.user
+    ? {
+        nombre: session.user.name ?? "Usuario",
+        inicial: (session.user.name ?? "U").charAt(0).toUpperCase(),
+        panel: panelDeRol(session.user.rol),
+      }
+    : null;
+
   return (
     <header className="bg-paper border-b border-line sticky top-0 z-30">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-4">
@@ -45,12 +71,37 @@ export function SitioHeader() {
             <span aria-hidden>📞</span>
             <span>0800 333 1175</span>
           </Link>
-          <Link
-            href="/acceso"
-            className="inline-flex items-center justify-center px-3 py-2 rounded-lg border border-line-strong text-navy font-semibold text-xs"
-          >
-            Acceder
-          </Link>
+          {usuario ? (
+            <div className="flex items-center gap-2">
+              <Link
+                href={usuario.panel.href}
+                className="flex items-center gap-2 rounded-full border border-line-strong pl-1 pr-3 py-1 text-navy hover:bg-paper-2"
+                title={`${usuario.nombre} · ${usuario.panel.label}`}
+              >
+                <span className="w-7 h-7 rounded-full bg-navy-2 text-white flex items-center justify-center text-xs font-bold">
+                  {usuario.inicial}
+                </span>
+                <span className="hidden sm:inline text-xs font-bold uppercase tracking-wider">
+                  {usuario.panel.label}
+                </span>
+              </Link>
+              <form action={logout}>
+                <button
+                  type="submit"
+                  className="inline-flex items-center justify-center px-3 py-2 rounded-lg border border-line-strong text-navy font-semibold text-xs hover:bg-paper-2"
+                >
+                  Salir
+                </button>
+              </form>
+            </div>
+          ) : (
+            <Link
+              href="/acceso"
+              className="inline-flex items-center justify-center px-3 py-2 rounded-lg border border-line-strong text-navy font-semibold text-xs"
+            >
+              Acceder
+            </Link>
+          )}
         </div>
       </div>
 

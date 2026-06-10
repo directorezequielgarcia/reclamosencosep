@@ -11,6 +11,7 @@ import {
 } from "@/lib/notas";
 import { TONE_CLASS } from "@/lib/admin";
 import { LogoEncosep } from "@/components/ui/LogoEncosep";
+import { BarraSesion } from "@/components/ui/BarraSesion";
 
 export const metadata = { title: "Notas · ENCOSEP" };
 
@@ -37,6 +38,7 @@ export default async function NotasPage() {
   return (
     <main className="flex flex-1 flex-col items-center bg-paper px-6 py-8">
       <div className="w-full max-w-3xl flex flex-col gap-6">
+        <BarraSesion />
         <header className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-3">
             <LogoEncosep size={48} />
