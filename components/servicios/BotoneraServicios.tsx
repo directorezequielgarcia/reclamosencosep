@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 const SERVICIOS = [
   {
@@ -36,12 +37,12 @@ export function BotoneraServicios() {
           href={`/areas-fiscalizadas/${s.slug}`}
           className="group flex flex-col items-center text-center p-4 rounded-2xl bg-paper border border-line hover:border-navy-2 hover:shadow-xl hover:-translate-y-1 transition"
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <Image
             src={`/imagenes/areas/${s.archivo}`}
             alt={s.titulo}
+            width={96}
+            height={96}
             className="block w-24 h-24 object-contain"
-            loading="eager"
           />
           <div className="mt-3 text-sm font-extrabold text-navy leading-tight">
             {s.titulo}
