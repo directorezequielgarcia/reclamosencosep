@@ -108,14 +108,26 @@ export default async function HomeInstitucional() {
           }}
         />
 
-        {/* Bloque centrado: placa con logo + CTA */}
+        {/* Bloque centrado: logo + CTA */}
         <div className="relative h-full flex flex-col items-center justify-center px-6 gap-7 text-center">
-          <div className="rounded-3xl bg-white/95 backdrop-blur-sm px-8 py-6 md:px-10 md:py-7 shadow-2xl ring-1 ring-white/50">
+          {/* Logo nuevo, fondo transparente, directo sobre la foto. Detrás un
+              resplandor radial difuso (no una caja) que lo separa del fondo y
+              hace legible el wordmark navy sin lavar los colores de marca. */}
+          <div className="relative flex items-center justify-center">
+            <div
+              aria-hidden
+              className="absolute -inset-x-16 -inset-y-12 pointer-events-none"
+              style={{
+                background:
+                  "radial-gradient(ellipse at center, rgba(255,255,255,0.80) 0%, rgba(255,255,255,0.45) 40%, rgba(255,255,255,0) 70%)",
+              }}
+            />
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/imagenes/logo-encosep.jpg"
+              src="/imagenes/logo-encosep-transparente.png"
               alt="EnCoSeP — Ente de Control de Servicios Públicos"
-              className="w-56 md:w-72 lg:w-80 h-auto"
+              className="relative w-60 md:w-80 lg:w-96 h-auto"
+              style={{ filter: "drop-shadow(0 4px 12px rgba(15,25,45,0.30))" }}
               loading="eager"
             />
           </div>
