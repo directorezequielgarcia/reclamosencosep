@@ -154,11 +154,20 @@ export default async function HomeInstitucional() {
               Asistencia por WhatsApp
             </a>
           </div>
+
+          <Link
+            href="/acciones"
+            className="text-white/90 font-semibold text-sm underline underline-offset-4 hover:text-white drop-shadow"
+          >
+            Conocé nuestras acciones ›
+          </Link>
         </div>
       </section>
 
       {/* ===================== ¿QUIÉN SOS HOY? ===================== */}
-      {/* Enrutamiento inmediato: cada persona encuentra su puerta apenas entra. */}
+      {/* Acceso único por rol: cada perfil entra a donde le corresponde.
+          El camino del vecino incluye, adentro, sus dos formas de reclamar
+          (con usuario o asistido por WhatsApp), para no repetir esa sección. */}
       <section className="max-w-6xl mx-auto px-6 py-16">
         <div className="text-center mb-10">
           <div className="text-xs font-bold tracking-widest uppercase text-muted">
@@ -167,42 +176,121 @@ export default async function HomeInstitucional() {
           <h2 className="text-3xl font-extrabold text-navy mt-2">
             ¿Quién sos hoy?
           </h2>
+          <p className="text-sm text-muted mt-2 max-w-2xl mx-auto">
+            Elegí tu perfil. A vecinos y prestadoras los llevamos directo a su
+            portal; los organismos ingresan con su usuario.
+          </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-5">
-          <PuertaAcceso
-            badge="Vecinos"
-            titulo="Portal de Reclamos"
-            descripcion="Registrá un reclamo sobre residuos, electricidad, agua o transporte. Hacé seguimiento del trámite en tiempo real y subí fotos del problema."
-            cta="Ingresar al Portal de Reclamos"
-            href="/reclamos"
-            color="red"
-          />
-          <PuertaAcceso
-            badge="Prestadoras"
-            titulo="Portal de Prestadoras"
-            descripcion="Acceso institucional para CLEAR URBANA, SCPL, PATAGONIA y DIADEMA. Gestión de reclamos asignados, descargo en expedientes, normativa vigente y vencimientos."
-            cta="Ingresar al Portal de Prestadoras"
-            href="/prestadoras"
-            color="navy"
-          />
+        <div className="grid lg:grid-cols-2 gap-5 items-start">
+          {/* VECINO — incluye las dos formas de reclamar */}
+          <div className="rounded-2xl border-2 border-svc-red/30 bg-paper p-6 flex flex-col gap-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-widest text-muted">
+                  Vecino · Usuario
+                </div>
+                <h3 className="text-2xl font-extrabold text-navy leading-tight">
+                  Portal de Reclamos
+                </h3>
+              </div>
+              <span className="text-3xl leading-none" aria-hidden>
+                🏠
+              </span>
+            </div>
+            <p className="text-sm text-navy leading-relaxed">
+              Reclamos de residuos, electricidad, agua o transporte. Elegí cómo
+              querés hacerlo:
+            </p>
+            <div className="grid sm:grid-cols-2 gap-3">
+              {/* Con usuario */}
+              <div className="rounded-xl border border-line bg-paper-2 p-4 flex flex-col gap-2">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-svc-red">
+                  Más rápido
+                </span>
+                <div className="text-sm font-extrabold text-navy">
+                  Con tu usuario
+                </div>
+                <p className="text-xs text-muted leading-snug flex-1">
+                  Cargás vos el reclamo y seguís el avance en tiempo real con un
+                  código de seguimiento.
+                </p>
+                <Link
+                  href="/reclamos"
+                  className="inline-flex items-center justify-center gap-1 px-4 py-2.5 rounded-lg bg-svc-red text-white font-bold text-sm hover:scale-105 transition"
+                >
+                  Crear usuario y reclamar →
+                </Link>
+              </div>
+              {/* Por WhatsApp */}
+              <div className="rounded-xl border border-line bg-paper-2 p-4 flex flex-col gap-2">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-svc-green">
+                  Sin registrarte
+                </span>
+                <div className="text-sm font-extrabold text-navy">
+                  Asistido por WhatsApp
+                </div>
+                <p className="text-xs text-muted leading-snug flex-1">
+                  Nos pasás los datos del problema y el equipo del Ente carga el
+                  reclamo por vos.
+                </p>
+                <a
+                  href={WSP_HREF}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg bg-svc-green text-white font-bold text-sm hover:scale-105 transition"
+                >
+                  <IconoWsp size={16} />
+                  WhatsApp
+                </a>
+              </div>
+            </div>
+          </div>
+
+          {/* PRESTADORA */}
+          <div className="rounded-2xl border border-line bg-paper p-6 flex flex-col gap-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-widest text-muted">
+                  Prestadora
+                </div>
+                <h3 className="text-2xl font-extrabold text-navy leading-tight">
+                  Portal de Prestadoras
+                </h3>
+              </div>
+              <span className="text-3xl leading-none" aria-hidden>
+                🏢
+              </span>
+            </div>
+            <p className="text-sm text-navy leading-relaxed flex-1">
+              Acceso para CLEAR URBANA, SCPL, PATAGONIA y DIADEMA: reclamos
+              asignados, descargo en expedientes, normativa vigente y
+              vencimientos.
+            </p>
+            <Link
+              href="/ingresar?perfil=prestadora"
+              className="inline-flex items-center justify-center px-5 py-3 rounded-xl bg-navy-2 text-white font-bold shadow-lg shadow-navy/30 hover:scale-105 transition"
+            >
+              Ingresar al Portal de Prestadoras →
+            </Link>
+          </div>
         </div>
 
-        {/* Accesos institucionales */}
+        {/* Organismos → ingreso con usuario */}
         <div className="mt-8">
           <div className="text-[10px] font-bold uppercase tracking-widest text-muted text-center mb-3">
-            Acceso institucional
+            Organismos · ingreso con usuario
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
-              { emoji: "🛡️", titulo: "Team EnCoSep", detalle: "Equipo del Ente" },
-              { emoji: "⚖️", titulo: "Autoridad de Aplicación", detalle: "Aplica las sanciones" },
-              { emoji: "🏛️", titulo: "PEM", detalle: "Ejecutivo Municipal" },
-              { emoji: "🗳️", titulo: "Concejo Deliberante", detalle: "Presidencia y concejales" },
+              { emoji: "🛡️", titulo: "Team EnCoSeP", detalle: "Equipo del Ente", perfil: "team" },
+              { emoji: "⚖️", titulo: "Autoridad de Aplicación", detalle: "Aplica las sanciones", perfil: "autoridad" },
+              { emoji: "🏛️", titulo: "PEM", detalle: "Ejecutivo Municipal", perfil: "pem" },
+              { emoji: "🗳️", titulo: "Concejo Deliberante", detalle: "Presidencia y concejales", perfil: "concejo" },
             ].map((a) => (
               <Link
                 key={a.titulo}
-                href="/ingresar"
+                href={`/ingresar?perfil=${a.perfil}`}
                 className="flex flex-col items-center text-center gap-1 rounded-2xl border border-line bg-paper p-4 hover:shadow-md hover:border-navy-2/40 transition"
               >
                 <span className="text-2xl leading-none" aria-hidden>
@@ -219,76 +307,6 @@ export default async function HomeInstitucional() {
                 </span>
               </Link>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ===================== DOS FORMAS DE RECLAMAR ===================== */}
-      {/* Explica el camino del vecino: con usuario propio o asistido por WhatsApp. */}
-      <section className="bg-paper-2 py-14 px-6 border-y border-line">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-8">
-            <div className="text-xs font-bold tracking-[0.18em] uppercase text-muted">
-              ¿Cómo querés reclamar?
-            </div>
-            <h2 className="text-2xl md:text-3xl font-extrabold text-navy mt-2">
-              Dos formas de hacer tu reclamo
-            </h2>
-            <p className="text-sm text-muted mt-2 max-w-2xl mx-auto">
-              Elegí la que te resulte más cómoda. Las dos llegan al mismo lugar:
-              el expediente de reclamos del ENCOSEP.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-5">
-            {/* Vía 1: usuario propio (recomendada / más rápida) */}
-            <div className="relative rounded-2xl border-2 border-svc-red/30 bg-paper p-6 flex flex-col gap-4">
-              <span className="absolute -top-3 left-6 px-3 py-1 rounded-full bg-svc-red text-white text-[10px] font-bold uppercase tracking-widest shadow">
-                Más rápido
-              </span>
-              <h3 className="text-xl font-extrabold text-navy mt-1">
-                Con tu usuario
-              </h3>
-              <p className="text-sm text-navy leading-relaxed flex-1">
-                Creás una cuenta y cargás vos mismo el reclamo: ubicación,
-                fotos y descripción de la situación. Te queda un código de
-                seguimiento para ver el avance en tiempo real, y el trámite{" "}
-                <strong>se impulsa más rápido</strong> porque entra directo al
-                sistema.
-              </p>
-              <Link
-                href="/reclamos"
-                className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-svc-red text-white font-bold text-sm shadow-lg shadow-svc-red/30 hover:scale-105 transition"
-              >
-                Crear mi usuario y reclamar →
-              </Link>
-            </div>
-
-            {/* Vía 2: asistencia por WhatsApp (carga manual del Ente) */}
-            <div className="rounded-2xl border border-line bg-paper p-6 flex flex-col gap-4">
-              <h3 className="text-xl font-extrabold text-navy mt-1">
-                Con asistencia por WhatsApp
-              </h3>
-              <p className="text-sm text-navy leading-relaxed flex-1">
-                Si preferís no crear un usuario, escribinos por WhatsApp y
-                contanos los datos del problema:{" "}
-                <strong>
-                  ubicación, fecha y hora, qué pasó, quiénes intervienen y qué
-                  empresa
-                </strong>{" "}
-                presta el servicio. Con esos datos, el equipo del Ente carga el
-                reclamo por vos en el ENCOSEP.
-              </p>
-              <a
-                href={WSP_HREF}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-svc-green text-white font-bold text-sm shadow-lg shadow-svc-green/30 hover:scale-105 transition"
-              >
-                <IconoWsp />
-                Pedir asistencia por WhatsApp
-              </a>
-            </div>
           </div>
         </div>
       </section>

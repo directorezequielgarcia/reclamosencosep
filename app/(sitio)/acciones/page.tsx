@@ -5,28 +5,46 @@ export const metadata = { title: "Acciones del Ente · ENCOSEP" };
 
 const TIPOS_ACCION = [
   {
-    icon: "🔍",
-    titulo: "Inspecciones",
-    descripcion:
-      "Verificación en terreno del cumplimiento de los pliegos y reglamentos por parte de las prestadoras. Se realizan inspecciones programadas y sorpresivas.",
-  },
-  {
     icon: "🤝",
-    titulo: "Mesas de Trabajo",
+    titulo: "Mesas de trabajo",
     descripcion:
-      "Reuniones de coordinación con las empresas prestadoras (SCPL, Clear Urbana, Patagonia, Diadema) y con las Secretarías Municipales. Anticipamos crisis y trabajamos sobre conflictos puntuales.",
+      "Reuniones de coordinación con las prestadoras (SCPL, Clear Urbana, Patagonia, Diadema) y con las autoridades de aplicación. Anticipamos crisis y trabajamos sobre conflictos puntuales del servicio.",
   },
   {
-    icon: "📋",
-    titulo: "Relevamientos y Monitoreos de Oficio",
+    icon: "🏛️",
+    titulo: "Asistencia institucional",
     descripcion:
-      "Acciones de fiscalización proactiva iniciadas por el Ente — sin reclamo previo — para verificar zonas sensibles, puntos críticos del servicio y cumplimiento normativo.",
+      "Acompañamos al Poder Ejecutivo Municipal, sus Secretarías y al Concejo Deliberante con información técnica para la toma de decisiones sobre los servicios públicos.",
   },
   {
-    icon: "🚐",
-    titulo: "EnCoSeP Móvil en tu barrio",
+    icon: "🔍",
+    titulo: "Inspecciones y constataciones",
     descripcion:
-      "Visitas territoriales del Ente a los barrios de Comodoro Rivadavia para escuchar a los vecinos en el lugar de los hechos y registrar reclamos en terreno.",
+      "Verificación en terreno del cumplimiento de pliegos y reglamentos por parte de las prestadoras, con actas de constatación. Inspecciones programadas y sorpresivas.",
+  },
+  {
+    icon: "📨",
+    titulo: "Atención de reclamos y expedientes",
+    descripcion:
+      "Recibimos y gestionamos los reclamos de los vecinos y, cuando corresponde, los escalamos a expedientes administrativos para su impulso formal.",
+  },
+  {
+    icon: "📑",
+    titulo: "Control documentario y auditorías",
+    descripcion:
+      "Control de la documentación que deben presentar las prestadoras y participación en auditorías para verificar el cumplimiento de sus obligaciones.",
+  },
+  {
+    icon: "📊",
+    titulo: "Propuestas de mejora e informes",
+    descripcion:
+      "Proponemos acciones de mejora y elaboramos informes técnicos para acompañar las decisiones administrativas y legislativas vinculadas a los servicios.",
+  },
+  {
+    icon: "📣",
+    titulo: "Convocatoria a audiencias públicas",
+    descripcion:
+      "Convocamos y presidimos audiencias públicas como instancia de participación de los usuarios en las cuestiones que afectan a los servicios públicos.",
   },
 ];
 
@@ -56,7 +74,7 @@ export default function AccionesPage() {
             Líneas de acción
           </div>
           <h2 className="text-2xl font-extrabold text-navy mt-1">
-            Cuatro tipos de intervención del Ente
+            Lo que hace el Ente, en concreto
           </h2>
           <div className="grid sm:grid-cols-2 gap-4 mt-5">
             {TIPOS_ACCION.map((t) => (

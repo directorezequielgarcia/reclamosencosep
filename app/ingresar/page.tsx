@@ -3,6 +3,11 @@ import { redirect } from "next/navigation";
 import { auth, signIn } from "@/lib/auth";
 import { BrandStripe } from "@/components/ui/BrandStripe";
 import { LogoEncosep } from "@/components/ui/LogoEncosep";
+import {
+  perfilDesde,
+  MISION_ENCOSEP,
+  type PerfilAcceso,
+} from "@/lib/perfiles-acceso";
 
 export const metadata = { title: "Ingresar · ENCOSEP" };
 
@@ -26,8 +31,7 @@ const PASOS_GUIA: { titulo: string; texto: string; destacado?: string }[] = [
   },
   {
     titulo: "Tiempos de espera",
-    texto:
-      "La empresa tiene un plazo de 15 días para contestar tu reclamo.",
+    texto: "La empresa tiene un plazo de 15 días para contestar tu reclamo.",
   },
   {
     titulo: "¿Qué pasa si la prestadora no contesta?",
@@ -54,7 +58,12 @@ const PASOS_GUIA: { titulo: string; texto: string; destacado?: string }[] = [
 export default async function IngresarPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; callbackUrl?: string; reset?: string }>;
+  searchParams: Promise<{
+    error?: string;
+    callbackUrl?: string;
+    reset?: string;
+    perfil?: string;
+  }>;
 }) {
   const session = await auth();
   if (session) redirect("/inicio");
@@ -63,6 +72,11 @@ export default async function IngresarPage({
   const error = sp.error;
   const resetOk = sp.reset === "ok";
   const callbackUrl = sp.callbackUrl ?? "/inicio";
+
+  // Perfil elegido (orienta, no autoriza). Si no viene o es "vecino", la
+  // pantalla mantiene su cara clásica de Portal de Reclamos.
+  const panel = perfilDesde(sp.perfil);
+  const esVecino = !panel || panel.key === "vecino";
 
   async function login(formData: FormData) {
     "use server";
@@ -79,48 +93,55 @@ export default async function IngresarPage({
     <main className="flex flex-1 flex-col">
       <div className="grid w-full md:grid-cols-[1fr_440px] items-stretch">
         {/* PANEL INSTITUCIONAL IZQUIERDO */}
-        <aside className="hidden md:flex flex-col justify-between gap-8 bg-gradient-to-br from-navy via-navy-2 to-navy text-white p-8 lg:p-12">
-          <div>
-            <div className="bg-white rounded-2xl p-3 inline-block">
-              <LogoEncosep size={92} />
-            </div>
-            <h2 className="text-3xl font-extrabold leading-tight mt-6">
-              Portal de Reclamos
-            </h2>
-            <p className="text-sm opacity-85 mt-2 leading-relaxed max-w-md">
-              Registrá un reclamo sobre cualquiera de los servicios públicos
-              bajo control del Ente y seguí tu trámite en tiempo real.
-            </p>
-            <BrandStripe className="mt-5 max-w-[200px]" />
-          </div>
-
-          <div>
-            <div className="text-[10px] font-bold tracking-widest uppercase opacity-70 mb-2.5">
-              Servicios sobre los que podés reclamar
-            </div>
-            <div className="grid grid-cols-2 gap-2.5">
-              {AREAS.map((a) => (
-                <div
-                  key={a.src}
-                  className="bg-white/95 rounded-xl px-3 py-2 flex items-center gap-2.5"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={a.src}
-                    alt={a.label}
-                    className="w-9 h-9 object-contain shrink-0"
-                  />
-                  <div className="text-xs font-bold text-navy leading-tight">
-                    {a.label}
-                  </div>
+        <aside className="hidden md:flex flex-col gap-8 bg-gradient-to-br from-navy via-navy-2 to-navy text-white p-8 lg:p-12">
+          {panel ? (
+            <PanelQuePodesHacer panel={panel} />
+          ) : (
+            <>
+              <div>
+                <div className="bg-white rounded-2xl p-3 inline-block">
+                  <LogoEncosep size={92} />
                 </div>
-              ))}
-            </div>
-          </div>
+                <h2 className="text-3xl font-extrabold leading-tight mt-6">
+                  Portal de Reclamos
+                </h2>
+                <p className="text-sm opacity-85 mt-2 leading-relaxed max-w-md">
+                  Registrá un reclamo sobre cualquiera de los servicios públicos
+                  bajo control del Ente y seguí tu trámite en tiempo real.
+                </p>
+                <BrandStripe className="mt-5 max-w-[200px]" />
+              </div>
 
-          <div className="text-[11px] opacity-60">
-            EnCoSeP · Ente de Control de Servicios Públicos · Comodoro Rivadavia
-          </div>
+              <div className="mt-auto">
+                <div className="text-[10px] font-bold tracking-widest uppercase opacity-70 mb-2.5">
+                  Servicios sobre los que podés reclamar
+                </div>
+                <div className="grid grid-cols-2 gap-2.5">
+                  {AREAS.map((a) => (
+                    <div
+                      key={a.src}
+                      className="bg-white/95 rounded-xl px-3 py-2 flex items-center gap-2.5"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={a.src}
+                        alt={a.label}
+                        className="w-9 h-9 object-contain shrink-0"
+                      />
+                      <div className="text-xs font-bold text-navy leading-tight">
+                        {a.label}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="text-[11px] opacity-60">
+                EnCoSeP · Ente de Control de Servicios Públicos · Comodoro
+                Rivadavia
+              </div>
+            </>
+          )}
         </aside>
 
         {/* FORM DE LOGIN DERECHA */}
@@ -131,17 +152,43 @@ export default async function IngresarPage({
               <LogoEncosep size={88} />
             </div>
 
+            {/* Versión compacta de "¿Qué podés hacer?" para mobile */}
+            {panel ? (
+              <div className="md:hidden rounded-2xl border border-line bg-paper-2 p-4 flex flex-col gap-2">
+                <div className="text-[10px] font-bold tracking-widest uppercase text-muted">
+                  ¿Qué podés hacer?
+                </div>
+                <div className="text-base font-extrabold text-navy flex items-center gap-2">
+                  <span aria-hidden>{panel.emoji}</span> {panel.titulo}
+                </div>
+                <p className="text-xs text-navy/85 leading-relaxed">
+                  {panel.funcion}
+                </p>
+                <ul className="flex flex-col gap-1 mt-1">
+                  {panel.secciones.map((s) => (
+                    <li key={s} className="text-xs text-navy/85 flex gap-1.5">
+                      <span className="text-svc-green" aria-hidden>
+                        ✓
+                      </span>
+                      <span>{s}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+
             <div className="flex flex-col gap-2">
               <div className="text-[10px] font-bold tracking-widest text-muted uppercase">
                 ENCOSEP · Comodoro Rivadavia
               </div>
               <h1 className="text-2xl font-extrabold leading-tight text-navy">
-                Ingresá con tu DNI
+                {esVecino ? "Ingresá con tu DNI" : "Ingresá a tu cuenta"}
               </h1>
               <BrandStripe />
               <p className="text-sm text-muted leading-relaxed mt-1">
-                Necesitamos identificarte para registrar y darle seguimiento a
-                tu reclamo.
+                {esVecino
+                  ? "Necesitamos identificarte para registrar y darle seguimiento a tu reclamo."
+                  : "Ingresá con el usuario y la clave que te asignó el Ente."}
               </p>
             </div>
 
@@ -200,30 +247,37 @@ export default async function IngresarPage({
                 >
                   Olvidé mi clave
                 </Link>
-                <Link
-                  href="/crear-cuenta"
-                  className="text-navy font-semibold underline underline-offset-4"
-                >
-                  Crear mi cuenta →
-                </Link>
+                {esVecino ? (
+                  <Link
+                    href="/crear-cuenta"
+                    className="text-navy font-semibold underline underline-offset-4"
+                  >
+                    Crear mi cuenta →
+                  </Link>
+                ) : (
+                  <span className="text-muted">
+                    ¿Sin usuario? Solicitalo al Ente.
+                  </span>
+                )}
               </div>
             </form>
 
-            <div className="text-xs text-muted text-center pt-3 border-t border-line">
-              <div className="font-semibold text-navy mb-1">
-                Usuarios de prueba
+            {esVecino ? (
+              <div className="text-xs text-muted text-center pt-3 border-t border-line">
+                <div className="font-semibold text-navy mb-1">
+                  Usuarios de prueba
+                </div>
+                <div>
+                  Vecino: DNI <span className="font-mono">40555666</span> · clave{" "}
+                  <span className="font-mono">demo1234</span>
+                </div>
+                <div className="mt-0.5">
+                  Operador SCPL: CUIT{" "}
+                  <span className="font-mono">30528775409</span> · clave{" "}
+                  <span className="font-mono">scpl-2026</span>
+                </div>
               </div>
-              <div>
-                Vecino: DNI{" "}
-                <span className="font-mono">40555666</span> · clave{" "}
-                <span className="font-mono">demo1234</span>
-              </div>
-              <div className="mt-0.5">
-                Operador SCPL: CUIT{" "}
-                <span className="font-mono">30528775409</span> · clave{" "}
-                <span className="font-mono">scpl-2026</span>
-              </div>
-            </div>
+            ) : null}
 
             <Link
               href="/"
@@ -236,43 +290,117 @@ export default async function IngresarPage({
         </div>
       </div>
 
-      {/* GUÍA DE PROCEDIMIENTO — cartilla institucional, paso a paso */}
-      <section className="bg-paper-2 border-t border-line px-6 py-12">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-9">
-            <div className="text-[10px] font-bold tracking-[0.18em] uppercase text-muted">
-              Antes de empezar
+      {/* Bloque inferior: vecino → guía de reclamos; institucional → misión */}
+      {esVecino ? (
+        <section className="bg-paper-2 border-t border-line px-6 py-12">
+          <div className="max-w-5xl mx-auto">
+            <div className="text-center mb-9">
+              <div className="text-[10px] font-bold tracking-[0.18em] uppercase text-muted">
+                Antes de empezar
+              </div>
+              <h2 className="text-2xl md:text-3xl font-extrabold text-navy mt-2">
+                Guía de procedimiento para reclamos
+              </h2>
+              <p className="text-sm text-muted mt-2 max-w-2xl mx-auto leading-relaxed">
+                Así avanza un reclamo, paso a paso: desde que lo presentás ante
+                la prestadora hasta la resolución del Ente.
+              </p>
+              <BrandStripe className="mx-auto mt-4 max-w-[160px]" />
             </div>
-            <h2 className="text-2xl md:text-3xl font-extrabold text-navy mt-2">
-              Guía de procedimiento para reclamos
-            </h2>
-            <p className="text-sm text-muted mt-2 max-w-2xl mx-auto leading-relaxed">
-              Así avanza un reclamo, paso a paso: desde que lo presentás ante la
-              prestadora hasta la resolución del Ente.
+
+            <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {PASOS_GUIA.map((p, i) => (
+                <PasoGuia
+                  key={i}
+                  n={i + 1}
+                  titulo={p.titulo}
+                  texto={p.texto}
+                  destacado={p.destacado}
+                />
+              ))}
+            </ol>
+
+            <p className="text-center text-xs text-muted mt-9 leading-relaxed">
+              ENCOSEP · Pasaje Valdivia 435 · info@encosepcomodoro.gob.ar
+              <br />
+              <span className="font-semibold">encosepcomodoro.gob.ar</span>
             </p>
-            <BrandStripe className="mx-auto mt-4 max-w-[160px]" />
           </div>
-
-          <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {PASOS_GUIA.map((p, i) => (
-              <PasoGuia
-                key={i}
-                n={i + 1}
-                titulo={p.titulo}
-                texto={p.texto}
-                destacado={p.destacado}
-              />
-            ))}
-          </ol>
-
-          <p className="text-center text-xs text-muted mt-9 leading-relaxed">
-            ENCOSEP · Pasaje Valdivia 435 · info@encosepcomodoro.gob.ar
-            <br />
-            <span className="font-semibold">encosepcomodoro.gob.ar</span>
-          </p>
-        </div>
-      </section>
+        </section>
+      ) : (
+        <section className="bg-paper-2 border-t border-line px-6 py-10">
+          <div className="max-w-3xl mx-auto text-center">
+            <div className="text-[10px] font-bold tracking-[0.18em] uppercase text-muted">
+              Tu acceso, en el marco del Ente
+            </div>
+            <p className="text-sm text-navy mt-3 leading-relaxed">
+              {MISION_ENCOSEP}
+            </p>
+          </div>
+        </section>
+      )}
     </main>
+  );
+}
+
+function PanelQuePodesHacer({ panel }: { panel: PerfilAcceso }) {
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="bg-white rounded-2xl p-3 inline-block self-start">
+        <LogoEncosep size={72} />
+      </div>
+
+      <div>
+        <div className="text-[10px] font-bold tracking-widest uppercase opacity-70 mb-1">
+          ¿Qué podés hacer?
+        </div>
+        <h2 className="text-2xl lg:text-3xl font-extrabold leading-tight flex items-center gap-2">
+          <span aria-hidden>{panel.emoji}</span> {panel.titulo}
+        </h2>
+        <p className="text-xs opacity-80 mt-1.5 max-w-md">{panel.rolLinea}</p>
+        <BrandStripe className="mt-4 max-w-[200px]" />
+      </div>
+
+      <p className="text-sm opacity-90 leading-relaxed max-w-md">
+        {panel.funcion}
+      </p>
+
+      <div>
+        <div className="text-[10px] font-bold tracking-widest uppercase opacity-70 mb-2">
+          Secciones habilitadas
+        </div>
+        <ul className="flex flex-col gap-1.5 max-w-md">
+          {panel.secciones.map((s) => (
+            <li key={s} className="text-sm flex gap-2">
+              <span className="text-svc-green font-bold" aria-hidden>
+                ✓
+              </span>
+              <span className="opacity-90">{s}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div>
+        <div className="text-[10px] font-bold tracking-widest uppercase opacity-70 mb-2">
+          {panel.deberesLabel}
+        </div>
+        <ul className="flex flex-col gap-1.5 max-w-md">
+          {panel.deberes.map((s) => (
+            <li key={s} className="text-sm flex gap-2">
+              <span className="opacity-60" aria-hidden>
+                •
+              </span>
+              <span className="opacity-90">{s}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <p className="text-[11px] opacity-70 leading-relaxed border-t border-white/20 pt-3 max-w-md">
+        {MISION_ENCOSEP}
+      </p>
+    </div>
   );
 }
 
