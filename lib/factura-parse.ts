@@ -145,6 +145,13 @@ export type FilaControl = {
   alerta: boolean;
 };
 
+export type Proyeccion = {
+  nombre: string;
+  estado: string | null;
+  total: number;
+  esMatch: boolean;
+};
+
 export type AnalisisFactura = {
   ok: boolean;
   mensaje?: string;
@@ -152,6 +159,7 @@ export type AnalisisFactura = {
   cuadroMatch: CuadroTarifario | null;
   filas: FilaControl[];
   checks: { label: string; ok: boolean; detalle: string }[];
+  proyecciones: Proyeccion[];
   totalFacturado: number | null;
   totalCuadro: number | null;
 };
@@ -177,6 +185,7 @@ export function analizarFactura(
       cuadroMatch: null,
       filas: [],
       checks: [],
+      proyecciones: [],
       totalFacturado: extraida.total,
       totalCuadro: null,
     };
@@ -190,6 +199,7 @@ export function analizarFactura(
       cuadroMatch: null,
       filas: [],
       checks: [],
+      proyecciones: [],
       totalFacturado: extraida.total,
       totalCuadro: null,
     };
@@ -211,12 +221,12 @@ export function analizarFactura(
     },
   });
 
-  // Elegimos el cuadro cuyo cálculo de los servicios regulados más se acerca
-  // a lo facturado (así detectamos con qué cuadro te facturaron).
+  // Calculamos la factura para CADA cuadro con el mismo consumo y, además de
+  // detectar con cuál te facturaron (menor error), proyectamos cómo quedaría
+  // tu factura bajo cada cuadro (vigente, pedido, anterior).
   const c = extraida.conceptos;
   const facturados = [c.cargoFijo, c.cargoVariable, c.compra, c.agua, c.cloacas];
-  let mejor: { cuadro: CuadroTarifario; res: ReturnType<typeof calcularFactura>; err: number } | null = null;
-  for (const cuadro of cuadros) {
+  const calculados = cuadros.map((cuadro) => {
     const res = calcularFactura(cuadro, entrada());
     const calc = [
       sumaLinea(res, "Cargo fijo de energía"),
@@ -234,9 +244,11 @@ export function analizarFactura(
         n++;
       }
     }
-    err = n ? err / n : Infinity;
-    if (!mejor || err < mejor.err) mejor = { cuadro, res, err };
-  }
+    return { cuadro, res, err: n ? err / n : Infinity };
+  });
+  let mejor: (typeof calculados)[number] | null = null;
+  for (const x of calculados) if (!mejor || x.err < mejor.err) mejor = x;
+
   if (!mejor) {
     return {
       ok: false,
@@ -245,6 +257,7 @@ export function analizarFactura(
       cuadroMatch: null,
       filas: [],
       checks: [],
+      proyecciones: [],
       totalFacturado: extraida.total,
       totalCuadro: null,
     };
@@ -302,12 +315,20 @@ export function analizarFactura(
     }
   }
 
+  const proyecciones: Proyeccion[] = calculados.map((x) => ({
+    nombre: x.cuadro.nombre,
+    estado: x.cuadro.estado ?? null,
+    total: x.res.total,
+    esMatch: x.cuadro === mejor!.cuadro,
+  }));
+
   return {
     ok: true,
     extraida,
     cuadroMatch: mejor.cuadro,
     filas,
     checks,
+    proyecciones,
     totalFacturado: extraida.total,
     totalCuadro: res.total,
   };

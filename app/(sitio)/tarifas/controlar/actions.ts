@@ -6,6 +6,7 @@ import {
   analizarFactura,
   type FacturaExtraida,
   type FilaControl,
+  type Proyeccion,
 } from "@/lib/factura-parse";
 
 export type ControlState = {
@@ -16,6 +17,7 @@ export type ControlState = {
   cuadroMatchEstado?: string | null;
   filas?: FilaControl[];
   checks?: { label: string; ok: boolean; detalle: string }[];
+  proyecciones?: Proyeccion[];
   totalFacturado?: number | null;
   totalCuadro?: number | null;
 };
@@ -78,6 +80,7 @@ export async function controlarFactura(
     cuadroMatchEstado: a.cuadroMatch?.estado ?? null,
     filas: a.filas,
     checks: a.checks,
+    proyecciones: a.proyecciones,
     totalFacturado: a.totalFacturado,
     totalCuadro: a.totalCuadro,
   };

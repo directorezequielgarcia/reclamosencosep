@@ -3,7 +3,15 @@
 import Link from "next/link";
 import { useActionState, useState } from "react";
 import { controlarFactura, type ControlState } from "./actions";
+import type { Proyeccion } from "@/lib/factura-parse";
 import { pesos } from "@/lib/tarifas";
+
+const ESTADO_TXT: Record<string, string> = {
+  VIGENTE: "Vigente",
+  PEDIDO: "Aumento pedido",
+  ANTERIOR: "Anterior",
+  BORRADOR: "Borrador",
+};
 
 const inicial: ControlState = { ok: false };
 
@@ -231,6 +239,13 @@ function Resultado({ state }: { state: ControlState }) {
         </div>
       ) : null}
 
+      {state.proyecciones && state.proyecciones.length > 1 ? (
+        <Proyecciones
+          proyecciones={state.proyecciones}
+          facturado={state.totalFacturado}
+        />
+      ) : null}
+
       <div className="rounded-2xl border border-svc-yellow/50 bg-svc-yellow/10 p-4 text-sm text-navy leading-relaxed">
         Las diferencias chicas (hasta ~3%) son normales por redondeos. Si ves un
         concepto marcado para revisar o una diferencia grande,{" "}
@@ -242,6 +257,75 @@ function Resultado({ state }: { state: ControlState }) {
         </Link>{" "}
         adjuntando tu factura. Este control es orientativo y no reemplaza la
         liquidación oficial de la prestadora.
+      </div>
+    </div>
+  );
+}
+
+function Proyecciones({
+  proyecciones,
+  facturado,
+}: {
+  proyecciones: Proyeccion[];
+  facturado: number | null | undefined;
+}) {
+  // Orden: vigente, pedido, anterior, resto.
+  const orden: Record<string, number> = { VIGENTE: 0, PEDIDO: 1, ANTERIOR: 2 };
+  const lista = [...proyecciones].sort(
+    (a, b) => (orden[a.estado ?? ""] ?? 9) - (orden[b.estado ?? ""] ?? 9),
+  );
+  return (
+    <div className="rounded-2xl border border-line bg-paper overflow-hidden">
+      <div className="px-5 py-3 border-b border-line">
+        <div className="text-sm font-bold text-navy">
+          Tu mismo consumo en cada cuadro
+        </div>
+        <div className="text-xs text-muted">
+          Con los datos de tu factura, cuánto daría bajo cada cuadro tarifario.
+        </div>
+      </div>
+      <div className="divide-y divide-line">
+        {lista.map((p, i) => {
+          const dif =
+            facturado != null && facturado > 0
+              ? (p.total - facturado) / facturado
+              : null;
+          return (
+            <div key={i} className="px-5 py-3 flex items-center gap-3">
+              <div className="flex-1">
+                <div className="text-sm font-semibold text-navy">
+                  {p.nombre}
+                  {p.esMatch ? (
+                    <span className="ml-2 text-[11px] font-bold text-svc-green">
+                      ← te facturaron con este
+                    </span>
+                  ) : null}
+                </div>
+                {p.estado ? (
+                  <div className="text-[11px] text-muted">
+                    {ESTADO_TXT[p.estado] ?? p.estado}
+                  </div>
+                ) : null}
+              </div>
+              <div className="text-right">
+                <div className="font-bold text-navy tabular-nums">
+                  {pesos(p.total)}
+                </div>
+                {dif != null && !p.esMatch ? (
+                  <div
+                    className={
+                      "text-[11px] font-semibold tabular-nums " +
+                      (dif >= 0 ? "text-svc-red" : "text-svc-green")
+                    }
+                  >
+                    {dif >= 0 ? "+" : ""}
+                    {(dif * 100).toFixed(1)}% vs tu factura
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
