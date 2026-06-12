@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
-  CUADROS,
   TIPO_LABEL,
   type CuadroTarifario,
   type EntradaCalculo,
@@ -11,7 +10,6 @@ import {
   type ResultadoCalculo,
   type TipoUsuario,
   calcularFactura,
-  cuadroVigente,
   extrasIniciales,
   pesos,
 } from "@/lib/tarifas";
@@ -67,29 +65,41 @@ function Campo({
   );
 }
 
-export function CalculadoraTarifas() {
-  const vigente = cuadroVigente();
+export function CalculadoraTarifas({ cuadros }: { cuadros: CuadroTarifario[] }) {
+  const vigente =
+    cuadros.find((c) => c.estado === "VIGENTE") ?? cuadros[0];
+  const pedido = cuadros.find((c) => c.estado === "PEDIDO");
+
   const [cuadroId, setCuadroId] = useState(vigente.id);
-  const [compararId, setCompararId] = useState<string>("");
+  const [compararId, setCompararId] = useState<string>(pedido?.id ?? "");
 
   const [tipo, setTipo] = useState<TipoUsuario>("RESIDENCIAL");
   const [kwh, setKwh] = useState(221);
+  const [modoAgua, setModoAgua] = useState<"ESTIMADA" | "MEDIDA">("ESTIMADA");
   const [m2, setM2] = useState(60);
+  const [m3Medido, setM3Medido] = useState(17);
   const [tieneCloacas, setTieneCloacas] = useState(true);
   const [conSubsidio, setConSubsidio] = useState(true);
   const [mes, setMes] = useState(new Date().getMonth() + 1);
 
-  const cuadro = CUADROS.find((c) => c.id === cuadroId) ?? vigente;
-  const cuadroComparar = CUADROS.find((c) => c.id === compararId) ?? null;
+  const cuadro = cuadros.find((c) => c.id === cuadroId) ?? vigente;
+  const cuadroComparar = cuadros.find((c) => c.id === compararId) ?? null;
 
   const [extras, setExtras] = useState<Record<string, boolean>>(
     extrasIniciales(vigente),
   );
 
+  // Tipos seleccionables = los que tienen tabla de energía en el cuadro.
+  const tiposDisponibles = (Object.keys(TIPO_LABEL) as TipoUsuario[]).filter(
+    (t) => cuadro.energia[t]?.length,
+  );
+
   const entrada: EntradaCalculo = {
     tipo,
     kwh: Number(kwh) || 0,
+    modoAgua,
     m2: Number(m2) || 0,
+    m3Medido: Number(m3Medido) || 0,
     tieneCloacas,
     conSubsidioEnergia: conSubsidio,
     mes,
@@ -99,13 +109,13 @@ export function CalculadoraTarifas() {
   const resultado = useMemo(
     () => calcularFactura(cuadro, entrada),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [cuadro, tipo, kwh, m2, tieneCloacas, conSubsidio, mes, extras],
+    [cuadro, tipo, kwh, modoAgua, m2, m3Medido, tieneCloacas, conSubsidio, mes, extras],
   );
 
   const resultadoComparar = useMemo(
     () => (cuadroComparar ? calcularFactura(cuadroComparar, entrada) : null),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [cuadroComparar, tipo, kwh, m2, tieneCloacas, conSubsidio, mes, extras],
+    [cuadroComparar, tipo, kwh, modoAgua, m2, m3Medido, tieneCloacas, conSubsidio, mes, extras],
   );
 
   const opcionales = cuadro.conceptosExtra.filter((c) => c.opcional);
@@ -122,13 +132,11 @@ export function CalculadoraTarifas() {
             onChange={(ev) => setTipo(ev.target.value as TipoUsuario)}
             className="rounded-lg border border-line-strong px-3 py-2 text-sm bg-paper"
           >
-            {(Object.keys(TIPO_LABEL) as TipoUsuario[])
-              .filter((t) => cuadro.energia[t] || t === "RESIDENCIAL")
-              .map((t) => (
-                <option key={t} value={t}>
-                  {TIPO_LABEL[t]}
-                </option>
-              ))}
+            {tiposDisponibles.map((t) => (
+              <option key={t} value={t}>
+                {TIPO_LABEL[t]}
+              </option>
+            ))}
           </select>
         </Campo>
 
@@ -145,18 +153,67 @@ export function CalculadoraTarifas() {
           />
         </Campo>
 
-        <Campo
-          label="Superficie cubierta (m²)"
-          hint={`Define el consumo de agua estimado: ${cuadro.aguaFormula.baseM3} m³ + ${cuadro.aguaFormula.m3Por10m2} m³ cada 10 m².`}
-        >
-          <input
-            type="number"
-            min={0}
-            value={m2}
-            onChange={(ev) => setM2(ev.target.valueAsNumber || 0)}
-            className="rounded-lg border border-line-strong px-3 py-2 text-sm bg-paper"
-          />
-        </Campo>
+        {/* Servicio de agua: estimada (por m²) o medida (por m³) */}
+        <div className="flex flex-col gap-2 border-t border-line pt-3">
+          <span className="text-xs font-bold uppercase tracking-wider text-muted">
+            Servicio de agua
+          </span>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setModoAgua("ESTIMADA")}
+              className={
+                "rounded-lg border px-3 py-2 text-xs font-semibold transition " +
+                (modoAgua === "ESTIMADA"
+                  ? "border-svc-red bg-svc-red/10 text-svc-red"
+                  : "border-line-strong text-navy hover:bg-paper-2")
+              }
+            >
+              Estimada (por m²)
+            </button>
+            <button
+              type="button"
+              onClick={() => setModoAgua("MEDIDA")}
+              className={
+                "rounded-lg border px-3 py-2 text-xs font-semibold transition " +
+                (modoAgua === "MEDIDA"
+                  ? "border-svc-red bg-svc-red/10 text-svc-red"
+                  : "border-line-strong text-navy hover:bg-paper-2")
+              }
+            >
+              Medida (por m³)
+            </button>
+          </div>
+
+          {modoAgua === "ESTIMADA" ? (
+            <Campo
+              label="Superficie cubierta (m²)"
+              hint={`Consumo estimado: ${cuadro.aguaFormula.baseM3} m³ + ${cuadro.aguaFormula.m3Por10m2} m³ cada 10 m². Para casas sin medidor de agua.`}
+            >
+              <input
+                type="number"
+                min={0}
+                value={m2}
+                onChange={(ev) => setM2(ev.target.valueAsNumber || 0)}
+                className="rounded-lg border border-line-strong px-3 py-2 text-sm bg-paper"
+              />
+            </Campo>
+          ) : (
+            <Campo
+              label="Consumo de agua medido (m³)"
+              hint="El consumo en m³ que figura en tu factura (ej. el del mes anterior). Para usuarios con medidor de agua."
+            >
+              <input
+                type="number"
+                min={0}
+                value={m3Medido}
+                onChange={(ev) => setM3Medido(ev.target.valueAsNumber || 0)}
+                placeholder="ej. 17"
+                className="rounded-lg border border-line-strong px-3 py-2 text-sm bg-paper"
+              />
+            </Campo>
+          )}
+        </div>
 
         <Campo label="Mes facturado" hint="Cambia el tope del subsidio nacional.">
           <select
@@ -225,7 +282,7 @@ export function CalculadoraTarifas() {
               onChange={(ev) => setCuadroId(ev.target.value)}
               className="rounded-lg border border-line-strong px-3 py-2 text-sm bg-paper"
             >
-              {CUADROS.map((c) => (
+              {cuadros.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.nombre}
                 </option>
@@ -236,19 +293,22 @@ export function CalculadoraTarifas() {
             <select
               value={compararId}
               onChange={(ev) => setCompararId(ev.target.value)}
-              disabled={CUADROS.length < 2}
+              disabled={cuadros.length < 2}
               className="rounded-lg border border-line-strong px-3 py-2 text-sm bg-paper disabled:opacity-50"
             >
               <option value="">— Sin comparación —</option>
-              {CUADROS.filter((c) => c.id !== cuadroId).map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.nombre}
-                </option>
-              ))}
+              {cuadros
+                .filter((c) => c.id !== cuadroId)
+                .map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.nombre}
+                  </option>
+                ))}
             </select>
-            {CUADROS.length < 2 ? (
+            {cuadros.length < 2 ? (
               <span className="text-[11px] text-muted">
-                Se activa cuando el Ente cargue un segundo cuadro.
+                Se activa cuando el Ente cargue otro cuadro (ej. un aumento
+                pedido).
               </span>
             ) : null}
           </Campo>
@@ -308,43 +368,48 @@ function ResumenTotal({
   resultado: ResultadoCalculo;
   comparar: { cuadro: CuadroTarifario; resultado: ResultadoCalculo } | null;
 }) {
-  const dif = comparar
-    ? resultado.total - comparar.resultado.total
-    : 0;
+  const dif = comparar ? comparar.resultado.total - resultado.total : 0;
   const difPorc =
-    comparar && comparar.resultado.total > 0
-      ? (dif / comparar.resultado.total) * 100
-      : 0;
+    comparar && resultado.total > 0 ? (dif / resultado.total) * 100 : 0;
+  const esPedido = comparar?.cuadro.estado === "PEDIDO";
 
   return (
     <div className="rounded-2xl border border-line bg-navy text-white p-5">
       <div className="text-xs font-bold uppercase tracking-widest opacity-70">
-        Total estimado de tu factura
+        Tu factura estimada hoy
       </div>
       <div className="text-3xl sm:text-4xl font-extrabold mt-1">
         {pesos(resultado.total)}
       </div>
       <div className="text-xs opacity-70 mt-1">
-        Según {cuadro.nombre} · vigente desde{" "}
-        {new Date(cuadro.vigenteDesde + "T00:00:00").toLocaleDateString("es-AR")}
+        Según {cuadro.nombre}
+        {cuadro.vigenteDesde
+          ? ` · vigente desde ${new Date(
+              cuadro.vigenteDesde + "T00:00:00",
+            ).toLocaleDateString("es-AR")}`
+          : ""}
       </div>
 
       {comparar ? (
         <div className="mt-4 pt-4 border-t border-white/20 grid sm:grid-cols-2 gap-3 text-sm">
           <div>
-            <div className="opacity-70 text-xs">{comparar.cuadro.nombre}</div>
+            <div className="opacity-70 text-xs">
+              {esPedido
+                ? "Si se aprueba el aumento pedido"
+                : comparar.cuadro.nombre}
+            </div>
             <div className="font-bold text-lg">
               {pesos(comparar.resultado.total)}
             </div>
           </div>
           <div
             className={
-              dif >= 0
-                ? "text-svc-yellow font-bold"
-                : "text-svc-green font-bold"
+              dif >= 0 ? "text-svc-yellow font-bold" : "text-svc-green font-bold"
             }
           >
-            <div className="opacity-90 text-xs">Variación</div>
+            <div className="opacity-90 text-xs">
+              {dif >= 0 ? "Aumento" : "Baja"}
+            </div>
             <div className="text-lg">
               {dif >= 0 ? "+" : ""}
               {pesos(dif)} ({difPorc >= 0 ? "+" : ""}

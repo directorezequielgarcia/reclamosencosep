@@ -73,6 +73,47 @@ export async function guardarDocumentoPrestadora(
   };
 }
 
+/**
+ * Guarda el PDF de un cuadro tarifario. Blob si hay token, fs local si no.
+ */
+export async function guardarPdfCuadro(
+  cuadroId: string,
+  file: File,
+): Promise<UploadedFile> {
+  if (file.size === 0) throw new Error("Archivo vacío");
+  if (file.size > MAX_DOC_BYTES) {
+    throw new Error(
+      `Archivo demasiado grande (máx ${MAX_DOC_BYTES / 1024 / 1024} MB)`,
+    );
+  }
+  if (file.type && file.type !== "application/pdf") {
+    throw new Error("El cuadro tarifario debe ser un PDF");
+  }
+
+  const nombre = `${cuadroId}.pdf`;
+
+  if (process.env.BLOB_READ_WRITE_TOKEN) {
+    const key = `cuadros/${nombre}`;
+    const blob = await put(key, file, {
+      access: "public",
+      contentType: "application/pdf",
+      allowOverwrite: true,
+    });
+    return { url: blob.url, mimeType: "application/pdf", bytes: file.size };
+  }
+
+  const dir = path.join(UPLOAD_ROOT, "cuadros");
+  await fs.mkdir(dir, { recursive: true });
+  const dest = path.join(dir, nombre);
+  const buf = Buffer.from(await file.arrayBuffer());
+  await fs.writeFile(dest, buf);
+  return {
+    url: `/uploads/cuadros/${nombre}`,
+    mimeType: "application/pdf",
+    bytes: file.size,
+  };
+}
+
 function extDocFromMime(mime: string): string {
   switch (mime) {
     case "application/pdf":

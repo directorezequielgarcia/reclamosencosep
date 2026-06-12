@@ -130,6 +130,11 @@ export function puedeGestionarVencimientos(rol: Rol): boolean {
   return esDireccion(rol) || rol === "COOPERATIVA_DOCS" || rol === "GESTOR_ENTE";
 }
 
+/** Puede gestionar los cuadros tarifarios de la Calculadora ENCOSEP. */
+export function puedeGestionarTarifas(rol: Rol): boolean {
+  return esDireccion(rol) || rol === "GESTOR_ENTE";
+}
+
 // Filtro WHERE para Prisma según el rol del usuario.
 // El operador de prestadora solo ve los reclamos asignados a su prestadora.
 export function whereReclamosByRol(rol: Rol, prestadoraId: string | null) {

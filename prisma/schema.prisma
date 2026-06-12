@@ -840,3 +840,40 @@ model InformeMensual {
   @@unique([anio, mes])
   @@index([estado, anio, mes])
 }
+
+// ─────────────────────────────────────────────
+// Cuadros tarifarios (Calculadora ENCOSEP)
+// ─────────────────────────────────────────────
+
+enum CuadroEstado {
+  VIGENTE   // aprobado y en vigencia
+  ANTERIOR  // histórico
+  PEDIDO    // aumento solicitado por la prestadora, aún no aprobado (para simular)
+  BORRADOR
+}
+
+model CuadroTarifario {
+  id           String       @id @default(cuid())
+  nombre       String
+  expediente   String?
+  estado       CuadroEstado @default(BORRADOR)
+  vigenteDesde DateTime?
+  fuente       String?
+  pdfUrl       String?
+
+  // Objeto con la estructura de tarifas (ver lib/tarifas.ts: energia,
+  // subsidioEnergia, alumbradoPublico, aguaEstimada, aguaFormula,
+  // cloacasPorc, iva, conceptosExtra). Los `hasta` infinitos se guardan
+  // como número centinela grande.
+  datos        Json
+
+  publicado    Boolean      @default(false) // visible en la calculadora pública
+
+  creadoPorId     String?
+  creadoPorNombre String?
+
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([publicado, estado])
+}
