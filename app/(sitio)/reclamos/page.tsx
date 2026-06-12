@@ -84,6 +84,28 @@ export default function ReclamosLanding() {
           </div>
         </div>
       </div>
+
+      <Link
+        href="/tarifas"
+        className="mt-10 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5 rounded-2xl border border-svc-orange/40 bg-svc-orange/10 p-5 hover:bg-svc-orange/15 transition"
+      >
+        <div className="text-3xl" aria-hidden>
+          🧮
+        </div>
+        <div className="flex-1">
+          <div className="text-sm font-bold text-navy">
+            Calculadora ENCOSEP — ¿querés controlar lo que te cobran?
+          </div>
+          <div className="text-xs text-muted leading-relaxed mt-0.5">
+            Ingresás tu consumo de luz, los m² de tu casa y si tenés cloacas, y
+            te decimos cuánto debería dar tu factura según el cuadro tarifario
+            aprobado por el Ente — y cómo te quedaría con los aumentos pedidos.
+          </div>
+        </div>
+        <div className="text-svc-red font-bold text-sm whitespace-nowrap">
+          Abrir calculadora →
+        </div>
+      </Link>
       </main>
     </>
   );
