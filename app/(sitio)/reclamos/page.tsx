@@ -99,7 +99,7 @@ export default function ReclamosLanding() {
           <div className="text-xs text-muted leading-relaxed mt-0.5">
             Ingresás tu consumo de luz, los m² de tu casa y si tenés cloacas, y
             te decimos cuánto debería dar tu factura según el cuadro tarifario
-            aprobado por el Ente — y cómo te quedaría con los aumentos pedidos.
+            vigente — y cómo te quedaría con los aumentos pedidos.
           </div>
         </div>
         <div className="text-svc-red font-bold text-sm whitespace-nowrap">

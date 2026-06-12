@@ -7,10 +7,11 @@ export function ExplicacionCuadros() {
         Cuadros tarifarios y comparativo
       </h2>
       <p className="text-sm text-navy mt-2 leading-relaxed max-w-3xl">
-        Un <b>cuadro tarifario</b> es la tabla de precios que aprueba el Ente y
-        que la prestadora <b>está obligada a respetar</b> para cobrarte la luz,
-        el agua y las cloacas. Cada vez que cambia, queda registrado. La
-        calculadora trabaja con tres tipos de cuadro:
+        Un <b>cuadro tarifario</b> es la tabla de precios oficial que la
+        prestadora <b>está obligada a respetar</b> para cobrarte la luz, el agua
+        y las cloacas. El Ente <b>interviene en su análisis y control</b>; la
+        aprobación corresponde a la autoridad competente. Cada vez que cambia,
+        queda registrado. La calculadora trabaja con tres tipos de cuadro:
       </p>
 
       <div className="grid sm:grid-cols-3 gap-3 mt-4">
@@ -28,7 +29,7 @@ export function ExplicacionCuadros() {
             Vigente
           </div>
           <div className="text-sm text-navy mt-2 leading-relaxed">
-            El cuadro <b>aprobado y en vigencia hoy</b>. Es con el que se calcula
+            El cuadro <b>oficial en vigencia hoy</b>. Es con el que se calcula
             lo que deberías estar pagando.
           </div>
         </div>

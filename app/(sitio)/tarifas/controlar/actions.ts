@@ -26,38 +26,45 @@ export async function controlarFactura(
   _prev: ControlState,
   formData: FormData,
 ): Promise<ControlState> {
-  const file = formData.get("factura");
-  if (!(file instanceof File) || file.size === 0) {
-    return { ok: false, mensaje: "Subí el PDF de tu factura." };
-  }
-  if (file.size > MAX) {
-    return { ok: false, mensaje: "El archivo es muy grande (máx 15 MB)." };
-  }
-  if (file.type && file.type !== "application/pdf") {
-    return {
-      ok: false,
-      mensaje: "Por ahora solo leemos el PDF original de la SCPL.",
-    };
-  }
-
+  // Camino A: texto ya extraído en el navegador por OCR (foto).
+  const textoOcr = String(formData.get("textoOcr") ?? "").trim();
   let texto = "";
-  try {
-    const buf = Buffer.from(await file.arrayBuffer());
-    const data = await pdfParse(buf);
-    texto = data.text ?? "";
-  } catch {
-    return {
-      ok: false,
-      mensaje: "No pudimos leer el PDF. ¿Es el archivo original de la factura?",
-    };
-  }
 
-  if (texto.trim().length < 40) {
-    return {
-      ok: false,
-      mensaje:
-        "El PDF no tiene texto (parece una foto o un escaneo). Subí el PDF original que te envía la SCPL por mail.",
-    };
+  if (textoOcr.length >= 40) {
+    texto = textoOcr;
+  } else {
+    // Camino B: PDF original (extracción server-side con pdf-parse).
+    const file = formData.get("factura");
+    if (!(file instanceof File) || file.size === 0) {
+      return { ok: false, mensaje: "Subí el PDF de tu factura o una foto." };
+    }
+    if (file.size > MAX) {
+      return { ok: false, mensaje: "El archivo es muy grande (máx 15 MB)." };
+    }
+    if (file.type && file.type !== "application/pdf") {
+      return {
+        ok: false,
+        mensaje:
+          "Ese archivo no es un PDF. Si es una foto, usá la opción «Foto».",
+      };
+    }
+    try {
+      const buf = Buffer.from(await file.arrayBuffer());
+      const data = await pdfParse(buf);
+      texto = data.text ?? "";
+    } catch {
+      return {
+        ok: false,
+        mensaje: "No pudimos leer el PDF. ¿Es el archivo original de la factura?",
+      };
+    }
+    if (texto.trim().length < 40) {
+      return {
+        ok: false,
+        mensaje:
+          "El PDF no tiene texto (parece un escaneo). Probá con la opción «Foto» o subí el PDF original de la SCPL.",
+      };
+    }
   }
 
   const cuadros = await cuadrosPublicados();

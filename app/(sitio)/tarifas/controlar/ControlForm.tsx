@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { controlarFactura, type ControlState } from "./actions";
 import { pesos } from "@/lib/tarifas";
 
@@ -9,32 +9,111 @@ const inicial: ControlState = { ok: false };
 
 export function ControlForm() {
   const [state, action, pending] = useActionState(controlarFactura, inicial);
+  const [modo, setModo] = useState<"PDF" | "FOTO">("PDF");
+  const [ocrTexto, setOcrTexto] = useState("");
+  const [ocrEstado, setOcrEstado] = useState<"idle" | "leyendo" | "listo" | "error">(
+    "idle",
+  );
+  const [progreso, setProgreso] = useState(0);
+
+  async function correrOcr(file: File) {
+    setOcrEstado("leyendo");
+    setProgreso(0);
+    setOcrTexto("");
+    try {
+      const T = await import("tesseract.js");
+      const worker = await T.createWorker("spa", 1, {
+        logger: (m: { status: string; progress: number }) => {
+          if (m.status === "recognizing text") setProgreso(m.progress);
+        },
+      });
+      const { data } = await worker.recognize(file);
+      await worker.terminate();
+      setOcrTexto(data.text ?? "");
+      setOcrEstado("listo");
+    } catch {
+      setOcrEstado("error");
+    }
+  }
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Selector de modo */}
+      <div className="inline-flex rounded-xl border border-line-strong overflow-hidden w-fit">
+        {(["PDF", "FOTO"] as const).map((m) => (
+          <button
+            key={m}
+            type="button"
+            onClick={() => setModo(m)}
+            className={
+              "px-4 py-2 text-sm font-bold " +
+              (modo === m
+                ? "bg-svc-red text-white"
+                : "bg-paper text-navy hover:bg-paper-2")
+            }
+          >
+            {m === "PDF" ? "📄 PDF" : "📷 Foto"}
+          </button>
+        ))}
+      </div>
+
       <form
         action={action}
-        className="rounded-2xl border border-line bg-paper p-5 flex flex-col sm:flex-row sm:items-end gap-4"
+        className="rounded-2xl border border-line bg-paper p-5 flex flex-col gap-4"
       >
-        <label className="flex-1 flex flex-col gap-1">
-          <span className="text-xs font-bold uppercase tracking-wider text-muted">
-            PDF de tu factura SCPL
-          </span>
-          <input
-            type="file"
-            name="factura"
-            accept="application/pdf"
-            required
-            className="text-sm"
-          />
-          <span className="text-[11px] text-muted">
-            Usá el PDF original que te llega por mail (no una foto).
-          </span>
-        </label>
+        <input type="hidden" name="textoOcr" value={modo === "FOTO" ? ocrTexto : ""} />
+
+        {modo === "PDF" ? (
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-bold uppercase tracking-wider text-muted">
+              PDF de tu factura SCPL
+            </span>
+            <input type="file" name="factura" accept="application/pdf" className="text-sm" />
+            <span className="text-[11px] text-muted">
+              Usá el PDF original que te llega por mail. Es la opción más precisa.
+            </span>
+          </label>
+        ) : (
+          <div className="flex flex-col gap-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-muted">
+              Foto de tu factura
+            </span>
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={(ev) => {
+                const f = ev.target.files?.[0];
+                if (f) correrOcr(f);
+              }}
+              className="text-sm"
+            />
+            <span className="text-[11px] text-muted">
+              Sacala derecha, con buena luz y enfocada. La lectura se hace en tu
+              teléfono (gratis); puede tardar unos segundos.
+            </span>
+            {ocrEstado === "leyendo" ? (
+              <div className="text-xs text-navy">
+                Leyendo la foto… {Math.round(progreso * 100)}%
+              </div>
+            ) : null}
+            {ocrEstado === "listo" ? (
+              <div className="text-xs text-svc-green font-semibold">
+                ✓ Foto leída. Ya podés controlar la factura.
+              </div>
+            ) : null}
+            {ocrEstado === "error" ? (
+              <div className="text-xs text-svc-red">
+                No se pudo leer la foto. Probá con otra o usá el PDF.
+              </div>
+            ) : null}
+          </div>
+        )}
+
         <button
           type="submit"
-          disabled={pending}
-          className="inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-svc-red text-white font-bold text-sm shadow-md shadow-svc-red/30 hover:opacity-90 disabled:opacity-60"
+          disabled={pending || (modo === "FOTO" && ocrEstado !== "listo")}
+          className="inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-svc-red text-white font-bold text-sm shadow-md shadow-svc-red/30 hover:opacity-90 disabled:opacity-60 w-fit"
         >
           {pending ? "Analizando…" : "Controlar factura"}
         </button>
@@ -46,9 +125,7 @@ export function ControlForm() {
         </div>
       ) : null}
 
-      {state.ok && state.extraida ? (
-        <Resultado state={state} />
-      ) : null}
+      {state.ok && state.extraida ? <Resultado state={state} /> : null}
     </div>
   );
 }

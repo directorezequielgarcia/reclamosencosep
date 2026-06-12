@@ -263,7 +263,7 @@ export function CalculadoraTarifas({ cuadros }: { cuadros: CuadroTarifario[] }) 
     )}</div></div>
 ${comp ? `<div class="comp"><table><tbody>${comp}</tbody></table></div>` : ""}
 ${donutComprobanteHTML(resultado.composicion)}
-<div class="nota">Cálculo estimado para un mes completo según el cuadro tarifario aprobado por el ENCOSEP. Tu factura real puede variar por el prorrateo de los días del período y por conceptos opcionales. No es un documento oficial de la prestadora.</div>
+<div class="nota">Cálculo estimado para un mes completo según el cuadro tarifario vigente. Tu factura real puede variar por el prorrateo de los días del período y por conceptos opcionales. No es un documento oficial de la prestadora.</div>
 <script>window.onload=function(){setTimeout(function(){window.print()},200)}</script>
 </body></html>`;
   }
@@ -515,7 +515,7 @@ ${donutComprobanteHTML(resultado.composicion)}
         <div className="rounded-2xl border border-svc-yellow/50 bg-svc-yellow/10 p-4 text-sm text-navy leading-relaxed">
           <div className="font-bold mb-1">¿La cuenta no te cierra?</div>
           Este es un cálculo <b>estimado para un mes completo</b> según el cuadro
-          tarifario aprobado. Tu factura real puede variar por el prorrateo de los
+          tarifario vigente. Tu factura real puede variar por el prorrateo de los
           días del período y por conceptos opcionales. Si encontrás una diferencia
           importante,{" "}
           <Link
@@ -534,7 +534,7 @@ ${donutComprobanteHTML(resultado.composicion)}
             rel="noopener"
             className="text-xs text-navy-2 underline underline-offset-4"
           >
-            Ver cuadro tarifario aprobado (PDF) · {cuadro.expediente}
+            Ver cuadro tarifario (PDF) · {cuadro.expediente}
           </a>
         ) : null}
       </div>

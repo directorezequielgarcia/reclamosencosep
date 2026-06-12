@@ -5,7 +5,7 @@ import { ControlForm } from "./ControlForm";
 export const metadata = {
   title: "Controlá tu factura · Calculadora ENCOSEP",
   description:
-    "Subí el PDF de tu factura de la SCPL y te decimos si los importes coinciden con el cuadro tarifario aprobado.",
+    "Subí el PDF de tu factura de la SCPL y te decimos si los importes coinciden con el cuadro tarifario vigente.",
 };
 
 export const dynamic = "force-dynamic";
@@ -16,7 +16,7 @@ export default function ControlarPage() {
       <SeccionHeader
         kicker="Calculadora ENCOSEP"
         titulo="Controlá tu factura"
-        descripcion="Subí el PDF original de tu factura de la SCPL y la comparamos, concepto por concepto, con el cuadro tarifario aprobado por el Ente. Te marcamos dónde puede haber diferencias."
+        descripcion="Subí el PDF original de tu factura de la SCPL —o una foto bien sacada— y la comparamos, concepto por concepto, con el cuadro tarifario vigente. Te marcamos dónde puede haber diferencias."
         variante="naranja"
       />
       <main className="max-w-4xl mx-auto px-6 py-10">

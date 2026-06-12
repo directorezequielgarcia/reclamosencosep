@@ -8,7 +8,7 @@ import { cuadrosPublicados } from "@/lib/tarifas-db";
 export const metadata = {
   title: "Calculadora ENCOSEP · Tarifas",
   description:
-    "Calculá tu factura estimada de luz, agua y cloacas según el cuadro tarifario aprobado por el ENCOSEP de Comodoro Rivadavia.",
+    "Calculá tu factura estimada de luz, agua y cloacas según el cuadro tarifario vigente en Comodoro Rivadavia.",
 };
 
 // Los cuadros pueden cambiar desde el panel admin: sin cache estática.
@@ -23,7 +23,7 @@ export default async function TarifasPage() {
       <SeccionHeader
         kicker="Transparencia tarifaria"
         titulo="Calculadora ENCOSEP"
-        descripcion="Ingresá tu categoría de usuario, tu consumo de luz y los metros cuadrados de tu casa: te mostramos cuánto debería dar tu factura según el último cuadro tarifario aprobado. Además podés sumar agua y cloacas para estimar tu factura completa y controlar lo que te cobran."
+        descripcion="Ingresá tu categoría de usuario, tu consumo de luz y los metros cuadrados de tu casa: te mostramos cuánto debería dar tu factura según el último cuadro tarifario vigente. Además podés sumar agua y cloacas para estimar tu factura completa y controlar lo que te cobran."
         variante="naranja"
       />
       <main className="max-w-6xl mx-auto px-6 py-10">
@@ -47,7 +47,7 @@ export default async function TarifasPage() {
             </div>
             <div className="text-xs text-muted leading-relaxed mt-0.5">
               Subí el PDF de tu factura de la SCPL y la comparamos concepto por
-              concepto con el cuadro aprobado, marcándote dónde puede haber
+              concepto con el cuadro vigente, marcándote dónde puede haber
               diferencias.
             </div>
           </div>
