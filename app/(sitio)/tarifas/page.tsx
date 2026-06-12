@@ -1,6 +1,7 @@
 import { SeccionHeader } from "@/components/ui/SeccionHeader";
 import { CalculadoraTarifas } from "./CalculadoraTarifas";
 import { InstructivoFactura } from "./InstructivoFactura";
+import { ExplicacionCuadros } from "./ExplicacionCuadros";
 import { cuadrosPublicados } from "@/lib/tarifas-db";
 
 export const metadata = {
@@ -32,7 +33,8 @@ export default async function TarifasPage() {
         </div>
         <CalculadoraTarifas cuadros={cuadros} />
 
-        <div className="mt-10">
+        <div className="mt-10 flex flex-col gap-8">
+          <ExplicacionCuadros />
           <InstructivoFactura />
         </div>
       </main>

@@ -54,6 +54,60 @@ function fechaHoy() {
   });
 }
 
+const COMPO_META: Record<string, { label: string; color: string }> = {
+  ENERGIA: { label: "Energía", color: "#f59e0b" },
+  ALUMBRADO: { label: "Alumbrado público", color: "#fbbf24" },
+  AGUA: { label: "Agua", color: "#3b82f6" },
+  CLOACAS: { label: "Cloacas", color: "#06b6d4" },
+  IMPUESTOS: { label: "Impuestos y tasas", color: "#ef4444" },
+  SEPELIO: { label: "Sepelios", color: "#8b5cf6" },
+  BOMBEROS: { label: "Bomberos", color: "#10b981" },
+  OTROS: { label: "Otros", color: "#94a3b8" },
+};
+const COMPO_ORDEN = [
+  "ENERGIA",
+  "ALUMBRADO",
+  "AGUA",
+  "CLOACAS",
+  "IMPUESTOS",
+  "SEPELIO",
+  "BOMBEROS",
+  "OTROS",
+];
+
+/** Donut SVG + leyenda como HTML, para el comprobante imprimible. */
+function donutComprobanteHTML(comp: Record<string, number>): string {
+  const items = COMPO_ORDEN.map((k) => ({
+    k,
+    ...COMPO_META[k],
+    monto: comp[k] ?? 0,
+  })).filter((i) => i.monto > 0);
+  const total = items.reduce((a, i) => a + i.monto, 0);
+  if (total <= 0) return "";
+  const R = 60;
+  const C = 2 * Math.PI * R;
+  const fracs = items.map((i) => i.monto / total);
+  const circ = items
+    .map((i, idx) => {
+      const previas = fracs.slice(0, idx).reduce((a, b) => a + b, 0);
+      return `<circle cx="80" cy="80" r="${R}" fill="none" stroke="${i.color}" stroke-width="24" stroke-dasharray="${fracs[idx] * C} ${C - fracs[idx] * C}" stroke-dashoffset="${-previas * C}"></circle>`;
+    })
+    .join("");
+  const leyenda = items
+    .map(
+      (i) =>
+        `<div class="lg"><span class="dot" style="background:${i.color}"></span>${i.label} <b>${((i.monto / total) * 100).toFixed(1)}%</b></div>`,
+    )
+    .join("");
+  return `<div class="chart"><div class="chart-t">Composición de la factura</div>
+  <div class="chart-row">
+    <svg viewBox="0 0 160 160" width="150" height="150" style="transform:rotate(-90deg)">
+      <circle cx="80" cy="80" r="${R}" fill="none" stroke="#eef0f4" stroke-width="24"></circle>${circ}
+    </svg>
+    <div class="leyenda">${leyenda}</div>
+  </div></div>`;
+}
+
 function Campo({
   label,
   children,
@@ -181,6 +235,11 @@ export function CalculadoraTarifas({ cuadros }: { cuadros: CuadroTarifario[] }) 
   .total .v{font-size:22px;font-weight:800}
   .comp{margin-top:10px;border:1px solid #e7e9ef;border-radius:8px;padding:8px 12px;font-size:12px}
   .nota{margin-top:16px;font-size:10px;color:#889;line-height:1.5}
+  .chart{margin-top:16px;border:1px solid #e7e9ef;border-radius:8px;padding:12px 14px}
+  .chart-t{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#889;font-weight:700;margin-bottom:8px}
+  .chart-row{display:flex;align-items:center;gap:18px}
+  .leyenda{display:flex;flex-direction:column;gap:3px;font-size:12px}
+  .lg{display:flex;align-items:center;gap:6px} .dot{width:10px;height:10px;border-radius:2px;display:inline-block}
 </style></head><body>
 <div class="head">
   <img src="${location.origin}/encosep-logo.png" alt="ENCOSEP" onerror="this.style.display='none'">
@@ -203,6 +262,7 @@ export function CalculadoraTarifas({ cuadros }: { cuadros: CuadroTarifario[] }) 
       resultado.total,
     )}</div></div>
 ${comp ? `<div class="comp"><table><tbody>${comp}</tbody></table></div>` : ""}
+${donutComprobanteHTML(resultado.composicion)}
 <div class="nota">Cálculo estimado para un mes completo según el cuadro tarifario aprobado por el ENCOSEP. Tu factura real puede variar por el prorrateo de los días del período y por conceptos opcionales. No es un documento oficial de la prestadora.</div>
 <script>window.onload=function(){setTimeout(function(){window.print()},200)}</script>
 </body></html>`;
