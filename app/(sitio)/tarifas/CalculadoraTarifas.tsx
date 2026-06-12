@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { GraficoComposicion } from "./GraficoComposicion";
 import {
   TIPO_LABEL,
   type CuadroTarifario,
@@ -76,10 +77,14 @@ function Campo({
 export function CalculadoraTarifas({ cuadros }: { cuadros: CuadroTarifario[] }) {
   const vigente =
     cuadros.find((c) => c.estado === "VIGENTE") ?? cuadros[0];
-  const pedido = cuadros.find((c) => c.estado === "PEDIDO");
+  // Por defecto comparamos con un aumento pedido si lo hay; si no, con el
+  // cuadro anterior (para mostrar el aumento que ya hubo).
+  const comparativo =
+    cuadros.find((c) => c.estado === "PEDIDO") ??
+    cuadros.find((c) => c.estado === "ANTERIOR");
 
   const [cuadroId, setCuadroId] = useState(vigente.id);
-  const [compararId, setCompararId] = useState<string>(pedido?.id ?? "");
+  const [compararId, setCompararId] = useState<string>(comparativo?.id ?? "");
 
   const [tipo, setTipo] = useState<TipoUsuario>("RESIDENCIAL");
   const [kwh, setKwh] = useState(221);
@@ -443,6 +448,8 @@ ${comp ? `<div class="comp"><table><tbody>${comp}</tbody></table></div>` : ""}
           </span>
         </div>
 
+        <GraficoComposicion composicion={resultado.composicion} />
+
         <Desglose resultado={resultado} />
 
         <div className="rounded-2xl border border-svc-yellow/50 bg-svc-yellow/10 p-4 text-sm text-navy leading-relaxed">
@@ -484,53 +491,64 @@ function ResumenTotal({
   resultado: ResultadoCalculo;
   comparar: { cuadro: CuadroTarifario; resultado: ResultadoCalculo } | null;
 }) {
-  const dif = comparar ? comparar.resultado.total - resultado.total : 0;
+  // Ordenamos los dos cuadros por fecha: "antes" (más viejo) vs "ahora".
+  let antes: { cuadro: CuadroTarifario; resultado: ResultadoCalculo } | null =
+    null;
+  let ahora = { cuadro, resultado };
+  if (comparar) {
+    const selMasViejo =
+      (cuadro.vigenteDesde || "") <= (comparar.cuadro.vigenteDesde || "");
+    antes = selMasViejo ? { cuadro, resultado } : comparar;
+    ahora = selMasViejo ? comparar : { cuadro, resultado };
+  }
+  const esPedido = ahora.cuadro.estado === "PEDIDO";
+  const dif = antes ? ahora.resultado.total - antes.resultado.total : 0;
   const difPorc =
-    comparar && resultado.total > 0 ? (dif / resultado.total) * 100 : 0;
-  const esPedido = comparar?.cuadro.estado === "PEDIDO";
+    antes && antes.resultado.total > 0
+      ? (dif / antes.resultado.total) * 100
+      : 0;
 
   return (
     <div className="rounded-2xl border border-line bg-navy text-white p-5">
       <div className="text-xs font-bold uppercase tracking-widest opacity-70">
-        Tu factura estimada hoy
+        Tu factura estimada con {cuadro.nombre}
       </div>
       <div className="text-3xl sm:text-4xl font-extrabold mt-1">
         {pesos(resultado.total)}
       </div>
       <div className="text-xs opacity-70 mt-1">
-        Según {cuadro.nombre}
         {cuadro.vigenteDesde
-          ? ` · vigente desde ${new Date(
+          ? `Vigente desde ${new Date(
               cuadro.vigenteDesde + "T00:00:00",
             ).toLocaleDateString("es-AR")}`
           : ""}
       </div>
 
-      {comparar ? (
-        <div className="mt-4 pt-4 border-t border-white/20 grid sm:grid-cols-2 gap-3 text-sm">
-          <div>
-            <div className="opacity-70 text-xs">
-              {esPedido
-                ? "Si se aprueba el aumento pedido"
-                : comparar.cuadro.nombre}
+      {antes ? (
+        <div className="mt-4 pt-4 border-t border-white/20">
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div>
+              <div className="opacity-70 text-xs">Antes · {antes.cuadro.nombre}</div>
+              <div className="font-bold text-lg">{pesos(antes.resultado.total)}</div>
             </div>
-            <div className="font-bold text-lg">
-              {pesos(comparar.resultado.total)}
+            <div>
+              <div className="opacity-70 text-xs">
+                {esPedido ? "Si se aprueba el pedido" : "Ahora"} · {ahora.cuadro.nombre}
+              </div>
+              <div className="font-bold text-lg">{pesos(ahora.resultado.total)}</div>
             </div>
           </div>
           <div
             className={
-              dif >= 0 ? "text-svc-yellow font-bold" : "text-svc-green font-bold"
+              "mt-3 rounded-lg px-3 py-2 text-sm font-bold " +
+              (dif >= 0
+                ? "bg-svc-red/20 text-svc-yellow"
+                : "bg-svc-green/20 text-svc-green")
             }
           >
-            <div className="opacity-90 text-xs">
-              {dif >= 0 ? "Aumento" : "Baja"}
-            </div>
-            <div className="text-lg">
-              {dif >= 0 ? "+" : ""}
-              {pesos(dif)} ({difPorc >= 0 ? "+" : ""}
-              {difPorc.toFixed(1)}%)
-            </div>
+            {dif >= 0 ? "Aumento" : "Baja"}: {dif >= 0 ? "+" : ""}
+            {pesos(dif)} ({difPorc >= 0 ? "+" : ""}
+            {difPorc.toFixed(1)}%)
           </div>
         </div>
       ) : null}

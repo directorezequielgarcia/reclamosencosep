@@ -57,6 +57,17 @@ export type AguaMedidaCat = {
   tramos: TramoMedida[]; // bloques marginales desde 0
 };
 
+/** Rubros para la composición de la factura (gráfico de torta). */
+export type ComposicionCat =
+  | "ENERGIA"
+  | "ALUMBRADO"
+  | "AGUA"
+  | "CLOACAS"
+  | "IMPUESTOS"
+  | "SEPELIO"
+  | "BOMBEROS"
+  | "OTROS";
+
 /** Concepto fijo / referencial que se suma al final (tasas, fondos, etc.). */
 export type ConceptoExtra = {
   id: string;
@@ -65,6 +76,7 @@ export type ConceptoExtra = {
   opcional: boolean; // si true, el vecino decide si lo incluye (default según `pordefecto`)
   pordefecto: boolean; // valor inicial del check cuando es opcional
   gravadoIva: boolean; // si entra en la base de IVA
+  compo: ComposicionCat; // a qué rubro de la torta pertenece
   nota?: string;
 };
 
@@ -306,6 +318,7 @@ export const CUADRO_FEB_2026: CuadroTarifario = {
       opcional: false,
       pordefecto: true,
       gravadoIva: false,
+      compo: "IMPUESTOS",
       nota: "Tasa provincial. Valor de referencia.",
     },
     {
@@ -315,6 +328,7 @@ export const CUADRO_FEB_2026: CuadroTarifario = {
       opcional: false,
       pordefecto: true,
       gravadoIva: false,
+      compo: "IMPUESTOS",
       nota: "Tasa de fiscalización provincial. Valor de referencia.",
     },
     {
@@ -324,6 +338,7 @@ export const CUADRO_FEB_2026: CuadroTarifario = {
       opcional: true,
       pordefecto: true,
       gravadoIva: false,
+      compo: "BOMBEROS",
     },
     {
       id: "sepelios",
@@ -332,6 +347,7 @@ export const CUADRO_FEB_2026: CuadroTarifario = {
       opcional: true,
       pordefecto: false,
       gravadoIva: false,
+      compo: "SEPELIO",
       nota: "Adhesión opcional.",
     },
     {
@@ -341,13 +357,208 @@ export const CUADRO_FEB_2026: CuadroTarifario = {
       opcional: true,
       pordefecto: false,
       gravadoIva: false,
+      compo: "SEPELIO",
       nota: "Adhesión opcional.",
     },
   ],
 };
 
+// ─────────────────────────────────────────────────────────────────────────
+// CUADRO ANTERIOR — agosto 2025 (vigente hasta la readecuación feb-2026)
+// Fuente: Boletín Oficial Municipal N° 143. Validado contra factura real.
+// ─────────────────────────────────────────────────────────────────────────
+
+const E_ANT = 135.6525; // precio de energía ($/kWh) del período
+
+export const CUADRO_ANTERIOR_AGO_2025: CuadroTarifario = {
+  id: "ago-2025",
+  nombre: "Cuadro anterior — agosto 2025",
+  expediente: "Boletín Oficial N° 143",
+  vigenteDesde: "2025-08-01",
+  estado: "ANTERIOR",
+  pdfUrl: "/tarifas/cuadro-tarifario-anterior-ago-2025.pdf",
+  fuente:
+    "Boletín Oficial Municipal N° 143 — cuadro vigente hasta la readecuación de feb-2026.",
+  energia: {
+    RESIDENCIAL: [
+      { hasta: 150, cargoFijo: 11021.12, cgoVariable: 99.3771, energia: E_ANT },
+      { hasta: 250, cargoFijo: 21083.88, cgoVariable: 99.3771, energia: E_ANT },
+      { hasta: 400, cargoFijo: 28750.74, cgoVariable: 99.3771, energia: E_ANT },
+      { hasta: 700, cargoFijo: 38334.32, cgoVariable: 99.3771, energia: E_ANT },
+      { hasta: 1400, cargoFijo: 47917.9, cgoVariable: 99.3771, energia: E_ANT },
+      { hasta: 2500, cargoFijo: 57501.49, cgoVariable: 99.3771, energia: E_ANT },
+      { hasta: 4000, cargoFijo: 67085.07, cgoVariable: 149.0657, energia: E_ANT },
+      { hasta: Infinity, cargoFijo: 75668.65, cgoVariable: 198.7542, energia: E_ANT },
+    ],
+    COMERCIAL: [
+      { hasta: 150, cargoFijo: 19167.16, cgoVariable: 134.1591, energia: E_ANT },
+      { hasta: 400, cargoFijo: 28750.74, cgoVariable: 134.1591, energia: E_ANT },
+      { hasta: 700, cargoFijo: 46001.19, cgoVariable: 134.1591, energia: E_ANT },
+      { hasta: 1400, cargoFijo: 57501.49, cgoVariable: 134.1591, energia: E_ANT },
+      { hasta: 2500, cargoFijo: 69001.78, cgoVariable: 134.1591, energia: E_ANT },
+      { hasta: 4000, cargoFijo: 87210.59, cgoVariable: 223.5985, energia: E_ANT },
+      { hasta: Infinity, cargoFijo: 107336.11, cgoVariable: 223.5985, energia: E_ANT },
+    ],
+    OBRADOR: [
+      { hasta: 150, cargoFijo: 20125.52, cgoVariable: 154.0345, energia: E_ANT },
+      { hasta: 400, cargoFijo: 33542.53, cgoVariable: 154.0345, energia: E_ANT },
+      { hasta: 700, cargoFijo: 49834.62, cgoVariable: 154.0345, energia: E_ANT },
+      { hasta: 1400, cargoFijo: 62293.28, cgoVariable: 154.0345, energia: E_ANT },
+      { hasta: 2500, cargoFijo: 74751.93, cgoVariable: 154.0345, energia: E_ANT },
+      { hasta: 4000, cargoFijo: 93919.09, cgoVariable: 268.3182, energia: E_ANT },
+      { hasta: Infinity, cargoFijo: 115002.97, cgoVariable: 268.3182, energia: E_ANT },
+    ],
+    ENTIDAD_SIN_FINES: [
+      { hasta: 150, cargoFijo: 10882.53, cgoVariable: 99.3771, energia: E_ANT },
+      { hasta: 250, cargoFijo: 20818.76, cgoVariable: 99.3771, energia: E_ANT },
+      { hasta: 400, cargoFijo: 28389.21, cgoVariable: 99.3771, energia: E_ANT },
+      { hasta: 700, cargoFijo: 37852.29, cgoVariable: 99.3771, energia: E_ANT },
+      { hasta: 1400, cargoFijo: 47315.36, cgoVariable: 99.3771, energia: E_ANT },
+      { hasta: 2500, cargoFijo: 56778.43, cgoVariable: 99.3771, energia: E_ANT },
+      { hasta: 4000, cargoFijo: 66241.5, cgoVariable: 149.0657, energia: E_ANT },
+      { hasta: Infinity, cargoFijo: 75704.57, cgoVariable: 198.7542, energia: E_ANT },
+    ],
+    ENTES_OFICIALES: [
+      { hasta: 150, cargoFijo: 19167.16, cgoVariable: 149.0657, energia: E_ANT },
+      { hasta: 400, cargoFijo: 33146.64, cgoVariable: 149.0657, energia: E_ANT },
+      { hasta: 700, cargoFijo: 47917.9, cgoVariable: 149.0657, energia: E_ANT },
+      { hasta: 1400, cargoFijo: 59897.38, cgoVariable: 149.0657, energia: E_ANT },
+      { hasta: 2500, cargoFijo: 71876.86, cgoVariable: 198.7542, energia: E_ANT },
+      { hasta: 4000, cargoFijo: 83856.33, cgoVariable: 248.4428, energia: E_ANT },
+      { hasta: Infinity, cargoFijo: 115002.97, cgoVariable: 248.4428, energia: E_ANT },
+    ],
+    PEQUENA_INDUSTRIA: [
+      { hasta: 400, cargoFijo: 33063.35, cgoVariable: 129.1903, energia: E_ANT },
+      { hasta: 700, cargoFijo: 44084.47, cgoVariable: 129.1903, energia: E_ANT },
+      { hasta: 1400, cargoFijo: 55105.59, cgoVariable: 129.1903, energia: E_ANT },
+      { hasta: 2500, cargoFijo: 66126.71, cgoVariable: 129.1903, energia: E_ANT },
+      { hasta: 4000, cargoFijo: 80502.08, cgoVariable: 238.5051, energia: E_ANT },
+      { hasta: Infinity, cargoFijo: 103502.67, cgoVariable: 238.5051, energia: E_ANT },
+    ],
+  },
+  subsidioEnergia: {
+    precioPorKwh: 90.4654,
+    topeAlto: 300,
+    topeBajo: 150,
+    mesesAlto: [1, 2, 5, 6, 8, 12],
+    mesesBajo: [3, 4, 9, 10, 11],
+  },
+  alumbradoPublico: {
+    RESIDENCIAL: 7119.2,
+    COMERCIAL: 21417.6,
+    OBRADOR: 21417.6,
+    ENTIDAD_SIN_FINES: 7119.2,
+    ENTES_OFICIALES: 85670.39,
+    PEQUENA_INDUSTRIA: 64252.8,
+  },
+  aguaEstimada: {
+    RESIDENCIAL: [
+      { hasta: 35, cargoFijo: 26958.79, cgoVariable: 1213.15 },
+      { hasta: Infinity, cargoFijo: 29654.67, cgoVariable: 1572.6 },
+    ],
+    COMERCIAL: [
+      { hasta: 35, cargoFijo: 35945.05, cgoVariable: 1258.08 },
+      { hasta: Infinity, cargoFijo: 39539.55, cgoVariable: 1572.6 },
+    ],
+    INDUSTRIAL: [
+      { hasta: 35, cargoFijo: 44931.31, cgoVariable: 1347.94 },
+      { hasta: Infinity, cargoFijo: 53917.57, cgoVariable: 1662.46 },
+    ],
+    ENTES_OFICIALES: [
+      { hasta: 35, cargoFijo: 44931.31, cgoVariable: 1347.94 },
+      { hasta: Infinity, cargoFijo: 53917.57, cgoVariable: 1662.46 },
+    ],
+  },
+  aguaMedida: {
+    RESIDENCIAL: {
+      cargoFijo: 26958.7872,
+      tramos: [
+        { hasta: 30, precio: 898.6262 },
+        { hasta: 75, precio: 1123.2828 },
+        { hasta: Infinity, precio: 1797.2525 },
+      ],
+    },
+    COMERCIAL: {
+      cargoFijo: 64701.0894,
+      tramos: [{ hasta: Infinity, precio: 2156.703 }],
+    },
+    OBRADOR: {
+      cargoFijo: 70092.8468,
+      tramos: [{ hasta: Infinity, precio: 2336.4282 }],
+    },
+    ENTIDAD_SIN_FINES: {
+      cargoFijo: 53917.5745,
+      tramos: [{ hasta: Infinity, precio: 1797.2525 }],
+    },
+    ENTES_OFICIALES: {
+      cargoFijo: 75484.6043,
+      tramos: [{ hasta: Infinity, precio: 2516.1535 }],
+    },
+    INDUSTRIAL: {
+      cargoFijo: 93457.1291,
+      tramos: [{ hasta: Infinity, precio: 3145.1918 }],
+    },
+  },
+  aguaAlias: {
+    OBRADOR: "COMERCIAL",
+    ENTIDAD_SIN_FINES: "COMERCIAL",
+    PEQUENA_INDUSTRIA: "INDUSTRIAL",
+  },
+  aguaFormula: { baseM3: 5, m3Por10m2: 2 },
+  cloacasPorc: {
+    RESIDENCIAL: 0.5,
+    COMERCIAL: 0.5,
+    OBRADOR: 0.5,
+    ENTIDAD_SIN_FINES: 0.5,
+    ENTES_OFICIALES: 0.5,
+    PEQUENA_INDUSTRIA: 0.5,
+    INDUSTRIAL: 0.5,
+  },
+  iva: 0.21,
+  // Tasas y fondos: se reutilizan los del cuadro vigente como referencia
+  // (el expediente no fija estos valores; son aproximados para el total).
+  conceptosExtra: CUADRO_FEB_2026.conceptosExtra,
+};
+
+// ─────────────────────────────────────────────────────────────────────────
+// CUADRO PEDIDO — junio 2026 (a tratarse en audiencia, NO aprobado)
+// Fuente: Nota N° 1746/26. Respecto del vigente feb-2026 sube la energía
+// (146,2829 → 162,5569) y baja el subsidio (92,1210 → 84,5786); el cargo fijo
+// y el cargo variable no cambian. Es un pass-through del precio mayorista.
+// ─────────────────────────────────────────────────────────────────────────
+
+const ENERGIA_PEDIDO_JUN26: CuadroTarifario["energia"] = {};
+for (const [k, tramos] of Object.entries(CUADRO_FEB_2026.energia)) {
+  if (tramos)
+    ENERGIA_PEDIDO_JUN26[k as TipoUsuario] = tramos.map((t) => ({
+      ...t,
+      energia: 162.5569,
+    }));
+}
+
+export const CUADRO_PEDIDO_JUN_2026: CuadroTarifario = {
+  ...CUADRO_FEB_2026,
+  id: "ped-jun-2026",
+  nombre: "Aumento pedido SCPL — junio 2026 (a tratarse)",
+  expediente: "Nota N° 1746/26",
+  vigenteDesde: "2026-07-01",
+  estado: "PEDIDO",
+  pdfUrl: "/tarifas/pedido-scpl-jun-2026.pdf",
+  fuente:
+    "Nota N° 1746/26 — pedido de readecuación de energía y alumbrado, a tratarse en audiencia pública. No aprobado.",
+  energia: ENERGIA_PEDIDO_JUN26,
+  subsidioEnergia: {
+    ...CUADRO_FEB_2026.subsidioEnergia,
+    precioPorKwh: 84.5786,
+  },
+};
+
 /** Todos los cuadros conocidos, del más nuevo al más viejo. */
-export const CUADROS: CuadroTarifario[] = [CUADRO_FEB_2026];
+export const CUADROS: CuadroTarifario[] = [
+  CUADRO_PEDIDO_JUN_2026,
+  CUADRO_FEB_2026,
+  CUADRO_ANTERIOR_AGO_2025,
+];
 
 export function cuadroVigente(fecha = new Date()): CuadroTarifario {
   const iso = fecha.toISOString().slice(0, 10);
@@ -381,6 +592,7 @@ export type LineaFactura = {
   concepto: string;
   monto: number;
   grupo: GrupoLinea;
+  compo: ComposicionCat;
   detalle?: string;
 };
 
@@ -393,6 +605,7 @@ export type ResultadoCalculo = {
   iva: number;
   otrosConceptos: number;
   total: number;
+  composicion: Record<ComposicionCat, number>;
 };
 
 function tramoEnergiaPara(tramos: TramoEnergia[], kwh: number): TramoEnergia {
@@ -452,18 +665,21 @@ export function calcularFactura(
     const compra = t.energia * e.kwh;
     lineas.push({
       grupo: "ENERGIA",
+      compo: "ENERGIA",
       concepto: "Cargo fijo de energía",
       monto: cargoFijo,
       detalle: `Escala hasta ${esSinLimite(t.hasta) ? "máx." : t.hasta + " kWh"}`,
     });
     lineas.push({
       grupo: "ENERGIA",
+      compo: "ENERGIA",
       concepto: "Cargo variable de energía",
       monto: cargoVariable,
       detalle: `${e.kwh} kWh × $${t.cgoVariable.toLocaleString("es-AR")}`,
     });
     lineas.push({
       grupo: "ENERGIA",
+      compo: "ENERGIA",
       concepto: "Compra de energía",
       monto: compra,
       detalle: `${e.kwh} kWh × $${t.energia.toLocaleString("es-AR")}`,
@@ -482,6 +698,7 @@ export function calcularFactura(
       const subsidio = -(kwhSub * s.precioPorKwh);
       lineas.push({
         grupo: "ENERGIA",
+        compo: "ENERGIA",
         concepto: "Subsidio Estado Nacional",
         monto: subsidio,
         detalle: `${kwhSub} kWh × -$${s.precioPorKwh.toLocaleString("es-AR")}`,
@@ -494,6 +711,7 @@ export function calcularFactura(
     if (alumbrado) {
       lineas.push({
         grupo: "ENERGIA",
+        compo: "ALUMBRADO",
         concepto: "Alumbrado público",
         monto: alumbrado,
       });
@@ -514,6 +732,7 @@ export function calcularFactura(
       costoAgua = costoAguaMedida(cat, e.m3Medido);
       lineas.push({
         grupo: "AGUA",
+        compo: "AGUA",
         concepto: "Servicio de agua (medida)",
         monto: costoAgua,
         detalle: `${e.m3Medido} m³ medidos · CF $${cat.cargoFijo.toLocaleString(
@@ -531,6 +750,7 @@ export function calcularFactura(
       costoAgua = t.cargoFijo + t.cgoVariable * consumoAguaM3;
       lineas.push({
         grupo: "AGUA",
+        compo: "AGUA",
         concepto: "Servicio de agua (estimada)",
         monto: costoAgua,
         detalle: `${consumoAguaM3.toFixed(1)} m³ estimados · CF $${t.cargoFijo.toLocaleString(
@@ -547,6 +767,7 @@ export function calcularFactura(
     const cloacas = costoAgua * porc;
     lineas.push({
       grupo: "CLOACAS",
+      compo: "CLOACAS",
       concepto: "Servicio de cloacas",
       monto: cloacas,
       detalle: `${(porc * 100).toFixed(0)}% del servicio de agua`,
@@ -561,6 +782,7 @@ export function calcularFactura(
   if (iva) {
     lineas.push({
       grupo: "IMPUESTOS",
+      compo: "IMPUESTOS",
       concepto: `IVA (${(cuadro.iva * 100).toFixed(0)}%)`,
       monto: iva,
       detalle: "Sobre la base gravada de servicios",
@@ -575,6 +797,7 @@ export function calcularFactura(
     otrosConceptos += c.monto;
     lineas.push({
       grupo: "OTROS",
+      compo: c.compo,
       concepto: c.label,
       monto: c.monto,
       detalle: c.nota,
@@ -582,6 +805,19 @@ export function calcularFactura(
   }
 
   const total = subtotalServicios + iva + otrosConceptos;
+
+  // Composición de la factura por rubro (para el gráfico de torta).
+  const composicion: Record<ComposicionCat, number> = {
+    ENERGIA: 0,
+    ALUMBRADO: 0,
+    AGUA: 0,
+    CLOACAS: 0,
+    IMPUESTOS: 0,
+    SEPELIO: 0,
+    BOMBEROS: 0,
+    OTROS: 0,
+  };
+  for (const l of lineas) composicion[l.compo] += l.monto;
 
   return {
     lineas,
@@ -592,6 +828,7 @@ export function calcularFactura(
     iva,
     otrosConceptos,
     total,
+    composicion,
   };
 }
 

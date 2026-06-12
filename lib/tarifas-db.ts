@@ -1,13 +1,22 @@
 import "server-only";
 import { prisma } from "./prisma";
 import {
+  CUADRO_ANTERIOR_AGO_2025,
   CUADRO_FEB_2026,
+  CUADRO_PEDIDO_JUN_2026,
   cuadroSerializable,
   datosDeCuadro,
   type CuadroEstado,
   type CuadroTarifario,
   type DatosCuadro,
 } from "./tarifas";
+
+// Cuadros del código, usados como fallback público y como semilla inicial.
+const CUADROS_SEMILLA = [
+  CUADRO_FEB_2026,
+  CUADRO_ANTERIOR_AGO_2025,
+  CUADRO_PEDIDO_JUN_2026,
+];
 import type { CuadroTarifario as DbCuadro } from "@prisma/client";
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -47,7 +56,7 @@ export async function cuadrosPublicados(): Promise<CuadroTarifario[]> {
       where: { publicado: true },
       orderBy: [{ vigenteDesde: "desc" }],
     });
-    if (!rows.length) return [cuadroSerializable(CUADRO_FEB_2026)];
+    if (!rows.length) return CUADROS_SEMILLA.map(cuadroSerializable);
     // Vigentes primero, después pedidos/otros.
     const orden: Record<string, number> = {
       VIGENTE: 0,
@@ -59,7 +68,7 @@ export async function cuadrosPublicados(): Promise<CuadroTarifario[]> {
       .map(rowToCuadro)
       .sort((a, b) => (orden[a.estado ?? ""] ?? 9) - (orden[b.estado ?? ""] ?? 9));
   } catch {
-    return [cuadroSerializable(CUADRO_FEB_2026)];
+    return CUADROS_SEMILLA.map(cuadroSerializable);
   }
 }
 
@@ -144,21 +153,26 @@ export async function eliminarCuadro(id: string): Promise<void> {
 }
 
 /**
- * Inserta el cuadro feb-2026 (del código) en la base si la tabla está vacía.
- * Idempotente: no hace nada si ya hay cuadros cargados.
+ * Inserta los cuadros del código (vigente feb-2026 + anterior ago-2025) en la
+ * base si la tabla está vacía. Idempotente: no hace nada si ya hay cuadros.
  */
-export async function seedCuadroInicial(): Promise<DbCuadro | null> {
+export async function seedCuadroInicial(): Promise<number> {
   const n = await prisma.cuadroTarifario.count();
-  if (n > 0) return null;
-  return crearCuadro({
-    nombre: CUADRO_FEB_2026.nombre,
-    expediente: CUADRO_FEB_2026.expediente,
-    estado: "VIGENTE",
-    vigenteDesde: new Date(CUADRO_FEB_2026.vigenteDesde + "T00:00:00"),
-    fuente: CUADRO_FEB_2026.fuente,
-    pdfUrl: CUADRO_FEB_2026.pdfUrl ?? null,
-    datos: datosDeCuadro(CUADRO_FEB_2026),
-    publicado: true,
-    creadoPorNombre: "Carga inicial (sistema)",
-  });
+  if (n > 0) return 0;
+  for (const c of CUADROS_SEMILLA) {
+    await crearCuadro({
+      nombre: c.nombre,
+      expediente: c.expediente,
+      estado: c.estado ?? "VIGENTE",
+      vigenteDesde: c.vigenteDesde
+        ? new Date(c.vigenteDesde + "T00:00:00")
+        : null,
+      fuente: c.fuente,
+      pdfUrl: c.pdfUrl ?? null,
+      datos: datosDeCuadro(c),
+      publicado: true,
+      creadoPorNombre: "Carga inicial (sistema)",
+    });
+  }
+  return CUADROS_SEMILLA.length;
 }

@@ -1,5 +1,6 @@
 import { SeccionHeader } from "@/components/ui/SeccionHeader";
 import { CalculadoraTarifas } from "./CalculadoraTarifas";
+import { InstructivoFactura } from "./InstructivoFactura";
 import { cuadrosPublicados } from "@/lib/tarifas-db";
 
 export const metadata = {
@@ -30,6 +31,10 @@ export default async function TarifasPage() {
           {vigente.fuente ? ` · ${vigente.fuente}` : ""}
         </div>
         <CalculadoraTarifas cuadros={cuadros} />
+
+        <div className="mt-10">
+          <InstructivoFactura />
+        </div>
       </main>
     </>
   );
