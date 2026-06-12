@@ -45,6 +45,14 @@ const GRUPO_ORDEN: GrupoLinea[] = [
   "OTROS",
 ];
 
+function fechaHoy() {
+  return new Date().toLocaleDateString("es-AR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+}
+
 function Campo({
   label,
   children,
@@ -119,6 +127,93 @@ export function CalculadoraTarifas({ cuadros }: { cuadros: CuadroTarifario[] }) 
   );
 
   const opcionales = cuadro.conceptosExtra.filter((c) => c.opcional);
+
+  // Comprobante imprimible / guardable como PDF (ventana autocontenida).
+  function comprobanteHTML(): string {
+    const filas = GRUPO_ORDEN.flatMap((g) => {
+      const ls = resultado.lineas.filter((l) => l.grupo === g);
+      if (!ls.length) return [];
+      return [
+        `<tr><td colspan="2" class="grp">${GRUPO_LABEL[g]}</td></tr>`,
+        ...ls.map(
+          (l) =>
+            `<tr><td>${l.concepto}${
+              l.detalle ? `<div class="det">${l.detalle}</div>` : ""
+            }</td><td class="num${l.monto < 0 ? " neg" : ""}">${pesos(
+              l.monto,
+            )}</td></tr>`,
+        ),
+      ];
+    }).join("");
+
+    const aguaTxt =
+      modoAgua === "ESTIMADA"
+        ? `${m2} m² (estimada)`
+        : `${m3Medido} m³ (medida)`;
+
+    const comp =
+      cuadroComparar && resultadoComparar
+        ? `<tr><td>${
+            cuadroComparar.estado === "PEDIDO"
+              ? "Si se aprueba el aumento pedido"
+              : cuadroComparar.nombre
+          }</td><td class="num">${pesos(resultadoComparar.total)}</td></tr>`
+        : "";
+
+    return `<!doctype html><html lang="es"><head><meta charset="utf-8">
+<title>Factura estimada - Calculadora ENCOSEP</title>
+<style>
+  *{box-sizing:border-box} body{font-family:Segoe UI,Arial,sans-serif;color:#1a2b4a;margin:32px;font-size:13px}
+  .head{display:flex;align-items:center;gap:14px;border-bottom:2px solid #1a2b4a;padding-bottom:12px;margin-bottom:16px}
+  .head img{height:54px}
+  .head h1{font-size:18px;margin:0} .head .sub{font-size:11px;color:#667}
+  .datos{display:grid;grid-template-columns:1fr 1fr;gap:4px 24px;margin:12px 0 18px;font-size:12px}
+  .datos b{color:#1a2b4a} .datos div{color:#445}
+  table{width:100%;border-collapse:collapse} td{padding:5px 4px;border-bottom:1px solid #e7e9ef;vertical-align:top}
+  td.num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums} td.neg{color:#0a7a3f}
+  .grp{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:#889;font-weight:700;border:0;padding-top:12px}
+  .total{display:flex;justify-content:space-between;align-items:center;background:#1a2b4a;color:#fff;padding:12px 14px;border-radius:8px;margin-top:14px}
+  .total .v{font-size:22px;font-weight:800}
+  .comp{margin-top:10px;border:1px solid #e7e9ef;border-radius:8px;padding:8px 12px;font-size:12px}
+  .nota{margin-top:16px;font-size:10px;color:#889;line-height:1.5}
+</style></head><body>
+<div class="head">
+  <img src="${location.origin}/encosep-logo.png" alt="ENCOSEP" onerror="this.style.display='none'">
+  <div><h1>Calculadora ENCOSEP — Factura estimada</h1>
+  <div class="sub">Ente de Control de los Servicios Públicos · Comodoro Rivadavia · ${fechaHoy()}</div></div>
+</div>
+<div class="datos">
+  <div><b>Categoría:</b> ${TIPO_LABEL[tipo]}</div>
+  <div><b>Consumo de luz:</b> ${entrada.kwh} kWh</div>
+  <div><b>Agua:</b> ${aguaTxt}</div>
+  <div><b>Cloacas:</b> ${tieneCloacas ? "Sí" : "No"}</div>
+  <div><b>Subsidio nacional:</b> ${conSubsidio ? "Sí" : "No"}</div>
+  <div><b>Mes:</b> ${MESES[mes - 1]}</div>
+  <div><b>Cuadro:</b> ${cuadro.nombre}${
+    cuadro.expediente ? ` (${cuadro.expediente})` : ""
+  }</div>
+</div>
+<table><tbody>${filas}</tbody></table>
+<div class="total"><div>Total estimado de tu factura</div><div class="v">${pesos(
+      resultado.total,
+    )}</div></div>
+${comp ? `<div class="comp"><table><tbody>${comp}</tbody></table></div>` : ""}
+<div class="nota">Cálculo estimado para un mes completo según el cuadro tarifario aprobado por el ENCOSEP. Tu factura real puede variar por el prorrateo de los días del período y por conceptos opcionales. No es un documento oficial de la prestadora.</div>
+<script>window.onload=function(){setTimeout(function(){window.print()},200)}</script>
+</body></html>`;
+  }
+
+  function abrirComprobante() {
+    const w = window.open("", "_blank", "width=820,height=900");
+    if (!w) {
+      alert(
+        "El navegador bloqueó la ventana. Permití las ventanas emergentes para imprimir o guardar el comprobante.",
+      );
+      return;
+    }
+    w.document.write(comprobanteHTML());
+    w.document.close();
+  }
 
   return (
     <div className="grid lg:grid-cols-[minmax(0,360px)_minmax(0,1fr)] gap-6 items-start">
@@ -326,6 +421,27 @@ export function CalculadoraTarifas({ cuadros }: { cuadros: CuadroTarifario[] }) 
               : null
           }
         />
+
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={abrirComprobante}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-navy text-white font-bold text-sm hover:opacity-90"
+          >
+            <span aria-hidden>🖨️</span> Imprimir
+          </button>
+          <button
+            type="button"
+            onClick={abrirComprobante}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-line-strong text-navy font-bold text-sm hover:bg-paper-2"
+          >
+            <span aria-hidden>💾</span> Guardar PDF
+          </button>
+          <span className="text-[11px] text-muted self-center">
+            En «Guardar PDF», elegí <b>Guardar como PDF</b> en el destino de
+            impresión.
+          </span>
+        </div>
 
         <Desglose resultado={resultado} />
 
