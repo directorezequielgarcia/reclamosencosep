@@ -9,6 +9,7 @@ import {
   puedeGestionarAudienciasMedios,
   puedeGestionarExpedientes,
   puedeGestionarReclamos,
+  puedeGestionarTarifas,
   puedeGestionarUsuarios,
   puedeGestionarVencimientos,
   puedeVerDocumentos,
@@ -61,6 +62,9 @@ export default async function AdminLayout({
             )}
             {puedeGestionarVencimientos(rol) && (
               <NavLink href="/admin/vencimientos">Vencimientos</NavLink>
+            )}
+            {puedeGestionarTarifas(rol) && (
+              <NavLink href="/admin/tarifas">Tarifas</NavLink>
             )}
             {puedeVerInspecciones(rol) && (
               <NavLink href="/admin/inspecciones">Inspecciones</NavLink>
