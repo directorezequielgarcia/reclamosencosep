@@ -20,15 +20,20 @@ export default function ControlarPage() {
         variante="naranja"
       />
       <main className="max-w-4xl mx-auto px-6 py-10">
-        <Link
-          href="/tarifas"
-          className="text-xs text-navy-2 underline underline-offset-4"
-        >
-          ← Volver a la calculadora
-        </Link>
-        <div className="mt-4">
-          <ControlForm />
+        <div className="rounded-2xl border border-line bg-paper-2 p-4 flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
+          <div className="text-sm text-navy flex-1">
+            <b>¿Tenés tu factura a mano?</b> Subí el <b>PDF</b> o una <b>foto</b>{" "}
+            acá abajo y la controlamos sola. Si no la tenés, podés{" "}
+            <Link
+              href="/tarifas"
+              className="font-bold underline underline-offset-2 text-svc-red"
+            >
+              cargar tus datos a mano en la calculadora
+            </Link>
+            .
+          </div>
         </div>
+        <ControlForm />
       </main>
     </>
   );
