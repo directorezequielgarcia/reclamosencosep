@@ -27,6 +27,50 @@ export default async function TarifasPage() {
         variante="naranja"
       />
       <main className="max-w-6xl mx-auto px-6 py-10">
+        <div className="mb-6 rounded-2xl border border-line bg-paper p-5">
+          <div className="text-sm font-bold text-navy mb-3">
+            ¿Qué podés hacer acá?
+          </div>
+          <div className="grid sm:grid-cols-3 gap-4">
+            <div className="flex gap-3">
+              <div className="text-2xl" aria-hidden>🧮</div>
+              <div>
+                <div className="text-sm font-bold text-navy">
+                  Estimar tu factura
+                </div>
+                <div className="text-xs text-muted leading-relaxed">
+                  Cargá tu consumo y datos, y mirá cuánto debería darte la
+                  factura.
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <div className="text-2xl" aria-hidden>📄</div>
+              <div>
+                <div className="text-sm font-bold text-navy">
+                  Controlar tu factura
+                </div>
+                <div className="text-xs text-muted leading-relaxed">
+                  Subí el PDF o una foto y te marcamos dónde puede haber
+                  diferencias.
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <div className="text-2xl" aria-hidden>📊</div>
+              <div>
+                <div className="text-sm font-bold text-navy">
+                  Comparar cuadros
+                </div>
+                <div className="text-xs text-muted leading-relaxed">
+                  Cuánto subió respecto del cuadro anterior y cuánto subiría con
+                  el aumento pedido.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <Link
           href="/tarifas/controlar"
           className="mb-6 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5 rounded-2xl border border-svc-blue/40 bg-svc-blue/10 p-5 hover:bg-svc-blue/15 transition"
