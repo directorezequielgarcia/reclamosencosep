@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { SeccionHeader } from "@/components/ui/SeccionHeader";
 import { CalculadoraTarifas } from "./CalculadoraTarifas";
 import { InstructivoFactura } from "./InstructivoFactura";
@@ -32,6 +33,28 @@ export default async function TarifasPage() {
           {vigente.fuente ? ` · ${vigente.fuente}` : ""}
         </div>
         <CalculadoraTarifas cuadros={cuadros} />
+
+        <Link
+          href="/tarifas/controlar"
+          className="mt-8 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5 rounded-2xl border border-svc-blue/40 bg-svc-blue/10 p-5 hover:bg-svc-blue/15 transition"
+        >
+          <div className="text-3xl" aria-hidden>
+            📄
+          </div>
+          <div className="flex-1">
+            <div className="text-sm font-bold text-navy">
+              ¿Ya tenés tu factura? Controlala
+            </div>
+            <div className="text-xs text-muted leading-relaxed mt-0.5">
+              Subí el PDF de tu factura de la SCPL y la comparamos concepto por
+              concepto con el cuadro aprobado, marcándote dónde puede haber
+              diferencias.
+            </div>
+          </div>
+          <div className="text-svc-red font-bold text-sm whitespace-nowrap">
+            Controlar factura →
+          </div>
+        </Link>
 
         <div className="mt-10 flex flex-col gap-8">
           <ExplicacionCuadros />
