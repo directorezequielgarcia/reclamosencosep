@@ -325,12 +325,12 @@ const BENEFICIOS_RESIDENCIAL_FEB26: BeneficioResidencial[] = [
   },
   {
     id: "singas",
-    label: "Sin acceso a red de gas",
+    label: "Sin acceso a gas (subsidio nacional ampliado)",
     pct: 0,
     bases: [],
     topeKwh: 0,
     subsidioTopeKwh: 700,
-    nota: "El subsidio nacional aplica hasta 700 kWh todos los meses.",
+    nota: "Hogar sin gas de red: el subsidio nacional aplica hasta 700 kWh todos los meses.",
   },
 ];
 

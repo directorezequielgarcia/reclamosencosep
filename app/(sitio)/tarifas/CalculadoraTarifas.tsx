@@ -286,18 +286,27 @@ ${donutComprobanteHTML(resultado.composicion)}
             }}
             className="rounded-lg border border-line-strong px-3 py-2 text-sm bg-paper"
           >
-            <optgroup label="Residencial">
+            <optgroup label="Residencial (hogares)">
               <option value="RESIDENCIAL">Residencial (sin beneficio)</option>
               {beneficios.map((b) => (
                 <option key={b.id} value={`RESIDENCIAL:${b.id}`}>
                   {b.label}
                 </option>
               ))}
+              {tiposDisponibles.includes("ELECTROINTENSIVO") && (
+                <option value="ELECTROINTENSIVO">
+                  Electrointensivo (sin gas + calefacción eléctrica)
+                </option>
+              )}
             </optgroup>
-            {tiposDisponibles.filter((t) => t !== "RESIDENCIAL").length > 0 && (
-              <optgroup label="Otras categorías">
+            {tiposDisponibles.filter(
+              (t) => t !== "RESIDENCIAL" && t !== "ELECTROINTENSIVO",
+            ).length > 0 && (
+              <optgroup label="Comercios, producción y entidades">
                 {tiposDisponibles
-                  .filter((t) => t !== "RESIDENCIAL")
+                  .filter(
+                    (t) => t !== "RESIDENCIAL" && t !== "ELECTROINTENSIVO",
+                  )
                   .map((t) => (
                     <option key={t} value={t}>
                       {TIPO_LABEL[t]}
@@ -325,8 +334,10 @@ ${donutComprobanteHTML(resultado.composicion)}
 
         {tipo === "ELECTROINTENSIVO" && (
           <div className="rounded-lg bg-svc-yellow/10 border border-svc-yellow/40 px-3 py-2 text-[11px] text-navy leading-relaxed">
-            La escala de electrointensivos rige para las emisiones de junio a
-            noviembre.
+            Para hogares <b>sin gas de red</b> que calefaccionan con
+            electricidad. La escala rige para las emisiones de junio a
+            noviembre. Si además tenés el subsidio nacional ampliado, elegí
+            “Sin acceso a gas”.
           </div>
         )}
 
