@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { SeccionHeader } from "@/components/ui/SeccionHeader";
+import { MigajasSitio, VolverInicio } from "@/components/ui/MigajasSitio";
 import { ControlForm } from "./ControlForm";
 
 export const metadata = {
@@ -20,6 +21,12 @@ export default function ControlarPage() {
         variante="naranja"
       />
       <main className="max-w-4xl mx-auto px-6 py-10">
+        <MigajasSitio
+          items={[
+            { label: "Calculadora", href: "/tarifas" },
+            { label: "Controlar factura" },
+          ]}
+        />
         <div className="rounded-2xl border border-line bg-paper-2 p-4 flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
           <div className="text-sm text-navy flex-1">
             <b>¿Tenés tu factura a mano?</b> Subí el <b>PDF</b> o una <b>foto</b>{" "}
@@ -34,6 +41,10 @@ export default function ControlarPage() {
           </div>
         </div>
         <ControlForm />
+
+        <VolverInicio
+          volverA={{ label: "Volver a la Calculadora", href: "/tarifas" }}
+        />
       </main>
     </>
   );

@@ -4,6 +4,7 @@ import { CalculadoraTarifas } from "./CalculadoraTarifas";
 import { GlosarioCategorias } from "./GlosarioCategorias";
 import { InstructivoFactura } from "./InstructivoFactura";
 import { ExplicacionCuadros } from "./ExplicacionCuadros";
+import { MigajasSitio, VolverInicio } from "@/components/ui/MigajasSitio";
 import { cuadrosPublicados } from "@/lib/tarifas-db";
 
 export const metadata = {
@@ -28,6 +29,7 @@ export default async function TarifasPage() {
         variante="naranja"
       />
       <main className="max-w-6xl mx-auto px-6 py-10">
+        <MigajasSitio items={[{ label: "Calculadora" }]} />
         <div className="mb-6 rounded-2xl border border-line bg-paper p-5">
           <div className="text-sm font-bold text-navy mb-3">
             ¿Qué podés hacer acá?
@@ -109,6 +111,8 @@ export default async function TarifasPage() {
           <ExplicacionCuadros />
           <InstructivoFactura />
         </div>
+
+        <VolverInicio />
       </main>
     </>
   );

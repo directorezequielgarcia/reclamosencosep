@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SeccionHeader } from "@/components/ui/SeccionHeader";
+import { MigajasSitio, VolverInicio } from "@/components/ui/MigajasSitio";
 
 type AreaConfig = {
   titulo: string;
@@ -194,6 +195,7 @@ export default async function AreaFiscalizadaPage({
       />
 
       <main className="max-w-5xl mx-auto px-6 py-10 flex flex-col gap-8">
+        <MigajasSitio items={[{ label: "Áreas fiscalizadas" }]} />
         {/* CABECERA CON ICONO + PRESTADORA + CTA */}
         <section
           className={`rounded-2xl border-2 ${acento.border} ${acento.bg} p-6 flex flex-col md:flex-row items-center gap-6`}
@@ -307,6 +309,8 @@ export default async function AreaFiscalizadaPage({
             Ver todas las normas →
           </Link>
         </section>
+
+        <VolverInicio />
       </main>
     </>
   );

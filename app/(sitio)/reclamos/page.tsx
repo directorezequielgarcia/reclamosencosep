@@ -2,6 +2,7 @@ import Link from "next/link";
 import { SvcIcon } from "@/components/servicios/SvcIcon";
 import { SVC_ORDER, SVC_META } from "@/lib/servicios";
 import { SeccionHeader } from "@/components/ui/SeccionHeader";
+import { MigajasSitio, VolverInicio } from "@/components/ui/MigajasSitio";
 
 export const metadata = {
   title: "Portal de Reclamos · ENCOSEP",
@@ -19,6 +20,12 @@ export default function ReclamosLanding() {
         variante="naranja"
       />
       <main className="max-w-5xl mx-auto px-6 py-10">
+      <MigajasSitio
+        items={[
+          { label: "Atención al Usuario", href: "/atencion-usuarios" },
+          { label: "Reclamos" },
+        ]}
+      />
       <div className="grid md:grid-cols-2 gap-10 items-start">
         <div className="flex flex-col gap-5">
           <div className="flex flex-col sm:flex-row gap-3">
@@ -106,6 +113,12 @@ export default function ReclamosLanding() {
           Abrir calculadora →
         </div>
       </Link>
+      <VolverInicio
+        volverA={{
+          label: "Volver a Atención al Usuario",
+          href: "/atencion-usuarios",
+        }}
+      />
       </main>
     </>
   );

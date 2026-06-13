@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { SeccionHeader } from "@/components/ui/SeccionHeader";
 import { ESTADO_AUDIENCIA_META, MODALIDAD_META, audienciaPermiteInscripcion } from "@/lib/audiencias";
 import { TONE_CLASS } from "@/lib/admin";
+import { MigajasSitio, VolverInicio } from "@/components/ui/MigajasSitio";
 
 export const metadata = { title: "Audiencias Públicas · ENCOSEP" };
 
@@ -21,6 +22,7 @@ export default async function AudienciasPublicasPage() {
         descripcion="El Ente convoca audiencias públicas para escuchar a los vecinos sobre temas vinculados a los servicios públicos. Inscribite gratis y participá."
       />
       <main className="max-w-5xl mx-auto px-6 py-10">
+        <MigajasSitio items={[{ label: "Audiencias" }]} />
         {audiencias.length === 0 ? (
           <div className="rounded-xl border border-dashed border-line-strong bg-paper-2 p-12 text-center text-muted text-sm">
             Próximamente nuevas audiencias.
@@ -62,6 +64,7 @@ export default async function AudienciasPublicasPage() {
             })}
           </ul>
         )}
+        <VolverInicio />
       </main>
     </>
   );

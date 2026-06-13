@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { SeccionHeader } from "@/components/ui/SeccionHeader";
+import { MigajasSitio, VolverInicio } from "@/components/ui/MigajasSitio";
 
 export const metadata = { title: "Nosotros · ENCOSEP" };
 
@@ -92,6 +93,7 @@ export default function Nosotros() {
         descripcion="Organismo municipal con autonomía funcional, creado por Ordenanza 13.189/17 para fiscalizar la prestación de los servicios públicos en Comodoro Rivadavia."
       />
       <main className="max-w-5xl mx-auto px-6 py-10">
+      <MigajasSitio items={[{ label: "Nosotros" }]} />
       {/* INTRO */}
       <section className="grid md:grid-cols-2 gap-10">
         <div className="space-y-4 text-navy leading-relaxed">
@@ -524,6 +526,7 @@ export default function Nosotros() {
           —contratos prorrogados por el Poder Ejecutivo Municipal—.
         </p>
       </section>
+      <VolverInicio />
       </main>
     </>
   );

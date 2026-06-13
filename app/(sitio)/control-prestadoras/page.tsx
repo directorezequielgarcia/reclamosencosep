@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { SeccionHeader } from "@/components/ui/SeccionHeader";
+import { MigajasSitio, VolverInicio } from "@/components/ui/MigajasSitio";
 
 export const metadata = { title: "Control a Prestadoras · ENCOSEP" };
 
@@ -83,17 +84,12 @@ export default function ControlPrestadoras() {
       />
       <main className="max-w-5xl mx-auto px-6 py-10">
 
-      <nav className="mb-6 flex items-center gap-2 text-xs text-muted">
-        <Link href="/" className="hover:text-navy font-semibold">
-          Inicio
-        </Link>
-        <span aria-hidden>/</span>
-        <Link href="/atencion-usuarios" className="hover:text-navy font-semibold">
-          Atención al Usuario
-        </Link>
-        <span aria-hidden>/</span>
-        <span className="text-navy font-semibold">Normativa</span>
-      </nav>
+      <MigajasSitio
+        items={[
+          { label: "Atención al Usuario", href: "/atencion-usuarios" },
+          { label: "Normativa" },
+        ]}
+      />
 
       <section className="rounded-2xl border border-navy-2/40 bg-navy-2/5 p-6">
         <div className="text-xs font-bold tracking-widest uppercase text-navy-2">
@@ -157,20 +153,12 @@ export default function ControlPrestadoras() {
         </p>
       </section>
 
-      <div className="mt-10 flex flex-wrap gap-3">
-        <Link
-          href="/atencion-usuarios"
-          className="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-navy-2 text-white font-bold text-sm"
-        >
-          ← Volver a Atención al Usuario
-        </Link>
-        <Link
-          href="/"
-          className="inline-flex items-center justify-center px-4 py-2.5 rounded-xl border border-line-strong text-navy font-bold text-sm hover:bg-paper-2"
-        >
-          Ir al inicio
-        </Link>
-      </div>
+      <VolverInicio
+        volverA={{
+          label: "Volver a Atención al Usuario",
+          href: "/atencion-usuarios",
+        }}
+      />
       </main>
     </>
   );

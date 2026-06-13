@@ -1,5 +1,6 @@
 import { SeccionHeader } from "@/components/ui/SeccionHeader";
 import { Galeria } from "@/components/ui/Galeria";
+import { MigajasSitio, VolverInicio } from "@/components/ui/MigajasSitio";
 
 export const metadata = { title: "Acciones del Ente · ENCOSEP" };
 
@@ -68,6 +69,7 @@ export default function AccionesPage() {
       />
 
       <main className="max-w-6xl mx-auto px-6 py-10 flex flex-col gap-12">
+        <MigajasSitio items={[{ label: "Acciones" }]} />
         {/* TIPOS DE ACCION */}
         <section>
           <div className="text-xs font-bold tracking-widest uppercase text-muted">
@@ -139,6 +141,8 @@ export default function AccionesPage() {
             ))}
           </div>
         </section>
+
+        <VolverInicio />
       </main>
     </>
   );

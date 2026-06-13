@@ -1,4 +1,5 @@
 import { SeccionHeader } from "@/components/ui/SeccionHeader";
+import { MigajasSitio, VolverInicio } from "@/components/ui/MigajasSitio";
 
 export const metadata = { title: "Contacto · ENCOSEP" };
 
@@ -11,6 +12,7 @@ export default function Contacto() {
         descripcion="El Ente atiende al público en horario administrativo de lunes a viernes. Para reclamos sobre servicios públicos, la vía oficial es el Portal de Reclamos."
       />
       <main className="max-w-3xl mx-auto px-6 py-10">
+      <MigajasSitio items={[{ label: "Contacto" }]} />
 
       <div className="grid md:grid-cols-2 gap-5">
         <Bloque titulo="📍 Dirección">
@@ -48,6 +50,7 @@ export default function Contacto() {
           </li>
         </ul>
       </section>
+      <VolverInicio />
       </main>
     </>
   );

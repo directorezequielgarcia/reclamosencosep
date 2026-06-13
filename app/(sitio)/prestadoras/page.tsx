@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { SeccionHeader } from "@/components/ui/SeccionHeader";
+import { MigajasSitio, VolverInicio } from "@/components/ui/MigajasSitio";
 
 export const metadata = { title: "Portal de Prestadoras · ENCOSEP" };
 
@@ -19,6 +20,7 @@ export default function PortalPrestadorasLanding() {
         descripcion="Espacio digital para las empresas que prestan servicios públicos bajo control del Ente. Gestión de reclamos asignados, descargos en expedientes, normativa vigente y vencimientos de documentación."
       />
       <main className="max-w-5xl mx-auto px-6 py-10">
+      <MigajasSitio items={[{ label: "Portal de Prestadoras" }]} />
 
       <div className="grid md:grid-cols-[1fr_360px] gap-6 items-start">
         <section>
@@ -88,6 +90,7 @@ export default function PortalPrestadorasLanding() {
           ))}
         </div>
       </section>
+      <VolverInicio />
       </main>
     </>
   );

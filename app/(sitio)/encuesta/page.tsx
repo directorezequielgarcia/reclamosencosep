@@ -1,5 +1,6 @@
 import { SeccionHeader } from "@/components/ui/SeccionHeader";
 import { SubmitButton } from "@/components/ui/SubmitButton";
+import { MigajasSitio, VolverInicio } from "@/components/ui/MigajasSitio";
 import { enviarEncuesta } from "./actions";
 
 export const metadata = { title: "Encuesta de servicios · ENCOSEP" };
@@ -29,6 +30,12 @@ export default async function EncuestaPage({
       />
 
       <main className="max-w-3xl mx-auto px-6 py-10">
+        <MigajasSitio
+          items={[
+            { label: "Atención al Usuario", href: "/atencion-usuarios" },
+            { label: "Encuesta" },
+          ]}
+        />
         {gracias ? (
           <div className="rounded-2xl border-2 border-svc-green bg-svc-green/10 p-8 text-center">
             <div className="text-5xl mb-2">✓</div>
@@ -148,6 +155,12 @@ export default async function EncuestaPage({
             </SubmitButton>
           </form>
         )}
+        <VolverInicio
+          volverA={{
+            label: "Volver a Atención al Usuario",
+            href: "/atencion-usuarios",
+          }}
+        />
       </main>
     </>
   );

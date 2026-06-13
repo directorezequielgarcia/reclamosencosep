@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { SeccionHeader } from "@/components/ui/SeccionHeader";
 import { TIPO_BOLETIN_META } from "@/lib/boletines";
+import { MigajasSitio, VolverInicio } from "@/components/ui/MigajasSitio";
 
 export const metadata = { title: "Boletines · ENCOSEP" };
 
@@ -19,6 +20,7 @@ export default async function BoletinesPublicoPage() {
         descripcion="Publicaciones oficiales del ENCOSEP: boletines, comunicados, notas de prensa y menciones en medios sobre los servicios públicos bajo control."
       />
       <main className="max-w-5xl mx-auto px-6 py-10">
+        <MigajasSitio items={[{ label: "Boletines" }]} />
         {boletines.length === 0 ? (
           <div className="rounded-xl border border-dashed border-line-strong bg-paper-2 p-12 text-center text-muted text-sm">
             Próximamente publicaciones del Ente.
@@ -88,6 +90,7 @@ export default async function BoletinesPublicoPage() {
             })}
           </ul>
         )}
+        <VolverInicio />
       </main>
     </>
   );

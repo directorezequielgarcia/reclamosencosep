@@ -10,6 +10,7 @@ import {
 import { TONE_CLASS } from "@/lib/admin";
 import { inscribirseAudiencia } from "@/app/admin/audiencias/actions";
 import { SubmitButton } from "@/components/ui/SubmitButton";
+import { MigajasSitio, VolverInicio } from "@/components/ui/MigajasSitio";
 
 export const metadata = { title: "Audiencia · ENCOSEP" };
 
@@ -45,6 +46,12 @@ export default async function AudienciaDetallePublico({
       />
 
       <main className="max-w-4xl mx-auto px-6 py-10 flex flex-col gap-6">
+        <MigajasSitio
+          items={[
+            { label: "Audiencias", href: "/audiencias" },
+            { label: "Detalle" },
+          ]}
+        />
         {/* DATOS CLAVE */}
         <section className="rounded-2xl border border-line bg-paper p-5">
           <div className="flex items-center gap-2 flex-wrap text-[11px]">
@@ -415,6 +422,10 @@ export default async function AudienciaDetallePublico({
         >
           ← Ver todas las audiencias
         </Link>
+
+        <VolverInicio
+          volverA={{ label: "Volver a Audiencias", href: "/audiencias" }}
+        />
       </main>
     </>
   );

@@ -3,6 +3,7 @@ import { SeccionHeader } from "@/components/ui/SeccionHeader";
 import { SVC_META, SVC_ORDER, svcFromKind } from "@/lib/servicios";
 import { ESTADO_META, TONE_CLASS } from "@/lib/admin";
 import { MapaCalor, type PuntoCalor } from "@/components/mapa/MapaCalor";
+import { MigajasSitio, VolverInicio } from "@/components/ui/MigajasSitio";
 import type { ReclamoEstado } from "@prisma/client";
 
 export const metadata = { title: "Indicadores · ENCOSEP" };
@@ -241,6 +242,7 @@ export default async function IndicadoresPage() {
       />
 
       <main className="max-w-6xl mx-auto px-6 py-10 flex flex-col gap-8">
+        <MigajasSitio items={[{ label: "Indicadores" }]} />
         {/* CIFRAS DE INTERÉS — estilo de la referencia */}
         <section className="rounded-3xl overflow-hidden shadow-xl">
           <div className="bg-gradient-to-br from-svc-red via-[#9b2b2e] to-navy text-white p-8 md:p-10">
@@ -741,6 +743,8 @@ export default async function IndicadoresPage() {
             )}
           </div>
         </section>
+
+        <VolverInicio />
       </main>
     </>
   );
