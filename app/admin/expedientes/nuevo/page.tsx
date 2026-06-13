@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 import { crearExpedienteAislado } from "../actions";
 
 export const metadata = { title: "Nuevo expediente · Panel ENCOSEP" };
@@ -125,12 +126,12 @@ export default async function NuevoExpedientePage() {
         </label>
 
         <div className="sm:col-span-2">
-          <button
-            type="submit"
+          <SubmitButton
             className="px-5 py-2.5 rounded-lg bg-svc-orange text-white font-bold text-sm"
+            pendingText="Creando…"
           >
             Abrir expediente
-          </button>
+          </SubmitButton>
         </div>
       </form>
     </div>

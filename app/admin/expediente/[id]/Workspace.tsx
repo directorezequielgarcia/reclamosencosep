@@ -499,22 +499,22 @@ function DetalleActo({
               <form action={notificarActo}>
                 <input type="hidden" name="actoId" value={acto.id} />
                 <input type="hidden" name="alcance" value="SOLO" />
-                <button
-                  type="submit"
+                <BotonEnviar
                   className="text-xs px-3 py-1.5 rounded-lg border border-svc-blue text-svc-blue font-semibold hover:bg-svc-blue/10"
+                  pendingText="Enviando…"
                 >
                   📨 Notificar solo esta etapa
-                </button>
+                </BotonEnviar>
               </form>
               <form action={notificarActo}>
                 <input type="hidden" name="actoId" value={acto.id} />
                 <input type="hidden" name="alcance" value="HASTA" />
-                <button
-                  type="submit"
+                <BotonEnviar
                   className="text-xs px-3 py-1.5 rounded-lg border border-svc-blue bg-svc-blue/10 text-svc-blue font-semibold hover:bg-svc-blue/20"
+                  pendingText="Enviando…"
                 >
                   📨 Notificar todo hasta acá
-                </button>
+                </BotonEnviar>
               </form>
             </div>
           ) : !acto.notificadoTexto && !acto.visiblePrestadora ? (

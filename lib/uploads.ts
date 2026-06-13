@@ -144,16 +144,24 @@ function extDocFromMime(mime: string): string {
  * - Si no, fallback a filesystem local en /public/uploads/ — útil para
  *   desarrollo y para entornos sin Blob configurado.
  */
+// El vecino puede adjuntar fotos o un PDF (p. ej. la factura que recibe por
+// mail). Aceptamos imágenes y PDF; los documentos van con el límite de 25 MB.
+const ALLOWED_RECLAMO = new Set([...ALLOWED_IMAGE, "application/pdf"]);
+
 export async function guardarFotoReclamo(
   reclamoId: string,
   file: File,
 ): Promise<UploadedFile> {
   if (file.size === 0) throw new Error("Archivo vacío");
-  if (file.size > MAX_BYTES) {
-    throw new Error("Imagen demasiado grande (máx 8 MB)");
+  const esPdf = file.type === "application/pdf";
+  const limite = esPdf ? MAX_DOC_BYTES : MAX_BYTES;
+  if (file.size > limite) {
+    throw new Error(
+      `Archivo demasiado grande (máx ${limite / 1024 / 1024} MB)`,
+    );
   }
-  if (!ALLOWED_IMAGE.has(file.type)) {
-    throw new Error(`Tipo de imagen no soportado: ${file.type}`);
+  if (!ALLOWED_RECLAMO.has(file.type)) {
+    throw new Error(`Tipo de archivo no soportado: ${file.type}`);
   }
 
   const ext = extFromMime(file.type);
@@ -195,6 +203,8 @@ function extFromMime(mime: string): string {
       return ".webp";
     case "image/heic":
       return ".heic";
+    case "application/pdf":
+      return ".pdf";
     default:
       return "";
   }

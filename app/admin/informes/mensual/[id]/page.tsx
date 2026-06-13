@@ -9,6 +9,7 @@ import {
   regenerarBorrador,
 } from "../../actions";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 import type { BloquesInforme } from "@/lib/informe-mensual-borrador";
 import type { InformeMensualData } from "@/lib/informe-mensual-data";
 
@@ -134,13 +135,13 @@ export default async function InformeMensualDetallePage({
         <div className="flex gap-2 flex-wrap">
           <form action={regenerarBorrador}>
             <input type="hidden" name="informeId" value={informe.id} />
-            <button
-              type="submit"
+            <SubmitButton
               className="px-3 py-2 rounded-lg border border-line-strong text-navy text-xs font-semibold hover:bg-paper-2"
               title="Recalcula los datos del mes y reemplaza los textos sugeridos con un borrador nuevo. Cuidado: pierde tus ediciones."
+              pendingText="Generando…"
             >
               🔄 Regenerar borrador desde datos actuales
-            </button>
+            </SubmitButton>
           </form>
         </div>
       )}
@@ -212,12 +213,12 @@ export default async function InformeMensualDetallePage({
 
         {editable && (
           <div className="flex gap-3 flex-wrap sticky bottom-3 bg-paper border border-line-strong rounded-2xl p-3 shadow-lg">
-            <button
-              type="submit"
+            <SubmitButton
               className="px-5 py-2.5 rounded-lg bg-navy text-white font-bold text-sm"
+              pendingText="Guardando…"
             >
               💾 Guardar cambios
-            </button>
+            </SubmitButton>
             <span className="text-xs text-muted self-center">
               Los cambios se guardan sin publicar. Para emitir el informe oficial
               usá el botón "Publicar".
@@ -241,12 +242,12 @@ export default async function InformeMensualDetallePage({
             </p>
           </div>
           <input type="hidden" name="informeId" value={informe.id} />
-          <button
-            type="submit"
+          <SubmitButton
             className="px-5 py-2.5 rounded-lg bg-svc-green text-white font-bold text-sm"
+            pendingText="Publicando…"
           >
             ✓ Publicar informe oficial
-          </button>
+          </SubmitButton>
         </form>
       )}
 

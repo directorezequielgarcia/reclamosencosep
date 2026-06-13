@@ -11,6 +11,7 @@ import {
 } from "@/lib/capacitacion";
 import { LogoEncosep } from "@/components/ui/LogoEncosep";
 import { BarraSesion } from "@/components/ui/BarraSesion";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 import { eliminarCapacitacion } from "./actions";
 import type { AudienciaCapacitacion } from "@prisma/client";
 
@@ -113,12 +114,12 @@ export default async function CapacitacionPage() {
                           {puedeGestionar && (
                             <form action={eliminarCapacitacion}>
                               <input type="hidden" name="id" value={item.id} />
-                              <button
-                                type="submit"
+                              <SubmitButton
                                 className="text-xs text-svc-red font-semibold hover:underline"
+                                pendingText="Borrando…"
                               >
                                 Eliminar
-                              </button>
+                              </SubmitButton>
                             </form>
                           )}
                         </div>

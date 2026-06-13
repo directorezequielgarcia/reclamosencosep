@@ -9,6 +9,7 @@ import {
   whereReclamosByRol,
 } from "@/lib/admin";
 import { EstadoBadge } from "@/components/ui/EstadoBadge";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Galeria } from "@/components/ui/Galeria";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { SvcIcon } from "@/components/servicios/SvcIcon";
@@ -76,6 +77,7 @@ export default async function ReclamoDetallePage({
     : [];
 
   const fotos = reclamo.adjuntos.filter((a) => a.tipo === "FOTO");
+  const documentos = reclamo.adjuntos.filter((a) => a.tipo === "DOCUMENTO");
   const fechaLarga = reclamo.createdAt.toLocaleString("es-AR", {
     day: "2-digit",
     month: "long",
@@ -140,6 +142,25 @@ export default async function ReclamoDetallePage({
                 }))}
                 titulo={`Reclamo ${reclamo.codigo}`}
               />
+            </Card>
+          )}
+
+          {documentos.length > 0 && (
+            <Card titulo={`Documentos · ${documentos.length}`}>
+              <ul className="flex flex-col gap-2">
+                {documentos.map((d, i) => (
+                  <li key={d.id}>
+                    <a
+                      href={d.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-sm text-navy font-semibold underline decoration-line-strong underline-offset-2"
+                    >
+                      📄 Documento {i + 1} (PDF)
+                    </a>
+                  </li>
+                ))}
+              </ul>
             </Card>
           )}
 
@@ -244,12 +265,12 @@ export default async function ReclamoDetallePage({
                   placeholder="Escribile al vecino…"
                   className="w-full px-3 py-2 rounded-lg border border-line-strong bg-paper text-sm focus:outline-none focus:border-navy-2 resize-none"
                 />
-                <button
-                  type="submit"
+                <SubmitButton
                   className="self-end px-4 py-2 rounded-lg bg-navy-2 text-white text-sm font-semibold"
+                  pendingText="Enviando…"
                 >
                   Responder al vecino
-                </button>
+                </SubmitButton>
               </form>
             )}
           </Card>
@@ -330,12 +351,12 @@ export default async function ReclamoDetallePage({
                   </span>
                 </label>
                 <div>
-                  <button
-                    type="submit"
+                  <SubmitButton
                     className="px-4 py-2 rounded-lg bg-navy-2 text-white text-sm font-semibold"
+                    pendingText="Guardando…"
                   >
                     Agregar comentario
-                  </button>
+                  </SubmitButton>
                 </div>
               </form>
             )}
@@ -373,12 +394,12 @@ export default async function ReclamoDetallePage({
                     </option>
                   ))}
                 </select>
-                <button
-                  type="submit"
+                <SubmitButton
                   className="px-3 py-1.5 rounded-lg border border-line-strong text-xs font-semibold text-navy hover:bg-paper-2"
+                  pendingText="Guardando…"
                 >
                   Confirmar reasignación
-                </button>
+                </SubmitButton>
               </form>
             )}
           </Card>
@@ -431,12 +452,12 @@ export default async function ReclamoDetallePage({
                   placeholder={`ENCOSEP c/ ${reclamo.prestadora?.razonSocial} s/ ${reclamo.servicio.nombreCorto}`}
                   className="px-2 py-1.5 rounded-lg border border-line-strong text-sm bg-paper"
                 />
-                <button
-                  type="submit"
+                <SubmitButton
                   className="px-3 py-2 rounded-lg bg-svc-orange text-white text-sm font-bold mt-1"
+                  pendingText="Creando…"
                 >
                   📁 Abrir expediente
-                </button>
+                </SubmitButton>
               </form>
             </Card>
           )}
@@ -494,12 +515,12 @@ export default async function ReclamoDetallePage({
                   placeholder="Motivo o nota (opcional)…"
                   className="px-2 py-1.5 rounded-lg border border-line-strong text-sm bg-paper resize-none"
                 />
-                <button
-                  type="submit"
+                <SubmitButton
                   className="px-3 py-2 rounded-lg bg-svc-red text-white text-sm font-semibold"
+                  pendingText="Guardando…"
                 >
                   Aplicar cambio
-                </button>
+                </SubmitButton>
               </form>
             </Card>
           )}

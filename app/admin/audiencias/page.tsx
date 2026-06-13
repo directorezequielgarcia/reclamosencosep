@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ESTADO_AUDIENCIA_META, MODALIDAD_META } from "@/lib/audiencias";
 import { puedeGestionarAudienciasMedios, TONE_CLASS } from "@/lib/admin";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 import { crearAudiencia } from "./actions";
 import type { ModalidadAudiencia } from "@prisma/client";
 
@@ -129,12 +130,12 @@ export default async function AudienciasAdminPage() {
             />
           </Field>
           <div className="sm:col-span-2">
-            <button
-              type="submit"
+            <SubmitButton
               className="px-5 py-3 rounded-xl bg-svc-red text-white font-bold text-sm"
+              pendingText="Creando…"
             >
               Crear audiencia y abrir inscripción
-            </button>
+            </SubmitButton>
           </div>
         </form>
       </section>

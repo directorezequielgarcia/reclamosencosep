@@ -15,6 +15,7 @@ import {
   puedeVerDocumentos,
   puedeVerInspecciones,
 } from "@/lib/admin";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 
 export default async function AdminLayout({
   children,
@@ -98,12 +99,12 @@ export default async function AdminLayout({
               {inicial}
             </Link>
             <form action={logout}>
-              <button
-                type="submit"
+              <SubmitButton
                 className="text-xs underline underline-offset-4 opacity-80 hover:opacity-100"
+                pendingText="Saliendo…"
               >
                 Salir
-              </button>
+              </SubmitButton>
             </form>
           </div>
         </div>

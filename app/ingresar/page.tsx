@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { auth, signIn } from "@/lib/auth";
 import { BrandStripe } from "@/components/ui/BrandStripe";
 import { LogoEncosep } from "@/components/ui/LogoEncosep";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 import {
   perfilDesde,
   MISION_ENCOSEP,
@@ -233,12 +234,12 @@ export default async function IngresarPage({
                 </div>
               ) : null}
 
-              <button
-                type="submit"
+              <SubmitButton
                 className="w-full inline-flex items-center justify-center px-5 py-3 rounded-xl bg-svc-red text-white font-bold uppercase tracking-wider hover:opacity-90 transition shadow-md shadow-svc-red/30"
+                pendingText="Ingresando…"
               >
                 Ingresar
-              </button>
+              </SubmitButton>
 
               <div className="flex items-center justify-between text-xs pt-1">
                 <Link

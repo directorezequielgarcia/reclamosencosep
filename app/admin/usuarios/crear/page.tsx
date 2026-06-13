@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { ROL_LABEL, puedeGestionarUsuarios, esDireccion } from "@/lib/admin";
 import { crearUsuario } from "../actions";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 import type { Rol } from "@prisma/client";
 
 export const metadata = { title: "Nuevo usuario · Panel ENCOSEP" };
@@ -167,12 +168,12 @@ export default async function CrearUsuarioPage() {
         </Field>
 
         <div className="flex gap-2 items-center pt-2">
-          <button
-            type="submit"
+          <SubmitButton
             className="px-5 py-2.5 rounded-lg bg-navy text-white font-bold text-sm hover:opacity-90"
+            pendingText="Creando…"
           >
             Crear usuario
-          </button>
+          </SubmitButton>
           <Link
             href="/admin/usuarios"
             className="px-5 py-2.5 rounded-lg border border-line-strong text-navy font-semibold text-sm"

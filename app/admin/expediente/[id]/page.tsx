@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { EXPEDIENTE_ESTADO_META, TIPO_ACTO_META } from "@/lib/expedientes";
 import { TONE_CLASS } from "@/lib/admin";
 import { EstadoBadge } from "@/components/ui/EstadoBadge";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { SvcIcon } from "@/components/servicios/SvcIcon";
 import { svcFromKind } from "@/lib/servicios";
@@ -255,12 +256,12 @@ export default async function ExpedienteDetallePage({
           {esEnte && docsReclamo > 0 && (
             <form action={importarDocumentalReclamo}>
               <input type="hidden" name="expedienteId" value={exp.id} />
-              <button
-                type="submit"
+              <SubmitButton
                 className="w-full px-4 py-2 rounded-lg border border-navy-2 text-navy-2 font-bold text-sm hover:bg-navy-2/5"
+                pendingText="Guardando…"
               >
                 📎 Importar documental del reclamo ({docsReclamo})
-              </button>
+              </SubmitButton>
             </form>
           )}
         </div>
@@ -353,12 +354,12 @@ export default async function ExpedienteDetallePage({
                 className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper font-mono"
               />
             </label>
-            <button
-              type="submit"
+            <SubmitButton
               className="px-4 py-2 rounded-lg border border-navy-2 text-navy-2 font-bold text-sm hover:bg-navy-2/5"
+              pendingText="Guardando…"
             >
               ↪️ Importar como antecedente
-            </button>
+            </SubmitButton>
           </form>
           <form
             action={importarExpedienteReferencia}
@@ -376,12 +377,12 @@ export default async function ExpedienteDetallePage({
                 className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper font-mono"
               />
             </label>
-            <button
-              type="submit"
+            <SubmitButton
               className="px-4 py-2 rounded-lg border border-navy-2 text-navy-2 font-bold text-sm hover:bg-navy-2/5"
+              pendingText="Guardando…"
             >
               🔗 Referenciar expediente
-            </button>
+            </SubmitButton>
           </form>
 
           <form
@@ -389,12 +390,12 @@ export default async function ExpedienteDetallePage({
             className="mt-3 pt-3 border-t border-line"
           >
             <input type="hidden" name="expedienteId" value={exp.id} />
-            <button
-              type="submit"
+            <SubmitButton
               className="px-4 py-2 rounded-lg border border-navy-2 text-navy-2 font-bold text-sm hover:bg-navy-2/5"
+              pendingText="Guardando…"
             >
               📊 Importar estadística actual de reclamos
-            </button>
+            </SubmitButton>
           </form>
 
           <p className="text-[11px] text-muted mt-2">
@@ -437,12 +438,12 @@ export default async function ExpedienteDetallePage({
                 <form action={importarConstatacionInspeccion} className="shrink-0">
                   <input type="hidden" name="expedienteId" value={exp.id} />
                   <input type="hidden" name="inspeccionId" value={insp.id} />
-                  <button
-                    type="submit"
+                  <SubmitButton
                     className="text-xs px-3 py-2 rounded-lg border border-navy-2 text-navy-2 font-bold hover:bg-navy-2/5 whitespace-nowrap"
+                    pendingText="Guardando…"
                   >
                     ↪️ Importar como constatación
-                  </button>
+                  </SubmitButton>
                 </form>
               </li>
             ))}
@@ -511,12 +512,12 @@ export default async function ExpedienteDetallePage({
                 <option value="RESUELTO">Resuelto</option>
                 <option value="ARCHIVADO">Archivado</option>
               </select>
-              <button
-                type="submit"
+              <SubmitButton
                 className="px-3 py-2 rounded-lg bg-navy-2 text-white text-sm font-semibold"
+                pendingText="Guardando…"
               >
                 Aplicar
-              </button>
+              </SubmitButton>
             </form>
           </Card>
         )}

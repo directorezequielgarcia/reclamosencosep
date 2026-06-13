@@ -156,7 +156,7 @@ export async function agregarDocumental(formData: FormData) {
       await prisma.adjunto.create({
         data: {
           reclamoId: r.id,
-          tipo: "FOTO",
+          tipo: saved.mimeType === "application/pdf" ? "DOCUMENTO" : "FOTO",
           url: saved.url,
           mimeType: saved.mimeType,
           bytes: saved.bytes,

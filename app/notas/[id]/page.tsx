@@ -91,12 +91,12 @@ export default async function NotaDetallePage({
             <form action={cambiarEstadoNota} className="flex gap-2 mt-3">
               <input type="hidden" name="notaId" value={nota.id} />
               <input type="hidden" name="estado" value="CERRADA" />
-              <button
-                type="submit"
+              <SubmitButton
                 className="text-xs px-3 py-1.5 rounded-lg border border-line-strong text-navy font-semibold hover:bg-paper-2"
+                pendingText="Guardando…"
               >
                 Cerrar gestión
-              </button>
+              </SubmitButton>
             </form>
           )}
         </header>

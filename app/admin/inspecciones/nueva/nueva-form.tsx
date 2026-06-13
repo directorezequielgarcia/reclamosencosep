@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { TIPO_INSPECCION_META } from "@/lib/inspecciones";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 import { crearInspeccion } from "../actions";
 import type { TipoInspeccion } from "@prisma/client";
 
@@ -233,12 +234,12 @@ export function NuevaInspeccionForm({
       </div>
 
       <div className="flex gap-2 items-center pt-2">
-        <button
-          type="submit"
+        <SubmitButton
+          pendingText="Guardando…"
           className="px-5 py-2.5 rounded-lg bg-navy text-white font-bold text-sm hover:opacity-90"
         >
           Guardar borrador
-        </button>
+        </SubmitButton>
         <Link
           href="/admin/inspecciones"
           className="px-5 py-2.5 rounded-lg border border-line-strong text-navy font-semibold text-sm"

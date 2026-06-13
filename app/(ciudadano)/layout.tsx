@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { auth, signOut } from "@/lib/auth";
 import { BrandHeader } from "@/components/ui/BrandHeader";
 import { FabAsistenciaWsp } from "@/components/ui/FabAsistenciaWsp";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 
 export default async function CiudadanoLayout({
   children,
@@ -46,12 +47,12 @@ export default async function CiudadanoLayout({
               {inicial}
             </Link>
             <form action={logout}>
-              <button
-                type="submit"
+              <SubmitButton
                 className="px-2 py-1 rounded-full border border-line-strong text-xs font-semibold text-navy hover:bg-paper-2"
+                pendingText="Saliendo…"
               >
                 Salir
-              </button>
+              </SubmitButton>
             </form>
           </div>
         }

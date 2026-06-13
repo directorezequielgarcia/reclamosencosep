@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { puedeExportarInformes, TONE_CLASS } from "@/lib/admin";
 import { crearInformeAnual, crearOAbrirInforme } from "./actions";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 
 export const metadata = { title: "Informes oficiales · Panel ENCOSEP" };
 
@@ -122,12 +123,12 @@ export default async function InformesPage() {
               ))}
             </select>
           </label>
-          <button
-            type="submit"
+          <SubmitButton
             className="px-5 py-2.5 rounded-lg bg-svc-red text-white font-bold text-sm"
+            pendingText="Generando…"
           >
             Generar / abrir borrador
-          </button>
+          </SubmitButton>
         </form>
       </section>
 
@@ -269,12 +270,12 @@ export default async function InformesPage() {
             />
           </label>
           <div className="sm:col-span-2">
-            <button
-              type="submit"
+            <SubmitButton
               className="px-5 py-2.5 rounded-lg bg-svc-orange text-white font-bold text-sm"
+              pendingText="Generando…"
             >
               Generar borrador del informe anual
-            </button>
+            </SubmitButton>
           </div>
         </form>
 

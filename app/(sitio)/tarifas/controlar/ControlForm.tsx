@@ -89,7 +89,6 @@ export function ControlForm() {
             <input
               type="file"
               accept="image/*"
-              capture="environment"
               onChange={(ev) => {
                 const f = ev.target.files?.[0];
                 if (f) correrOcr(f);

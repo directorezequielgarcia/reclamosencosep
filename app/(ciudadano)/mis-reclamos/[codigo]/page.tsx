@@ -16,6 +16,7 @@ import {
 } from "./actions";
 import { BorrarReclamo } from "./BorrarReclamo";
 import { Solucionado } from "./Solucionado";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 
 export const metadata = { title: "Mi reclamo · ENCOSEP" };
 
@@ -55,6 +56,7 @@ export default async function DetalleMiReclamoPage({
 
   const svc = svcFromKind(reclamo.servicio.kind);
   const fotos = reclamo.adjuntos.filter((a) => a.tipo === "FOTO");
+  const documentos = reclamo.adjuntos.filter((a) => a.tipo === "DOCUMENTO");
   const eventosVisibles = reclamo.eventos.filter((e) =>
     TIPOS_VISIBLES.includes(e.tipo),
   );
@@ -124,6 +126,28 @@ export default async function DetalleMiReclamoPage({
             }))}
             titulo={`Reclamo ${reclamo.codigo}`}
           />
+        </section>
+      )}
+
+      {documentos.length > 0 && (
+        <section className="rounded-2xl border border-line bg-paper p-4">
+          <div className="text-[11px] font-bold text-muted uppercase tracking-wider mb-2">
+            Documentos · {documentos.length}
+          </div>
+          <ul className="flex flex-col gap-2">
+            {documentos.map((d, i) => (
+              <li key={d.id}>
+                <a
+                  href={d.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-sm text-navy font-semibold underline decoration-line-strong underline-offset-2"
+                >
+                  📄 Documento {i + 1} (PDF)
+                </a>
+              </li>
+            ))}
+          </ul>
         </section>
       )}
 
@@ -201,25 +225,26 @@ export default async function DetalleMiReclamoPage({
           Sumar documentación
         </div>
         <div className="text-xs text-muted leading-relaxed mb-3">
-          Podés agregar fotos o imágenes (por ejemplo, de una factura) cuando
-          quieras. Quedan registradas con la fecha en el historial de abajo.
+          Podés agregar fotos, imágenes o un PDF (por ejemplo, de una factura)
+          cuando quieras, desde la cámara, la galería o los archivos de tu
+          teléfono. Quedan registrados con la fecha en el historial de abajo.
         </div>
         <form action={agregarDocumental} className="flex flex-col gap-2">
           <input type="hidden" name="codigo" value={reclamo.codigo} />
           <input
             type="file"
             name="archivo"
-            accept="image/*"
+            accept="image/*,application/pdf"
             multiple
             required
             className="text-sm text-navy file:mr-3 file:px-3 file:py-2 file:rounded-lg file:border-0 file:bg-navy-2 file:text-white file:font-semibold"
           />
-          <button
-            type="submit"
+          <SubmitButton
             className="self-end inline-flex items-center justify-center px-4 py-2 rounded-lg bg-navy-2 text-white font-bold text-sm"
+            pendingText="Subiendo…"
           >
             Agregar documentación
-          </button>
+          </SubmitButton>
         </form>
       </section>
 
@@ -284,12 +309,12 @@ export default async function DetalleMiReclamoPage({
             placeholder="Escribí tu mensaje al ENCOSEP…"
             className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper resize-y"
           />
-          <button
-            type="submit"
+          <SubmitButton
             className="self-end inline-flex items-center justify-center px-4 py-2 rounded-lg bg-navy-2 text-white font-bold text-sm"
+            pendingText="Enviando…"
           >
             Enviar mensaje
-          </button>
+          </SubmitButton>
         </form>
       </section>
 
@@ -358,12 +383,12 @@ export default async function DetalleMiReclamoPage({
             </p>
             <form action={solicitarCopiaExpediente} className="mt-2">
               <input type="hidden" name="codigo" value={reclamo.codigo} />
-              <button
-                type="submit"
+              <SubmitButton
                 className="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-svc-red text-white font-bold text-sm"
+                pendingText="Enviando…"
               >
                 Solicitar copia del expediente
-              </button>
+              </SubmitButton>
             </form>
           </section>
         )}
@@ -406,12 +431,12 @@ export default async function DetalleMiReclamoPage({
                 placeholder="Comentario opcional…"
                 className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper resize-y"
               />
-              <button
-                type="submit"
+              <SubmitButton
                 className="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-svc-green text-white font-bold text-sm"
+                pendingText="Enviando…"
               >
                 Enviar mi calificación
-              </button>
+              </SubmitButton>
             </form>
           </section>
         )}

@@ -374,7 +374,6 @@ function PasoDetalle({
           <input
             type="file"
             accept="image/*"
-            capture="environment"
             multiple
             onChange={onFotos}
             className="hidden"

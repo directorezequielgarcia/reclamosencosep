@@ -358,7 +358,6 @@ export function CapturaCampo({
         <input
           type="file"
           accept="image/*"
-          capture="environment"
           multiple
           onChange={onSeleccionFotos}
           className="text-xs file:mr-3 file:px-3 file:py-2 file:rounded-lg file:border-0 file:bg-navy file:text-white file:font-bold file:cursor-pointer"

@@ -1,4 +1,5 @@
 import { SeccionHeader } from "@/components/ui/SeccionHeader";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 import { enviarEncuesta } from "./actions";
 
 export const metadata = { title: "Encuesta de servicios · ENCOSEP" };
@@ -139,12 +140,12 @@ export default async function EncuestaPage({
               </p>
             </fieldset>
 
-            <button
-              type="submit"
+            <SubmitButton
               className="w-full inline-flex items-center justify-center px-5 py-3 rounded-xl bg-svc-red text-white font-bold uppercase tracking-wider shadow-md shadow-svc-red/30"
+              pendingText="Enviando…"
             >
               Enviar mi opinión
-            </button>
+            </SubmitButton>
           </form>
         )}
       </main>

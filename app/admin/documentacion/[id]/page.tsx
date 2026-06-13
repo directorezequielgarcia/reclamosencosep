@@ -11,6 +11,7 @@ import {
 import { TONE_CLASS, puedeRevisarDocumentos } from "@/lib/admin";
 import { revisarDocumento } from "../actions";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 
 export const metadata = { title: "Documento · Panel ENCOSEP" };
 
@@ -174,12 +175,12 @@ export default async function DocumentoDetallePage({
                   placeholder="Comentario (obligatorio si observás o rechazás)…"
                   className="px-2 py-1.5 rounded-lg border border-line-strong text-sm bg-paper resize-none"
                 />
-                <button
-                  type="submit"
+                <SubmitButton
                   className="px-3 py-2 rounded-lg bg-svc-red text-white text-sm font-semibold"
+                  pendingText="Guardando…"
                 >
                   Aplicar revisión
-                </button>
+                </SubmitButton>
               </form>
             </Card>
           )}

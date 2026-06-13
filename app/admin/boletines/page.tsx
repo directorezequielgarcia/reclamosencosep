@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { TIPO_BOLETIN_META } from "@/lib/boletines";
 import { alternarPublicado, borrarBoletin, crearBoletin } from "./actions";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 import type { TipoBoletin } from "@prisma/client";
 
 export const metadata = { title: "Boletines · Panel ENCOSEP" };
@@ -60,9 +61,9 @@ export default async function BoletinesAdminPage() {
             <span className="text-sm text-navy">Publicado (visible en el sitio público)</span>
           </label>
           <div className="sm:col-span-2 flex gap-2">
-            <button type="submit" className="px-5 py-3 rounded-xl bg-svc-red text-white font-bold text-sm">
+            <SubmitButton className="px-5 py-3 rounded-xl bg-svc-red text-white font-bold text-sm" pendingText="Creando…">
               Crear boletín
-            </button>
+            </SubmitButton>
           </div>
         </form>
       </section>
@@ -95,15 +96,15 @@ export default async function BoletinesAdminPage() {
                   </div>
                   <form action={alternarPublicado}>
                     <input type="hidden" name="id" value={b.id} />
-                    <button type="submit" className="text-xs px-2 py-1 rounded border border-line-strong text-navy">
+                    <SubmitButton className="text-xs px-2 py-1 rounded border border-line-strong text-navy" pendingText="Procesando…">
                       {b.publicado ? "Despublicar" : "Publicar"}
-                    </button>
+                    </SubmitButton>
                   </form>
                   <form action={borrarBoletin}>
                     <input type="hidden" name="id" value={b.id} />
-                    <button type="submit" className="text-xs px-2 py-1 rounded border border-svc-red/40 text-svc-red">
+                    <SubmitButton className="text-xs px-2 py-1 rounded border border-svc-red/40 text-svc-red" pendingText="Borrando…">
                       Borrar
-                    </button>
+                    </SubmitButton>
                   </form>
                 </li>
               );

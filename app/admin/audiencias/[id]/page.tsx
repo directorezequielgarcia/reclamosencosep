@@ -9,6 +9,7 @@ import {
   cambiarEstadoAudiencia,
 } from "../actions";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 import type { EstadoAudiencia } from "@prisma/client";
 
 export const metadata = { title: "Audiencia · Panel ENCOSEP" };
@@ -219,12 +220,12 @@ export default async function AudienciaAdminDetalle({
           </FieldD>
 
           <div className="sm:col-span-2">
-            <button
-              type="submit"
+            <SubmitButton
               className="px-5 py-2.5 rounded-lg bg-navy text-white font-bold text-sm"
+              pendingText="Guardando…"
             >
               Guardar material
-            </button>
+            </SubmitButton>
           </div>
         </form>
       </section>
@@ -240,9 +241,9 @@ export default async function AudienciaAdminDetalle({
               <option key={e} value={e}>{ESTADO_AUDIENCIA_META[e].label}</option>
             ))}
           </select>
-          <button type="submit" className="px-4 py-2 rounded-lg bg-navy-2 text-white font-semibold text-sm">
+          <SubmitButton className="px-4 py-2 rounded-lg bg-navy-2 text-white font-semibold text-sm" pendingText="Guardando…">
             Aplicar
-          </button>
+          </SubmitButton>
         </form>
       </section>
 

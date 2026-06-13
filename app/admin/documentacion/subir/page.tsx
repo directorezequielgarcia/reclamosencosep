@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { TIPO_DOC_META } from "@/lib/documentos";
 import { subirDocumento } from "../actions";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 import type { TipoDocumento } from "@prisma/client";
 
 export const metadata = { title: "Subir documento · Panel ENCOSEP" };
@@ -163,12 +164,12 @@ export default async function SubirDocumentoPage() {
           >
             Cancelar
           </Link>
-          <button
-            type="submit"
+          <SubmitButton
             className="flex-1 inline-flex items-center justify-center px-4 py-3 rounded-xl bg-svc-red text-white font-bold text-sm shadow-md shadow-svc-red/30"
+            pendingText="Subiendo…"
           >
             Subir y enviar a revisión
-          </button>
+          </SubmitButton>
         </div>
       </form>
     </div>

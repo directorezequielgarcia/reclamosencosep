@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { ROL_LABEL, puedeGestionarUsuarios, esDireccion } from "@/lib/admin";
 import { resetClaveADni, toggleActivo } from "./actions";
 import { BotonClaveTemporal } from "./BotonClaveTemporal";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 import type { Prisma, Rol } from "@prisma/client";
 
 export const metadata = { title: "Usuarios · Panel ENCOSEP" };
@@ -184,13 +185,13 @@ export default async function UsuariosPage({
                           name="usuarioId"
                           value={u.id}
                         />
-                        <button
-                          type="submit"
+                        <SubmitButton
                           className="text-[11px] px-2.5 py-1 rounded-md border border-line-strong text-navy hover:bg-paper-3"
                           title={`Resetea la clave de ${u.nombre} a su propio DNI`}
+                          pendingText="Reseteando…"
                         >
                           Reset a DNI
-                        </button>
+                        </SubmitButton>
                       </form>
                       {esDireccion(session.user.rol) &&
                         u.id !== session.user.id && (
@@ -200,16 +201,16 @@ export default async function UsuariosPage({
                               name="usuarioId"
                               value={u.id}
                             />
-                            <button
-                              type="submit"
+                            <SubmitButton
                               className={`text-[11px] px-2.5 py-1 rounded-md border ${
                                 u.activo
                                   ? "border-svc-red/40 text-svc-red hover:bg-svc-red/10"
                                   : "border-svc-green/40 text-svc-green hover:bg-svc-green/10"
                               }`}
+                              pendingText="Procesando…"
                             >
                               {u.activo ? "Bloquear" : "Activar"}
-                            </button>
+                            </SubmitButton>
                           </form>
                         )}
                     </div>

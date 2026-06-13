@@ -21,6 +21,7 @@ import {
 import { CapturaCampo } from "@/components/inspecciones/CapturaCampo";
 import { Galeria } from "@/components/ui/Galeria";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 import type { EstadoInspeccion } from "@prisma/client";
 
 export const metadata = { title: "Inspección · Panel ENCOSEP" };
@@ -162,22 +163,22 @@ export default async function InspeccionDetallePage({
             <form key={e} action={cambiarEstadoInspeccion}>
               <input type="hidden" name="inspeccionId" value={insp.id} />
               <input type="hidden" name="estado" value={e} />
-              <button
-                type="submit"
+              <SubmitButton
                 disabled={e === "PUBLICADA" && !tieneVinculo}
+                pendingText={e === "PUBLICADA" ? "Publicando…" : "Archivando…"}
                 title={
                   e === "PUBLICADA" && !tieneVinculo
                     ? "Para publicar, primero vinculá a un expediente o generá un reclamo de oficio"
                     : undefined
                 }
-                className={`px-3 py-2 rounded-lg text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed ${
+                className={`px-3 py-2 rounded-lg text-sm font-bold ${
                   e === "PUBLICADA"
                     ? "bg-svc-green text-white"
                     : "bg-paper-3 text-navy border border-line-strong"
                 }`}
               >
                 {e === "PUBLICADA" ? "Publicar" : "Archivar"}
-              </button>
+              </SubmitButton>
             </form>
           ))}
         </div>
@@ -276,12 +277,12 @@ export default async function InspeccionDetallePage({
                   </select>
                 </label>
                 <div>
-                  <button
-                    type="submit"
+                  <SubmitButton
+                    pendingText="Guardando…"
                     className="px-3 py-2 rounded-lg bg-navy text-white text-xs font-bold"
                   >
                     Guardar vinculación
-                  </button>
+                  </SubmitButton>
                 </div>
               </form>
 
@@ -293,12 +294,12 @@ export default async function InspeccionDetallePage({
                 </div>
                 <form action={crearReclamoOficio}>
                   <input type="hidden" name="inspeccionId" value={insp.id} />
-                  <button
-                    type="submit"
+                  <SubmitButton
+                    pendingText="Generando…"
                     className="px-3 py-2 rounded-lg bg-svc-red text-white text-xs font-bold"
                   >
                     + Generar reclamo de oficio
-                  </button>
+                  </SubmitButton>
                 </form>
               </div>
 
@@ -417,12 +418,12 @@ export default async function InspeccionDetallePage({
               </Field>
 
               <div>
-                <button
-                  type="submit"
+                <SubmitButton
+                  pendingText="Guardando…"
                   className="px-5 py-2.5 rounded-lg bg-navy text-white font-bold text-sm hover:opacity-90"
                 >
                   Guardar cambios
-                </button>
+                </SubmitButton>
               </div>
             </form>
           ) : (

@@ -9,6 +9,7 @@ import {
 } from "@/lib/audiencias";
 import { TONE_CLASS } from "@/lib/admin";
 import { inscribirseAudiencia } from "@/app/admin/audiencias/actions";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 
 export const metadata = { title: "Audiencia · ENCOSEP" };
 
@@ -339,12 +340,12 @@ export default async function AudienciaDetallePublico({
                 />
               </Field>
               <div className="sm:col-span-2">
-                <button
-                  type="submit"
+                <SubmitButton
                   className="w-full px-5 py-3 rounded-xl bg-svc-red text-white font-bold uppercase tracking-wider text-sm shadow-md shadow-svc-red/30"
+                  pendingText="Enviando…"
                 >
                   Confirmar inscripción
-                </button>
+                </SubmitButton>
               </div>
             </form>
             <p className="text-[11px] text-muted mt-3 leading-relaxed">

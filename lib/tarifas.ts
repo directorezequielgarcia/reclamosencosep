@@ -18,6 +18,8 @@ export type TipoUsuario =
   | "ENTIDAD_SIN_FINES"
   | "ENTES_OFICIALES"
   | "PEQUENA_INDUSTRIA"
+  | "ELECTROINTENSIVO"
+  | "GRAN_USUARIO"
   | "INDUSTRIAL"; // categoría usada solo para agua estimada (alias)
 
 export const TIPO_LABEL: Record<TipoUsuario, string> = {
@@ -27,6 +29,8 @@ export const TIPO_LABEL: Record<TipoUsuario, string> = {
   ENTIDAD_SIN_FINES: "Entidad sin fines de lucro",
   ENTES_OFICIALES: "Entes oficiales",
   PEQUENA_INDUSTRIA: "Pequeña industria",
+  ELECTROINTENSIVO: "Electrointensivo",
+  GRAN_USUARIO: "Gran usuario",
   INDUSTRIAL: "Industrial",
 };
 
@@ -80,6 +84,40 @@ export type ConceptoExtra = {
   nota?: string;
 };
 
+/** Cargo de energía sobre el que aplica una bonificación. */
+export type BaseBonificacion = "CF" | "CV" | "ENERGIA";
+
+/**
+ * Régimen especial del usuario residencial (Anexo I): bonificaciones de
+ * jubilados / electrodependientes / tarifa social, y el caso "sin acceso a
+ * red de gas" (que no bonifica la tarifa pero amplía el tope del subsidio
+ * nacional). Todos son excluyentes entre sí en la calculadora.
+ */
+export type BeneficioResidencial = {
+  id: string; // "jub80" | "electro" | "social" | "singas" | ...
+  label: string;
+  pct: number; // fracción de descuento sobre las bases (0.8, 0.5, 1, 0)
+  bases: BaseBonificacion[]; // a qué cargos aplica el descuento
+  topeKwh: number; // el descuento aplica hasta estos kWh (HASTA_MAX = todo el consumo)
+  // Si se define, reemplaza el tope del subsidio nacional para este régimen
+  // (ej. "sin gas" subsidia hasta 700 kWh todo el año).
+  subsidioTopeKwh?: number;
+  nota?: string;
+};
+
+/** Gran usuario (Anexo III): cargo fijo por kW de capacidad + consumo. */
+export type GranUsuarioTarifa = {
+  cargoFijoPorKw: number; // $/kW de capacidad de suministro contratada
+  cgoVariable: number; // $/kW.h
+  energia: number; // $/kW.h
+};
+
+/** Subsidio nacional para usuarios NO residenciales (Anexo III). */
+export type SubsidioNoResidencial = {
+  precioPorKwh: number; // $/kW.h sobre todo el consumo (general)
+  bienPublicoPorKwh: number; // $/kW.h para entidades de bien público
+};
+
 export type CuadroEstado = "VIGENTE" | "ANTERIOR" | "PEDIDO" | "BORRADOR";
 
 /** Número centinela: un tramo con `hasta >= HASTA_MAX` no tiene límite
@@ -102,7 +140,7 @@ export type CuadroTarifario = {
   // Energía eléctrica (Anexo I — residencial). Otros tipos se podrán sumar.
   energia: Partial<Record<TipoUsuario, TramoEnergia[]>>;
 
-  // Subsidio nacional a la energía (Anexo I).
+  // Subsidio nacional a la energía (Anexo I) — usuarios residenciales.
   subsidioEnergia: {
     precioPorKwh: number; // $/kWh que se descuenta
     topeAlto: number; // kWh tope en meses "altos"
@@ -110,6 +148,16 @@ export type CuadroTarifario = {
     mesesAlto: number[]; // 1-12
     mesesBajo: number[]; // 1-12
   };
+
+  // Subsidio nacional para usuarios NO residenciales (Anexo III).
+  subsidioNoResidencial?: SubsidioNoResidencial;
+
+  // Bonificaciones del régimen residencial (Anexo I): jubilados,
+  // electrodependientes, tarifa social y "sin acceso a gas".
+  beneficiosResidencial?: BeneficioResidencial[];
+
+  // Gran usuario (Anexo III): cargo fijo por kW de capacidad + consumo.
+  granUsuario?: GranUsuarioTarifa;
 
   // Alumbrado público (Anexo III) — valor fijo mensual por tipo de usuario.
   alumbradoPublico: Partial<Record<TipoUsuario, number>>;
@@ -209,6 +257,83 @@ const ENERGIA_PEQ_INDUSTRIA_FEB26: TramoEnergia[] = [
   { hasta: Infinity, cargoFijo: 119529.02, cgoVariable: 275.4352, energia: 146.2829 },
 ];
 
+// Electrointensivos (Anexo I) — escala propia, vigente desde la emisión de
+// junio a noviembre. Mismas 8 escalas que residencial.
+const ENERGIA_ELECTROINTENSIVO_FEB26: TramoEnergia[] = [
+  { hasta: 150, cargoFijo: 12727.63, cgoVariable: 80.3353, energia: 146.2829 },
+  { hasta: 250, cargoFijo: 24348.5, cgoVariable: 68.8588, energia: 146.2829 },
+  { hasta: 400, cargoFijo: 33202.51, cgoVariable: 57.3823, energia: 146.2829 },
+  { hasta: 700, cargoFijo: 38736.26, cgoVariable: 45.9059, energia: 146.2829 },
+  { hasta: 1400, cargoFijo: 44270.01, cgoVariable: 45.9059, energia: 146.2829 },
+  { hasta: 2500, cargoFijo: 49803.76, cgoVariable: 45.9059, energia: 146.2829 },
+  { hasta: 4000, cargoFijo: 60871.26, cgoVariable: 45.9059, energia: 146.2829 },
+  { hasta: Infinity, cargoFijo: 66405.01, cgoVariable: 80.3353, energia: 146.2829 },
+];
+
+// Bonificaciones del régimen residencial (Anexo I). Jubilados y tarifa social
+// aplican sobre Cargo Fijo y Cargo Variable hasta 300 kWh; electrodependientes
+// 100% sobre todo (CF, CV y Energía); "sin acceso a gas" no bonifica la tarifa
+// pero el subsidio nacional aplica hasta 700 kWh todo el año.
+const BENEFICIOS_RESIDENCIAL_FEB26: BeneficioResidencial[] = [
+  {
+    id: "jub80",
+    label: "Jubilado · Categoría 02 (80%)",
+    pct: 0.8,
+    bases: ["CF", "CV"],
+    topeKwh: 300,
+    nota: "Bonificación 80% sobre cargo fijo y variable hasta 300 kWh.",
+  },
+  {
+    id: "jub70",
+    label: "Jubilado · Categoría 16 (70%)",
+    pct: 0.7,
+    bases: ["CF", "CV"],
+    topeKwh: 300,
+    nota: "Bonificación 70% sobre cargo fijo y variable hasta 300 kWh.",
+  },
+  {
+    id: "jub60",
+    label: "Jubilado · Categoría 18 (60%)",
+    pct: 0.6,
+    bases: ["CF", "CV"],
+    topeKwh: 300,
+    nota: "Bonificación 60% sobre cargo fijo y variable hasta 300 kWh.",
+  },
+  {
+    id: "jub40",
+    label: "Jubilado · Categoría 19 (40%)",
+    pct: 0.4,
+    bases: ["CF", "CV"],
+    topeKwh: 300,
+    nota: "Bonificación 40% sobre cargo fijo y variable hasta 300 kWh.",
+  },
+  {
+    id: "electro",
+    label: "Electrodependiente (100%)",
+    pct: 1,
+    bases: ["CF", "CV", "ENERGIA"],
+    topeKwh: HASTA_MAX,
+    nota: "Bonificación 100% sobre cargo fijo, variable y energía.",
+  },
+  {
+    id: "social",
+    label: "Tarifa social conectados (50%)",
+    pct: 0.5,
+    bases: ["CF", "CV"],
+    topeKwh: 300,
+    nota: "Bonificación 50% sobre cargo fijo y variable hasta 300 kWh.",
+  },
+  {
+    id: "singas",
+    label: "Sin acceso a red de gas",
+    pct: 0,
+    bases: [],
+    topeKwh: 0,
+    subsidioTopeKwh: 700,
+    nota: "El subsidio nacional aplica hasta 700 kWh todos los meses.",
+  },
+];
+
 const AGUA_ESTIMADA_FEB26: Partial<Record<TipoUsuario, TramoAgua[]>> = {
   RESIDENCIAL: [
     { hasta: 35, cargoFijo: 29961.41, cgoVariable: 1348.26 },
@@ -276,6 +401,7 @@ export const CUADRO_FEB_2026: CuadroTarifario = {
     ENTIDAD_SIN_FINES: ENERGIA_ENTIDAD_FEB26,
     ENTES_OFICIALES: ENERGIA_OFICIALES_FEB26,
     PEQUENA_INDUSTRIA: ENERGIA_PEQ_INDUSTRIA_FEB26,
+    ELECTROINTENSIVO: ENERGIA_ELECTROINTENSIVO_FEB26,
   },
   subsidioEnergia: {
     precioPorKwh: 92.121,
@@ -284,6 +410,16 @@ export const CUADRO_FEB_2026: CuadroTarifario = {
     mesesAlto: [1, 2, 5, 6, 8, 12],
     mesesBajo: [3, 4, 9, 10, 11],
   },
+  subsidioNoResidencial: {
+    precioPorKwh: 19.0964,
+    bienPublicoPorKwh: 92.121,
+  },
+  beneficiosResidencial: BENEFICIOS_RESIDENCIAL_FEB26,
+  granUsuario: {
+    cargoFijoPorKw: 37629.51,
+    cgoVariable: 154.9323,
+    energia: 146.2315,
+  },
   alumbradoPublico: {
     RESIDENCIAL: 8616.37,
     COMERCIAL: 25849.12,
@@ -291,6 +427,7 @@ export const CUADRO_FEB_2026: CuadroTarifario = {
     ENTIDAD_SIN_FINES: 8616.37,
     ENTES_OFICIALES: 103396.47,
     PEQUENA_INDUSTRIA: 77547.36,
+    GRAN_USUARIO: 129245.59,
   },
   aguaEstimada: AGUA_ESTIMADA_FEB26,
   aguaMedida: AGUA_MEDIDA_FEB26,
@@ -298,6 +435,8 @@ export const CUADRO_FEB_2026: CuadroTarifario = {
     OBRADOR: "COMERCIAL",
     ENTIDAD_SIN_FINES: "COMERCIAL",
     PEQUENA_INDUSTRIA: "INDUSTRIAL",
+    ELECTROINTENSIVO: "INDUSTRIAL",
+    GRAN_USUARIO: "INDUSTRIAL",
   },
   aguaFormula: { baseM3: 5, m3Por10m2: 2 },
   cloacasPorc: {
@@ -307,6 +446,8 @@ export const CUADRO_FEB_2026: CuadroTarifario = {
     ENTIDAD_SIN_FINES: 0.5,
     ENTES_OFICIALES: 0.5,
     PEQUENA_INDUSTRIA: 0.5,
+    ELECTROINTENSIVO: 0.5,
+    GRAN_USUARIO: 0.5,
     INDUSTRIAL: 0.5,
   },
   iva: 0.21,
@@ -443,6 +584,9 @@ export const CUADRO_ANTERIOR_AGO_2025: CuadroTarifario = {
     mesesAlto: [1, 2, 5, 6, 8, 12],
     mesesBajo: [3, 4, 9, 10, 11],
   },
+  // Las bonificaciones son porcentajes de política (no cambian con el cuadro);
+  // se aplican sobre los cargos residenciales propios de este período.
+  beneficiosResidencial: BENEFICIOS_RESIDENCIAL_FEB26,
   alumbradoPublico: {
     RESIDENCIAL: 7119.2,
     COMERCIAL: 21417.6,
@@ -584,6 +728,11 @@ export type EntradaCalculo = {
   conSubsidioEnergia: boolean;
   mes: number; // 1-12 (para el tope del subsidio)
   extras: Record<string, boolean>; // id de ConceptoExtra -> incluido
+  // Régimen residencial especial (jubilado / electrodependiente / tarifa
+  // social / sin gas). Vacío o "" = sin beneficio.
+  beneficioId?: string;
+  // Capacidad de suministro contratada en kW (sólo Gran usuario).
+  potenciaKw?: number;
 };
 
 export type GrupoLinea = "ENERGIA" | "AGUA" | "CLOACAS" | "IMPUESTOS" | "OTROS";
@@ -655,45 +804,118 @@ export function calcularFactura(
   let baseIva = 0;
 
   // ── Energía ──────────────────────────────────────────────────────────
-  const tramosEnergia = cuadro.energia[e.tipo] ?? cuadro.energia.RESIDENCIAL ?? [];
   let tramoEnergia: TramoEnergia | null = null;
-  if (tramosEnergia.length && e.kwh > 0) {
-    const t = tramoEnergiaPara(tramosEnergia, e.kwh);
-    tramoEnergia = t;
-    const cargoFijo = t.cargoFijo;
-    const cargoVariable = t.cgoVariable * e.kwh;
-    const compra = t.energia * e.kwh;
-    lineas.push({
-      grupo: "ENERGIA",
-      compo: "ENERGIA",
-      concepto: "Cargo fijo de energía",
-      monto: cargoFijo,
-      detalle: `Escala hasta ${esSinLimite(t.hasta) ? "máx." : t.hasta + " kWh"}`,
-    });
+
+  // Beneficio del régimen residencial seleccionado (sólo aplica a Residencial).
+  const beneficio =
+    e.tipo === "RESIDENCIAL" && e.beneficioId
+      ? (cuadro.beneficiosResidencial?.find((b) => b.id === e.beneficioId) ??
+        null)
+      : null;
+
+  if (e.tipo === "GRAN_USUARIO" && cuadro.granUsuario && e.kwh > 0) {
+    // Gran usuario: cargo fijo por kW de capacidad contratada + consumo.
+    const g = cuadro.granUsuario;
+    const kw = Math.max(0, e.potenciaKw ?? 0);
+    const cargoFijo = g.cargoFijoPorKw * kw;
+    const cargoVariable = g.cgoVariable * e.kwh;
+    const compra = g.energia * e.kwh;
+    if (cargoFijo > 0) {
+      lineas.push({
+        grupo: "ENERGIA",
+        compo: "ENERGIA",
+        concepto: "Cargo fijo por capacidad",
+        monto: cargoFijo,
+        detalle: `${kw} kW × $${g.cargoFijoPorKw.toLocaleString("es-AR")}/kW`,
+      });
+    }
     lineas.push({
       grupo: "ENERGIA",
       compo: "ENERGIA",
       concepto: "Cargo variable de energía",
       monto: cargoVariable,
-      detalle: `${e.kwh} kWh × $${t.cgoVariable.toLocaleString("es-AR")}`,
+      detalle: `${e.kwh} kWh × $${g.cgoVariable.toLocaleString("es-AR")}`,
     });
     lineas.push({
       grupo: "ENERGIA",
       compo: "ENERGIA",
       concepto: "Compra de energía",
       monto: compra,
-      detalle: `${e.kwh} kWh × $${t.energia.toLocaleString("es-AR")}`,
+      detalle: `${e.kwh} kWh × $${g.energia.toLocaleString("es-AR")}`,
     });
     baseIva += cargoFijo + cargoVariable + compra;
+  } else {
+    const tramosEnergia =
+      cuadro.energia[e.tipo] ?? cuadro.energia.RESIDENCIAL ?? [];
+    if (tramosEnergia.length && e.kwh > 0) {
+      const t = tramoEnergiaPara(tramosEnergia, e.kwh);
+      tramoEnergia = t;
+      const cargoFijo = t.cargoFijo;
+      const cargoVariable = t.cgoVariable * e.kwh;
+      const compra = t.energia * e.kwh;
+      lineas.push({
+        grupo: "ENERGIA",
+        compo: "ENERGIA",
+        concepto: "Cargo fijo de energía",
+        monto: cargoFijo,
+        detalle: `Escala hasta ${esSinLimite(t.hasta) ? "máx." : t.hasta + " kWh"}`,
+      });
+      lineas.push({
+        grupo: "ENERGIA",
+        compo: "ENERGIA",
+        concepto: "Cargo variable de energía",
+        monto: cargoVariable,
+        detalle: `${e.kwh} kWh × $${t.cgoVariable.toLocaleString("es-AR")}`,
+      });
+      lineas.push({
+        grupo: "ENERGIA",
+        compo: "ENERGIA",
+        concepto: "Compra de energía",
+        monto: compra,
+        detalle: `${e.kwh} kWh × $${t.energia.toLocaleString("es-AR")}`,
+      });
+      baseIva += cargoFijo + cargoVariable + compra;
 
-    // Subsidio nacional (resta)
-    if (e.conSubsidioEnergia) {
+      // Bonificación del régimen residencial (jubilado / electrodependiente /
+      // tarifa social). El descuento aplica sobre los cargos elegidos, y la
+      // parte variable sólo hasta el tope de kWh del beneficio.
+      if (beneficio && beneficio.pct > 0 && beneficio.bases.length) {
+        const kwhBon = Math.min(e.kwh, beneficio.topeKwh);
+        let desc = 0;
+        if (beneficio.bases.includes("CF")) desc += cargoFijo * beneficio.pct;
+        if (beneficio.bases.includes("CV"))
+          desc += t.cgoVariable * kwhBon * beneficio.pct;
+        if (beneficio.bases.includes("ENERGIA"))
+          desc += t.energia * kwhBon * beneficio.pct;
+        if (desc > 0) {
+          lineas.push({
+            grupo: "ENERGIA",
+            compo: "ENERGIA",
+            concepto: `Bonificación · ${beneficio.label}`,
+            monto: -desc,
+            detalle: beneficio.nota,
+          });
+          baseIva += -desc;
+        }
+      }
+    }
+  }
+
+  // ── Subsidio nacional a la energía (resta) ───────────────────────────
+  // El electrodependiente ya tiene la energía bonificada al 100%, así que no
+  // se le suma otro subsidio (evita un saldo negativo ficticio).
+  const energiaYaCubierta =
+    !!beneficio && beneficio.pct >= 1 && beneficio.bases.includes("ENERGIA");
+  if (e.conSubsidioEnergia && e.kwh > 0 && !energiaYaCubierta) {
+    if (e.tipo === "RESIDENCIAL") {
       const s = cuadro.subsidioEnergia;
-      const tope = s.mesesAlto.includes(e.mes)
+      const topeBase = s.mesesAlto.includes(e.mes)
         ? s.topeAlto
         : s.mesesBajo.includes(e.mes)
           ? s.topeBajo
           : s.topeAlto;
+      // "Sin acceso a gas" amplía el tope del subsidio (700 kWh todo el año).
+      const tope = beneficio?.subsidioTopeKwh ?? topeBase;
       const kwhSub = Math.min(e.kwh, tope);
       const subsidio = -(kwhSub * s.precioPorKwh);
       lineas.push({
@@ -704,9 +926,27 @@ export function calcularFactura(
         detalle: `${kwhSub} kWh × -$${s.precioPorKwh.toLocaleString("es-AR")}`,
       });
       baseIva += subsidio;
+    } else if (cuadro.subsidioNoResidencial) {
+      const sn = cuadro.subsidioNoResidencial;
+      // Entidades de bien público tienen un descuento mayor.
+      const precio =
+        e.tipo === "ENTIDAD_SIN_FINES"
+          ? sn.bienPublicoPorKwh
+          : sn.precioPorKwh;
+      const subsidio = -(e.kwh * precio);
+      lineas.push({
+        grupo: "ENERGIA",
+        compo: "ENERGIA",
+        concepto: "Subsidio Estado Nacional",
+        monto: subsidio,
+        detalle: `${e.kwh} kWh × -$${precio.toLocaleString("es-AR")}`,
+      });
+      baseIva += subsidio;
     }
+  }
 
-    // Alumbrado público (Anexo III) — fijo por tipo
+  // ── Alumbrado público (Anexo III) — fijo por tipo ────────────────────
+  if (e.kwh > 0) {
     const alumbrado = cuadro.alumbradoPublico[e.tipo] ?? 0;
     if (alumbrado) {
       lineas.push({
@@ -859,6 +1099,9 @@ export type DatosCuadro = Pick<
   CuadroTarifario,
   | "energia"
   | "subsidioEnergia"
+  | "subsidioNoResidencial"
+  | "beneficiosResidencial"
+  | "granUsuario"
   | "alumbradoPublico"
   | "aguaEstimada"
   | "aguaMedida"
@@ -901,6 +1144,9 @@ export function datosDeCuadro(c: CuadroTarifario): DatosCuadro {
   return {
     energia,
     subsidioEnergia: c.subsidioEnergia,
+    subsidioNoResidencial: c.subsidioNoResidencial,
+    beneficiosResidencial: c.beneficiosResidencial,
+    granUsuario: c.granUsuario,
     alumbradoPublico: c.alumbradoPublico,
     aguaEstimada,
     aguaMedida,
@@ -969,6 +1215,21 @@ export function aplicarAumento(datos: DatosCuadro, pct: number): DatosCuadro {
       ...datos.subsidioEnergia,
       precioPorKwh: datos.subsidioEnergia.precioPorKwh * f,
     },
+    subsidioNoResidencial: datos.subsidioNoResidencial
+      ? {
+          precioPorKwh: datos.subsidioNoResidencial.precioPorKwh * f,
+          bienPublicoPorKwh: datos.subsidioNoResidencial.bienPublicoPorKwh * f,
+        }
+      : undefined,
+    // Las bonificaciones son porcentajes (no se escalan con el aumento).
+    beneficiosResidencial: datos.beneficiosResidencial,
+    granUsuario: datos.granUsuario
+      ? {
+          cargoFijoPorKw: datos.granUsuario.cargoFijoPorKw * f,
+          cgoVariable: datos.granUsuario.cgoVariable * f,
+          energia: datos.granUsuario.energia * f,
+        }
+      : undefined,
     alumbradoPublico,
     aguaEstimada,
     aguaMedida,

@@ -54,6 +54,33 @@ function fechaHoy() {
   });
 }
 
+/** Explica, según la categoría/mes/beneficio, qué parte del consumo subsidia
+ *  el Estado Nacional. */
+function textoSubsidio(
+  cuadro: CuadroTarifario,
+  tipo: TipoUsuario,
+  mes: number,
+  topeOverride?: number,
+): string {
+  if (tipo === "RESIDENCIAL") {
+    const s = cuadro.subsidioEnergia;
+    const base = s.mesesAlto.includes(mes)
+      ? s.topeAlto
+      : s.mesesBajo.includes(mes)
+        ? s.topeBajo
+        : s.topeAlto;
+    const tope = topeOverride ?? base;
+    return `Este mes el subsidio cubre hasta ${tope} kWh; el resto del consumo va sin subsidio.`;
+  }
+  const sn = cuadro.subsidioNoResidencial;
+  if (!sn) return "Para esta categoría no hay subsidio nacional definido en el cuadro.";
+  const precio =
+    tipo === "ENTIDAD_SIN_FINES" ? sn.bienPublicoPorKwh : sn.precioPorKwh;
+  return `Subsidio no residencial: -$${precio.toLocaleString(
+    "es-AR",
+  )} por kWh sobre todo el consumo.`;
+}
+
 const COMPO_META: Record<string, { label: string; color: string }> = {
   ENERGIA: { label: "Energía", color: "#f59e0b" },
   ALUMBRADO: { label: "Alumbrado público", color: "#fbbf24" },
@@ -141,6 +168,8 @@ export function CalculadoraTarifas({ cuadros }: { cuadros: CuadroTarifario[] }) 
   const [compararId, setCompararId] = useState<string>(comparativo?.id ?? "");
 
   const [tipo, setTipo] = useState<TipoUsuario>("RESIDENCIAL");
+  const [beneficioId, setBeneficioId] = useState<string>("");
+  const [potenciaKw, setPotenciaKw] = useState(10);
   const [kwh, setKwh] = useState(221);
   const [modoAgua, setModoAgua] = useState<"ESTIMADA" | "MEDIDA">("ESTIMADA");
   const [m2, setM2] = useState(60);
@@ -156,9 +185,12 @@ export function CalculadoraTarifas({ cuadros }: { cuadros: CuadroTarifario[] }) 
     extrasIniciales(vigente),
   );
 
-  // Tipos seleccionables = los que tienen tabla de energía en el cuadro.
+  // Tipos seleccionables = los que tienen tabla de energía en el cuadro, más
+  // Gran usuario (que se calcula con su propia tarifa por kW, no por escala).
   const tiposDisponibles = (Object.keys(TIPO_LABEL) as TipoUsuario[]).filter(
-    (t) => cuadro.energia[t]?.length,
+    (t) =>
+      cuadro.energia[t]?.length ||
+      (t === "GRAN_USUARIO" && cuadro.granUsuario),
   );
 
   const entrada: EntradaCalculo = {
@@ -171,19 +203,24 @@ export function CalculadoraTarifas({ cuadros }: { cuadros: CuadroTarifario[] }) 
     conSubsidioEnergia: conSubsidio,
     mes,
     extras,
+    beneficioId: tipo === "RESIDENCIAL" ? beneficioId : "",
+    potenciaKw: Number(potenciaKw) || 0,
   };
 
   const resultado = useMemo(
     () => calcularFactura(cuadro, entrada),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [cuadro, tipo, kwh, modoAgua, m2, m3Medido, tieneCloacas, conSubsidio, mes, extras],
+    [cuadro, tipo, beneficioId, potenciaKw, kwh, modoAgua, m2, m3Medido, tieneCloacas, conSubsidio, mes, extras],
   );
 
   const resultadoComparar = useMemo(
     () => (cuadroComparar ? calcularFactura(cuadroComparar, entrada) : null),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [cuadroComparar, tipo, kwh, modoAgua, m2, m3Medido, tieneCloacas, conSubsidio, mes, extras],
+    [cuadroComparar, tipo, beneficioId, potenciaKw, kwh, modoAgua, m2, m3Medido, tieneCloacas, conSubsidio, mes, extras],
   );
+
+  const beneficios = cuadro.beneficiosResidencial ?? [];
+  const beneficioSel = beneficios.find((b) => b.id === beneficioId) ?? null;
 
   const opcionales = cuadro.conceptosExtra.filter((c) => c.opcional);
 
@@ -247,8 +284,15 @@ export function CalculadoraTarifas({ cuadros }: { cuadros: CuadroTarifario[] }) 
   <div class="sub">Ente de Control de los Servicios Públicos · Comodoro Rivadavia · ${fechaHoy()}</div></div>
 </div>
 <div class="datos">
-  <div><b>Categoría:</b> ${TIPO_LABEL[tipo]}</div>
+  <div><b>Categoría:</b> ${TIPO_LABEL[tipo]}${
+    tipo === "RESIDENCIAL" && beneficioSel ? ` · ${beneficioSel.label}` : ""
+  }</div>
   <div><b>Consumo de luz:</b> ${entrada.kwh} kWh</div>
+  ${
+    tipo === "GRAN_USUARIO"
+      ? `<div><b>Potencia contratada:</b> ${entrada.potenciaKw} kW</div>`
+      : ""
+  }
   <div><b>Agua:</b> ${aguaTxt}</div>
   <div><b>Cloacas:</b> ${tieneCloacas ? "Sí" : "No"}</div>
   <div><b>Subsidio nacional:</b> ${conSubsidio ? "Sí" : "No"}</div>
@@ -286,19 +330,70 @@ ${donutComprobanteHTML(resultado.composicion)}
       <div className="rounded-2xl border border-line bg-paper p-5 flex flex-col gap-4 lg:sticky lg:top-24">
         <div className="text-sm font-bold text-navy">Tus datos</div>
 
-        <Campo label="Tipo de usuario">
+        <Campo
+          label="Tipo de usuario"
+          hint={
+            beneficioSel?.nota ??
+            "Elegí tu categoría. Si sos residencial con beneficio (jubilado, electrodependiente, tarifa social o sin gas), está dentro del grupo Residencial."
+          }
+        >
           <select
-            value={tipo}
-            onChange={(ev) => setTipo(ev.target.value as TipoUsuario)}
+            value={beneficioId ? `RESIDENCIAL:${beneficioId}` : tipo}
+            onChange={(ev) => {
+              const v = ev.target.value;
+              if (v.startsWith("RESIDENCIAL:")) {
+                setTipo("RESIDENCIAL");
+                setBeneficioId(v.slice("RESIDENCIAL:".length));
+              } else {
+                setTipo(v as TipoUsuario);
+                setBeneficioId("");
+              }
+            }}
             className="rounded-lg border border-line-strong px-3 py-2 text-sm bg-paper"
           >
-            {tiposDisponibles.map((t) => (
-              <option key={t} value={t}>
-                {TIPO_LABEL[t]}
-              </option>
-            ))}
+            <optgroup label="Residencial">
+              <option value="RESIDENCIAL">Residencial (sin beneficio)</option>
+              {beneficios.map((b) => (
+                <option key={b.id} value={`RESIDENCIAL:${b.id}`}>
+                  {b.label}
+                </option>
+              ))}
+            </optgroup>
+            {tiposDisponibles.filter((t) => t !== "RESIDENCIAL").length > 0 && (
+              <optgroup label="Otras categorías">
+                {tiposDisponibles
+                  .filter((t) => t !== "RESIDENCIAL")
+                  .map((t) => (
+                    <option key={t} value={t}>
+                      {TIPO_LABEL[t]}
+                    </option>
+                  ))}
+              </optgroup>
+            )}
           </select>
         </Campo>
+
+        {tipo === "GRAN_USUARIO" && (
+          <Campo
+            label="Potencia contratada (kW)"
+            hint="Capacidad de suministro contratada. El cargo fijo del gran usuario se cobra por cada kW."
+          >
+            <input
+              type="number"
+              min={0}
+              value={potenciaKw}
+              onChange={(ev) => setPotenciaKw(ev.target.valueAsNumber || 0)}
+              className="rounded-lg border border-line-strong px-3 py-2 text-sm bg-paper"
+            />
+          </Campo>
+        )}
+
+        {tipo === "ELECTROINTENSIVO" && (
+          <div className="rounded-lg bg-svc-yellow/10 border border-svc-yellow/40 px-3 py-2 text-[11px] text-navy leading-relaxed">
+            La escala de electrointensivos rige para las emisiones de junio a
+            noviembre.
+          </div>
+        )}
 
         <Campo
           label="Consumo de luz (kWh)"
@@ -408,6 +503,11 @@ ${donutComprobanteHTML(resultado.composicion)}
             />
             ¿Tenés subsidio nacional a la energía?
           </label>
+          {conSubsidio && (
+            <span className="text-[11px] text-muted pl-6 -mt-1">
+              {textoSubsidio(cuadro, tipo, mes, beneficioSel?.subsidioTopeKwh)}
+            </span>
+          )}
         </div>
 
         {opcionales.length > 0 && (

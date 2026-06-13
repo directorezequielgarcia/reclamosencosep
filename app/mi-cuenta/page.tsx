@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { auth, signOut } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { BrandHeader } from "@/components/ui/BrandHeader";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 import { FormDatos, FormClave } from "./forms";
 
 export const metadata = { title: "Mi cuenta · ENCOSEP" };
@@ -49,12 +50,12 @@ export default async function MiCuentaPage() {
               ← Volver
             </Link>
             <form action={logout}>
-              <button
-                type="submit"
+              <SubmitButton
                 className="px-3 py-1 rounded-full border border-line-strong text-xs font-semibold text-navy hover:bg-paper-2"
+                pendingText="Saliendo…"
               >
                 Salir
-              </button>
+              </SubmitButton>
             </form>
           </div>
         }

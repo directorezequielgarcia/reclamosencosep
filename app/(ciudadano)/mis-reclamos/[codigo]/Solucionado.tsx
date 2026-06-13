@@ -1,6 +1,7 @@
 "use client";
 
 import { marcarSolucionado } from "./actions";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 
 // El vecino avisa que su reclamo se solucionó. Pide confirmación.
 export function Solucionado({ codigo }: { codigo: string }) {
@@ -18,12 +19,12 @@ export function Solucionado({ codigo }: { codigo: string }) {
       }}
     >
       <input type="hidden" name="codigo" value={codigo} />
-      <button
-        type="submit"
+      <SubmitButton
         className="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-svc-green text-white font-bold text-sm hover:opacity-90 transition"
+        pendingText="Guardando…"
       >
         ✓ Mi reclamo se solucionó
-      </button>
+      </SubmitButton>
     </form>
   );
 }

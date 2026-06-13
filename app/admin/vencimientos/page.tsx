@@ -3,6 +3,7 @@ import { ESTADO_VENC_META, diasHasta } from "@/lib/vencimientos";
 import { TIPO_DOC_META } from "@/lib/documentos";
 import { TONE_CLASS } from "@/lib/admin";
 import { cambiarEstadoVencimiento, crearVencimiento } from "./actions";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 import type { EstadoVencimiento, TipoDocumento } from "@prisma/client";
 
 export const metadata = { title: "Vencimientos · Panel ENCOSEP" };
@@ -67,9 +68,9 @@ export default async function VencimientosPage() {
             <textarea name="observacion" rows={2} className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper resize-y" />
           </Field>
           <div className="sm:col-span-2">
-            <button type="submit" className="px-5 py-3 rounded-xl bg-svc-red text-white font-bold text-sm">
+            <SubmitButton className="px-5 py-3 rounded-xl bg-svc-red text-white font-bold text-sm" pendingText="Creando…">
               Crear vencimiento
-            </button>
+            </SubmitButton>
           </div>
         </form>
       </section>
@@ -127,9 +128,9 @@ export default async function VencimientosPage() {
                               <option key={e} value={e}>{ESTADO_VENC_META[e].label}</option>
                             ))}
                           </select>
-                          <button type="submit" className="px-2 py-1 rounded bg-navy-2 text-white text-xs font-semibold">
+                          <SubmitButton className="px-2 py-1 rounded bg-navy-2 text-white text-xs font-semibold" pendingText="Guardando…">
                             Aplicar
-                          </button>
+                          </SubmitButton>
                         </form>
                       </td>
                     </tr>
