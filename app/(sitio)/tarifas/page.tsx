@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { SeccionHeader } from "@/components/ui/SeccionHeader";
 import { CalculadoraTarifas } from "./CalculadoraTarifas";
+import { GlosarioCategorias } from "./GlosarioCategorias";
 import { InstructivoFactura } from "./InstructivoFactura";
 import { ExplicacionCuadros } from "./ExplicacionCuadros";
 import { cuadrosPublicados } from "@/lib/tarifas-db";
@@ -99,6 +100,10 @@ export default async function TarifasPage() {
           {vigente.fuente ? ` · ${vigente.fuente}` : ""}
         </div>
         <CalculadoraTarifas cuadros={cuadros} />
+
+        <div className="mt-6">
+          <GlosarioCategorias />
+        </div>
 
         <div className="mt-10 flex flex-col gap-8">
           <ExplicacionCuadros />
