@@ -5,6 +5,12 @@ export const metadata = { title: "Control a Prestadoras · ENCOSEP" };
 
 const NORMATIVA_ENCOSEP = [
   {
+    norma: "Ordenanza 6050/96 (t.o. 6050-5/23)",
+    titulo: "Marco Regulatorio de la Concesión de Servicios Públicos",
+    detalle:
+      "Norma marco de la concesión y prestación de los servicios públicos (energía, alumbrado, agua y cloacas). Define las categorías de usuarios y los regímenes especiales (jubilados, electrodependientes, tarifa social, electrointensivos), el procedimiento tarifario y las audiencias públicas. Texto ordenado por la Ord. 6050-5/23 (vigente); permanecen vigentes los anexos de las modificatorias 6050-3/21 y 6050-4/22 en lo que no se le opongan.",
+  },
+  {
     norma: "Ordenanza 13.189/17",
     titulo: "Creación del ENCOSEP",
     detalle:
@@ -77,6 +83,18 @@ export default function ControlPrestadoras() {
       />
       <main className="max-w-5xl mx-auto px-6 py-10">
 
+      <nav className="mb-6 flex items-center gap-2 text-xs text-muted">
+        <Link href="/" className="hover:text-navy font-semibold">
+          Inicio
+        </Link>
+        <span aria-hidden>/</span>
+        <Link href="/atencion-usuarios" className="hover:text-navy font-semibold">
+          Atención al Usuario
+        </Link>
+        <span aria-hidden>/</span>
+        <span className="text-navy font-semibold">Normativa</span>
+      </nav>
+
       <section className="rounded-2xl border border-navy-2/40 bg-navy-2/5 p-6">
         <div className="text-xs font-bold tracking-widest uppercase text-navy-2">
           ¿Sos una prestadora controlada?
@@ -138,6 +156,21 @@ export default function ControlPrestadoras() {
           (sector "Ente de Control de Servicios Públicos").
         </p>
       </section>
+
+      <div className="mt-10 flex flex-wrap gap-3">
+        <Link
+          href="/atencion-usuarios"
+          className="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-navy-2 text-white font-bold text-sm"
+        >
+          ← Volver a Atención al Usuario
+        </Link>
+        <Link
+          href="/"
+          className="inline-flex items-center justify-center px-4 py-2.5 rounded-xl border border-line-strong text-navy font-bold text-sm hover:bg-paper-2"
+        >
+          Ir al inicio
+        </Link>
+      </div>
       </main>
     </>
   );
