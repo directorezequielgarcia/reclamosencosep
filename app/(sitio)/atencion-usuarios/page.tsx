@@ -24,6 +24,31 @@ export default function AtencionUsuarios() {
         />
 
         <Tarjeta
+          titulo="🧮 Controlá tu factura"
+          subtitulo="Calculadora ENCOSEP"
+          descripcion="Subí el PDF o una foto de tu factura de la SCPL y la comparamos concepto por concepto con el cuadro tarifario vigente. Si no la tenés, podés calcular tu factura estimada a mano."
+          cta="Controlar o calcular"
+          href="/tarifas"
+        />
+
+        <Tarjeta
+          titulo="🏛️ Participá en audiencias"
+          subtitulo="Participación ciudadana"
+          descripcion="Enterate de las audiencias públicas (por ejemplo, por pedidos de aumento de tarifas), consultá la documentación y anotate para participar."
+          cta="Ver audiencias"
+          href="/audiencias"
+        />
+
+        <Tarjeta
+          titulo="📚 Consultá la normativa"
+          subtitulo="Marco normativo"
+          descripcion="Accedé al Digesto Municipal de Comodoro Rivadavia para consultar ordenanzas y el Marco Regulatorio de los Servicios Públicos (Ord. 6050/96 y modificatorias)."
+          cta="Ver Digesto Municipal"
+          href="https://www.digestocomodoro.gob.ar/"
+          externo
+        />
+
+        <Tarjeta
           titulo="⭐ Encuesta de satisfacción"
           subtitulo="Tu opinión"
           descripcion="Calificá del 1 al 5 cómo está cada servicio público. Si cerraste un reclamo, también podés calificar la atención del Ente y de la prestadora."
@@ -77,6 +102,7 @@ function Tarjeta({
   descripcion,
   cta,
   href,
+  externo,
   deshabilitado,
 }: {
   destacado?: boolean;
@@ -85,6 +111,7 @@ function Tarjeta({
   descripcion: string;
   cta: string;
   href: string;
+  externo?: boolean;
   deshabilitado?: boolean;
 }) {
   const ctaCls = deshabilitado
@@ -92,6 +119,7 @@ function Tarjeta({
     : destacado
       ? "bg-svc-red text-white shadow-md shadow-svc-red/30"
       : "bg-navy-2 text-white";
+  const ctaClassName = `inline-flex items-center justify-center px-4 py-2.5 rounded-xl font-bold text-sm ${ctaCls}`;
   return (
     <div
       className={`rounded-2xl border bg-paper p-5 flex flex-col gap-3 ${destacado ? "border-svc-red/60" : "border-line"}`}
@@ -102,16 +130,18 @@ function Tarjeta({
       <h3 className="text-xl font-extrabold text-navy">{titulo}</h3>
       <p className="text-sm text-navy leading-relaxed flex-1">{descripcion}</p>
       {deshabilitado ? (
-        <span
-          className={`inline-flex items-center justify-center px-4 py-2.5 rounded-xl font-bold text-sm ${ctaCls}`}
+        <span className={ctaClassName}>{cta}</span>
+      ) : externo ? (
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={ctaClassName}
         >
           {cta}
-        </span>
+        </a>
       ) : (
-        <Link
-          href={href}
-          className={`inline-flex items-center justify-center px-4 py-2.5 rounded-xl font-bold text-sm ${ctaCls}`}
-        >
+        <Link href={href} className={ctaClassName}>
           {cta}
         </Link>
       )}

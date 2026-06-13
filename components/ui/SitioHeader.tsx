@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { LogoEncosep } from "./LogoEncosep";
+import { NavDesktop, MenuMobile } from "./SitioNav";
 import { auth, signOut } from "@/lib/auth";
 
 const NAV = [
   { href: "/", label: "Inicio" },
   { href: "/nosotros", label: "Nosotros" },
   { href: "/acciones", label: "Acciones" },
-  { href: "/atencion-usuarios", label: "Atención al Usuario" },
-  { href: "/control-prestadoras", label: "Control a Prestadoras" },
+  { href: "/atencion-usuarios", label: "Atención" },
+  { href: "/control-prestadoras", label: "Prestadoras" },
   { href: "/tarifas", label: "Calculadora" },
   { href: "/boletines", label: "Boletines" },
   { href: "/audiencias", label: "Audiencias" },
@@ -52,17 +53,7 @@ export async function SitioHeader() {
           <LogoEncosep size={72} />
         </Link>
 
-        <nav className="hidden lg:flex items-center gap-1 ml-2">
-          {NAV.map((n) => (
-            <Link
-              key={n.href}
-              href={n.href}
-              className="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider text-navy hover:bg-paper-2 transition"
-            >
-              {n.label}
-            </Link>
-          ))}
-        </nav>
+        <NavDesktop nav={NAV} />
 
         <div className="ml-auto flex items-center gap-2">
           <Link
@@ -103,6 +94,11 @@ export async function SitioHeader() {
               Acceder
             </Link>
           )}
+          <MenuMobile
+            nav={NAV}
+            telHref="tel:08003331175"
+            telLabel="0800 333 1175"
+          />
         </div>
       </div>
 
@@ -114,19 +110,6 @@ export async function SitioHeader() {
         <span className="flex-1 bg-svc-blue" />
         <span className="flex-1 bg-svc-red" />
       </div>
-
-      {/* Nav mobile */}
-      <nav className="lg:hidden flex items-center justify-center gap-0 overflow-x-auto border-t border-line bg-paper-2">
-        {NAV.map((n) => (
-          <Link
-            key={n.href}
-            href={n.href}
-            className="px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-navy whitespace-nowrap"
-          >
-            {n.label}
-          </Link>
-        ))}
-      </nav>
     </header>
   );
 }
