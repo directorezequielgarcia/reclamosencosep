@@ -5,6 +5,8 @@ import { useActionState, useState } from "react";
 import { controlarFactura, type ControlState } from "./actions";
 import type { Proyeccion } from "@/lib/factura-parse";
 import { pesos } from "@/lib/tarifas";
+import { GraficoComposicion } from "../GraficoComposicion";
+import { abrirComprobante, donutComprobanteHTML } from "@/lib/comprobante";
 
 const ESTADO_TXT: Record<string, string> = {
   VIGENTE: "Vigente",
@@ -137,6 +139,99 @@ export function ControlForm() {
   );
 }
 
+function fechaHoy() {
+  return new Date().toLocaleDateString("es-AR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+// Comprobante imprimible / guardable como PDF del control de factura.
+function comprobanteControlHTML(state: ControlState): string {
+  const e = state.extraida!;
+  const filas = state.filas ?? [];
+  const difTotal =
+    state.totalFacturado != null && state.totalCuadro
+      ? (state.totalFacturado - state.totalCuadro) / state.totalCuadro
+      : null;
+
+  const filasHTML = filas
+    .map(
+      (f) =>
+        `<tr${f.alerta ? ' class="alerta"' : ""}><td>${f.concepto}${
+          f.alerta ? ' <b class="rev">⚠ revisar</b>' : ""
+        }</td><td class="num">${
+          f.facturado != null ? pesos(f.facturado) : "—"
+        }</td><td class="num">${pesos(f.segunCuadro)}</td><td class="num">${
+          f.difPorc == null
+            ? "—"
+            : `${f.difPorc >= 0 ? "+" : ""}${(f.difPorc * 100).toFixed(1)}%`
+        }</td></tr>`,
+    )
+    .join("");
+
+  const aguaTxt =
+    e.modoAgua === "MEDIDA"
+      ? `${e.m3Medido ?? "?"} m³ (medida)`
+      : `${e.m2 ?? "?"} m² (estimada)`;
+
+  return `<!doctype html><html lang="es"><head><meta charset="utf-8">
+<title>Control de factura - Calculadora ENCOSEP</title>
+<style>
+  *{box-sizing:border-box} body{font-family:Segoe UI,Arial,sans-serif;color:#1a2b4a;margin:32px;font-size:13px}
+  .head{display:flex;align-items:center;gap:14px;border-bottom:2px solid #1a2b4a;padding-bottom:12px;margin-bottom:16px}
+  .head img{height:54px}
+  .head h1{font-size:18px;margin:0} .head .sub{font-size:11px;color:#667}
+  .datos{display:grid;grid-template-columns:1fr 1fr;gap:4px 24px;margin:12px 0 18px;font-size:12px}
+  .datos b{color:#1a2b4a} .datos div{color:#445}
+  table{width:100%;border-collapse:collapse} td,th{padding:5px 4px;border-bottom:1px solid #e7e9ef;vertical-align:top;text-align:left}
+  th{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:#889}
+  td.num,th.num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+  tr.alerta{background:#fff7e6} .rev{color:#c0392b}
+  .tot{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:14px 0}
+  .box{border:1px solid #e7e9ef;border-radius:8px;padding:8px 12px} .box .l{font-size:10px;color:#889} .box .v{font-size:16px;font-weight:800}
+  .chart{margin-top:16px;border:1px solid #e7e9ef;border-radius:8px;padding:12px 14px}
+  .chart-t{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#889;font-weight:700;margin-bottom:8px}
+  .chart-row{display:flex;align-items:center;gap:18px}
+  .leyenda{display:flex;flex-direction:column;gap:3px;font-size:12px}
+  .lg{display:flex;align-items:center;gap:6px} .dot{width:10px;height:10px;border-radius:2px;display:inline-block}
+  .nota{margin-top:16px;font-size:10px;color:#889;line-height:1.5}
+</style></head><body>
+<div class="head">
+  <img src="${location.origin}/encosep-logo.png" alt="ENCOSEP" onerror="this.style.display='none'">
+  <div><h1>Calculadora ENCOSEP — Control de tu factura</h1>
+  <div class="sub">Ente de Control de los Servicios Públicos · Comodoro Rivadavia · ${fechaHoy()}</div></div>
+</div>
+<div class="datos">
+  <div><b>Categoría:</b> ${e.tipo}</div>
+  <div><b>Período:</b> ${e.periodo ?? "—"}</div>
+  <div><b>Consumo de luz:</b> ${e.consumoKwh ?? "?"} kWh</div>
+  <div><b>Agua:</b> ${aguaTxt}</div>
+  <div><b>Comparada con:</b> ${state.cuadroMatchNombre ?? "—"}</div>
+  <div><b>Subsidio nacional:</b> ${e.conSubsidio ? "Sí" : "No"}</div>
+</div>
+<div class="tot">
+  <div class="box"><div class="l">Total facturado</div><div class="v">${
+    state.totalFacturado != null ? pesos(state.totalFacturado) : "—"
+  }</div></div>
+  <div class="box"><div class="l">Según el cuadro</div><div class="v">${
+    state.totalCuadro != null ? pesos(state.totalCuadro) : "—"
+  }</div></div>
+  <div class="box"><div class="l">Diferencia</div><div class="v">${
+    difTotal == null
+      ? "—"
+      : `${difTotal >= 0 ? "+" : ""}${(difTotal * 100).toFixed(1)}%`
+  }</div></div>
+</div>
+<table><thead><tr><th>Concepto</th><th class="num">Te cobraron</th><th class="num">Según cuadro</th><th class="num">Dif.</th></tr></thead>
+<tbody>${filasHTML}</tbody></table>
+${state.composicion ? donutComprobanteHTML(state.composicion, "Composición de tu factura (según el cuadro)") : ""}
+<div class="nota">Control orientativo. Las diferencias chicas (hasta ~3%) son normales por el prorrateo de los días del período y por adhesiones opcionales. No reemplaza la liquidación oficial de la prestadora.</div>
+<script>window.onload=function(){setTimeout(function(){window.print()},200)}</script>
+</body></html>`;
+}
+
 function Resultado({ state }: { state: ControlState }) {
   const e = state.extraida!;
   const filas = state.filas ?? [];
@@ -187,6 +282,27 @@ function Resultado({ state }: { state: ControlState }) {
         </div>
       </div>
 
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => abrirComprobante(comprobanteControlHTML(state))}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-navy text-white font-bold text-sm hover:opacity-90"
+        >
+          <span aria-hidden>🖨️</span> Imprimir
+        </button>
+        <button
+          type="button"
+          onClick={() => abrirComprobante(comprobanteControlHTML(state))}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-line-strong text-navy font-bold text-sm hover:bg-paper-2"
+        >
+          <span aria-hidden>💾</span> Guardar PDF
+        </button>
+        <span className="text-[11px] text-muted self-center">
+          En «Guardar PDF», elegí <b>Guardar como PDF</b> en el destino de
+          impresión.
+        </span>
+      </div>
+
       <div className="rounded-2xl border border-line bg-paper overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-paper-2 text-left text-xs uppercase tracking-wider text-muted">
@@ -222,6 +338,10 @@ function Resultado({ state }: { state: ControlState }) {
           </tbody>
         </table>
       </div>
+
+      {state.composicion ? (
+        <GraficoComposicion composicion={state.composicion} />
+      ) : null}
 
       {state.checks && state.checks.length ? (
         <div className="rounded-2xl border border-line bg-paper p-4 flex flex-col gap-2">

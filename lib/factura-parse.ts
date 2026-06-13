@@ -3,6 +3,7 @@
 
 import {
   calcularFactura,
+  type ComposicionCat,
   type CuadroTarifario,
   type EntradaCalculo,
   type ModoAgua,
@@ -162,6 +163,9 @@ export type AnalisisFactura = {
   proyecciones: Proyeccion[];
   totalFacturado: number | null;
   totalCuadro: number | null;
+  // Composición de la factura (por rubro) según el cuadro con el que matcheó,
+  // para el gráfico de torta y el comprobante.
+  composicion: Record<ComposicionCat, number> | null;
 };
 
 const UMBRAL = 0.03; // 3% de tolerancia para marcar alerta
@@ -188,6 +192,7 @@ export function analizarFactura(
       proyecciones: [],
       totalFacturado: extraida.total,
       totalCuadro: null,
+      composicion: null,
     };
   }
   if (extraida.consumoKwh == null && extraida.conceptos.cargoFijo == null) {
@@ -202,6 +207,7 @@ export function analizarFactura(
       proyecciones: [],
       totalFacturado: extraida.total,
       totalCuadro: null,
+      composicion: null,
     };
   }
 
@@ -260,6 +266,7 @@ export function analizarFactura(
       proyecciones: [],
       totalFacturado: extraida.total,
       totalCuadro: null,
+      composicion: null,
     };
   }
 
@@ -331,6 +338,7 @@ export function analizarFactura(
     proyecciones,
     totalFacturado: extraida.total,
     totalCuadro: res.total,
+    composicion: res.composicion,
   };
 }
 

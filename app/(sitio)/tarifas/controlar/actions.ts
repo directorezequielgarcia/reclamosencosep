@@ -8,6 +8,7 @@ import {
   type FilaControl,
   type Proyeccion,
 } from "@/lib/factura-parse";
+import type { ComposicionCat } from "@/lib/tarifas";
 
 export type ControlState = {
   ok: boolean;
@@ -20,6 +21,7 @@ export type ControlState = {
   proyecciones?: Proyeccion[];
   totalFacturado?: number | null;
   totalCuadro?: number | null;
+  composicion?: Record<ComposicionCat, number> | null;
 };
 
 const MAX = 15 * 1024 * 1024;
@@ -83,5 +85,6 @@ export async function controlarFactura(
     proyecciones: a.proyecciones,
     totalFacturado: a.totalFacturado,
     totalCuadro: a.totalCuadro,
+    composicion: a.composicion,
   };
 }
