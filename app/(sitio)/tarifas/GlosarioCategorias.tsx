@@ -1,6 +1,4 @@
-"use client";
-
-import { useState } from "react";
+import { IconoCategoria } from "./IconosCategorias";
 
 // Glosario visible de las categorías que maneja la calculadora. Cada categoría
 // muestra un ícono (imagen en /public/categorias si existe; si no, un emoji de
@@ -120,26 +118,6 @@ const GRUPOS: { titulo: string; cats: Cat[] }[] = [
   },
 ];
 
-function IconoCat({ file, emoji }: { file: string; emoji: string }) {
-  const [err, setErr] = useState(false);
-  if (err) {
-    return (
-      <span className="text-3xl leading-none" aria-hidden>
-        {emoji}
-      </span>
-    );
-  }
-  // eslint-disable-next-line @next/next/no-img-element
-  return (
-    <img
-      src={`/categorias/${file}.png`}
-      alt=""
-      className="w-12 h-12 object-contain"
-      onError={() => setErr(true)}
-    />
-  );
-}
-
 export function GlosarioCategorias() {
   return (
     <details className="rounded-2xl border border-line bg-paper overflow-hidden">
@@ -168,7 +146,7 @@ export function GlosarioCategorias() {
                   className="flex gap-3 rounded-xl border border-line bg-paper-2 p-3"
                 >
                   <div className="w-12 h-12 shrink-0 flex items-center justify-center">
-                    <IconoCat file={c.file} emoji={c.emoji} />
+                    <IconoCategoria id={c.file} className="w-11 h-11" />
                   </div>
                   <div className="flex flex-col gap-0.5">
                     <div className="text-sm font-bold text-navy">{c.nombre}</div>
