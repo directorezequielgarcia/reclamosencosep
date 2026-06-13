@@ -20,6 +20,8 @@ const inicial: ControlState = { ok: false };
 export function ControlForm() {
   const [state, action, pending] = useActionState(controlarFactura, inicial);
   const [modo, setModo] = useState<"PDF" | "FOTO">("PDF");
+  const [nombrePdf, setNombrePdf] = useState("");
+  const [nombreFoto, setNombreFoto] = useState("");
   const [ocrTexto, setOcrTexto] = useState("");
   const [ocrEstado, setOcrEstado] = useState<"idle" | "leyendo" | "listo" | "error">(
     "idle",
@@ -74,29 +76,60 @@ export function ControlForm() {
         <input type="hidden" name="textoOcr" value={modo === "FOTO" ? ocrTexto : ""} />
 
         {modo === "PDF" ? (
-          <label className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1">
             <span className="text-xs font-bold uppercase tracking-wider text-muted">
               PDF de tu factura SCPL
             </span>
-            <input type="file" name="factura" accept="application/pdf" className="text-sm" />
+            <label className="cursor-pointer flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-line-strong bg-paper-2 px-4 py-7 text-center hover:border-svc-red hover:bg-svc-red/5 transition">
+              <span className="text-3xl" aria-hidden>
+                📄
+              </span>
+              <span className="text-sm font-bold text-navy">
+                {nombrePdf ? `✓ ${nombrePdf}` : "Tocá acá para elegir tu PDF"}
+              </span>
+              <span className="inline-flex items-center gap-1 px-4 py-2 rounded-lg bg-navy text-white text-xs font-bold">
+                {nombrePdf ? "Cambiar archivo" : "Seleccionar archivo"}
+              </span>
+              <input
+                type="file"
+                name="factura"
+                accept="application/pdf"
+                className="hidden"
+                onChange={(ev) => setNombrePdf(ev.target.files?.[0]?.name ?? "")}
+              />
+            </label>
             <span className="text-[11px] text-muted">
               Usá el PDF original que te llega por mail. Es la opción más precisa.
             </span>
-          </label>
+          </div>
         ) : (
           <div className="flex flex-col gap-2">
             <span className="text-xs font-bold uppercase tracking-wider text-muted">
               Foto de tu factura
             </span>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(ev) => {
-                const f = ev.target.files?.[0];
-                if (f) correrOcr(f);
-              }}
-              className="text-sm"
-            />
+            <label className="cursor-pointer flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-line-strong bg-paper-2 px-4 py-7 text-center hover:border-svc-red hover:bg-svc-red/5 transition">
+              <span className="text-3xl" aria-hidden>
+                📷
+              </span>
+              <span className="text-sm font-bold text-navy">
+                {nombreFoto
+                  ? `✓ ${nombreFoto}`
+                  : "Tocá acá para sacar o elegir una foto"}
+              </span>
+              <span className="inline-flex items-center gap-1 px-4 py-2 rounded-lg bg-navy text-white text-xs font-bold">
+                {nombreFoto ? "Cambiar foto" : "Cámara o galería"}
+              </span>
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(ev) => {
+                  const f = ev.target.files?.[0];
+                  setNombreFoto(f?.name ?? "");
+                  if (f) correrOcr(f);
+                }}
+              />
+            </label>
             <span className="text-[11px] text-muted">
               Sacala derecha, con buena luz y enfocada. La lectura se hace en tu
               teléfono (gratis); puede tardar unos segundos.
@@ -121,7 +154,11 @@ export function ControlForm() {
 
         <button
           type="submit"
-          disabled={pending || (modo === "FOTO" && ocrEstado !== "listo")}
+          disabled={
+            pending ||
+            (modo === "PDF" && !nombrePdf) ||
+            (modo === "FOTO" && ocrEstado !== "listo")
+          }
           className="inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-svc-red text-white font-bold text-sm shadow-md shadow-svc-red/30 hover:opacity-90 disabled:opacity-60 w-fit"
         >
           {pending ? "Analizando…" : "Controlar factura"}
