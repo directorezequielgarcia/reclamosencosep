@@ -42,10 +42,9 @@ export default function AtencionUsuarios() {
         <Tarjeta
           titulo="📚 Consultá la normativa"
           subtitulo="Marco normativo"
-          descripcion="Accedé al Digesto Municipal de Comodoro Rivadavia para consultar ordenanzas y el Marco Regulatorio de los Servicios Públicos (Ord. 6050/96 y modificatorias)."
-          cta="Ver Digesto Municipal"
-          href="https://www.digestocomodoro.gob.ar/"
-          externo
+          descripcion="Mirá la normativa que aplica el Ente: ordenanzas de creación, reglamentos del usuario y marco regulatorio. Desde ahí también podés entrar al Digesto Municipal completo."
+          cta="Ver normativa completa"
+          href="/control-prestadoras"
         />
 
         <Tarjeta
