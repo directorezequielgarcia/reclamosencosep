@@ -11,12 +11,12 @@ const DIRECTORIO = [
     bio: "Abogado. Asumió la presidencia del Directorio el 01-12-2025.",
   },
   {
-    cargo: "Director",
+    cargo: "Vicepresidente",
     nombre: "Dr. Cr. Ezequiel García",
     bio: "Abogado y Contador Público. Integrante del Directorio desde el 01-12-2025.",
   },
   {
-    cargo: "Director",
+    cargo: "Vocal",
     nombre: "Arq. Maximiliano López",
     bio: "Arquitecto. Integrante del Directorio desde el 01-12-2025.",
   },
@@ -178,7 +178,9 @@ export default function Nosotros() {
         <h2 className="text-2xl font-extrabold text-navy mt-1">
           Directorio actual
         </h2>
-        <p className="text-sm text-muted mt-1">Asumido el 01/12/2025</p>
+        <p className="text-sm text-muted mt-1">
+          Mandato: 01/12/2025 a 30/11/2028
+        </p>
 
         <div className="grid sm:grid-cols-3 gap-4 mt-5">
           {DIRECTORIO.map((d) => (
