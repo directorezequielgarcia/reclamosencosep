@@ -178,8 +178,11 @@ export default function Nosotros() {
         <h2 className="text-2xl font-extrabold text-navy mt-1">
           Directorio actual
         </h2>
-        <p className="text-sm text-muted mt-1">
-          Mandato: 01/12/2025 a 30/11/2028
+        <p className="text-sm text-muted mt-1 max-w-3xl">
+          Cuerpo colegiado de tres directores. Mandato: 01/12/2025 a 30/11/2028.
+          La Presidencia, la Vicepresidencia y la Vocalía rotan anualmente entre
+          sus integrantes; los cargos que figuran corresponden al período en
+          curso (01/12/2025 a 30/11/2026).
         </p>
 
         <div className="grid sm:grid-cols-3 gap-4 mt-5">
