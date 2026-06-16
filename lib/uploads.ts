@@ -19,7 +19,7 @@ export type UploadedFile = {
   bytes: number;
 };
 
-const MAX_DOC_BYTES = 25 * 1024 * 1024; // 25 MB para documentos
+const MAX_DOC_BYTES = 4 * 1024 * 1024; // 4 MB — techo Vercel Hobby sin Blob storage
 const ALLOWED_DOC = new Set([
   "application/pdf",
   "application/msword",

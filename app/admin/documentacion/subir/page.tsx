@@ -148,7 +148,7 @@ export default async function SubirDocumentoPage() {
 
         <label className="flex flex-col gap-1">
           <span className="text-xs font-bold text-navy uppercase tracking-wider">
-            Archivo (PDF, Word, Excel, JPG/PNG) * — máx 25 MB
+            Archivo (PDF, Word, Excel, JPG/PNG) * — máx 4 MB
           </span>
           <input
             type="file"
