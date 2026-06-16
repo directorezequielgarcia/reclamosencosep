@@ -113,7 +113,9 @@ export default async function SubirDocumentoPage() {
               type="text"
               name="periodo"
               required
-              placeholder={`Ej: ${anoActual} (anual) o ${anoActual}-${mesActual} (mensual)`}
+              placeholder={`Ej: ${anoActual}-${mesActual} (mensual) o ${anoActual} (anual)`}
+              pattern="^\d{4}(-\d{2})?$"
+              title="Formato: AAAA-MM para mensual (ej: 2026-03) o AAAA para anual (ej: 2026)"
               className="px-3 py-2.5 rounded-lg border border-line-strong text-sm bg-paper"
             />
           </label>
@@ -152,7 +154,7 @@ export default async function SubirDocumentoPage() {
             type="file"
             name="archivo"
             required
-            accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,image/jpeg,image/png"
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
             className="px-3 py-2.5 rounded-lg border border-dashed border-line-strong text-sm bg-paper-2 cursor-pointer"
           />
         </label>

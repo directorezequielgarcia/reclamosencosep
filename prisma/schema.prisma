@@ -151,6 +151,15 @@ model Documento {
   updatedAt     DateTime        @updatedAt
   revisadoEn    DateTime?
 
+  // Análisis ENCOSEP de certificaciones (CERTIFICACION / MENSUAL)
+  // observaciones: ObservacionSeccion[] serializado como JSON
+  observaciones      Json?
+  conclusionGeneral  String?
+  montoMaximo        String?   // solo higiene urbana, ej: "$ 3.055.591.137,06"
+  notaNumero         String?   // "105/2026"
+  notaDocxUrl        String?
+  notaEmitidaEn      DateTime?
+
   @@index([prestadoraId, estado])
   @@index([tipo, periodo])
   @@index([estado])

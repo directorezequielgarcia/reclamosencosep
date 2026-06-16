@@ -12,6 +12,7 @@ import { TONE_CLASS, puedeRevisarDocumentos } from "@/lib/admin";
 import { revisarDocumento } from "../actions";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { SubmitButton } from "@/components/ui/SubmitButton";
+import type { ObservacionSeccion } from "@/lib/docx-certificacion";
 
 export const metadata = { title: "Documento · Panel ENCOSEP" };
 
@@ -46,6 +47,11 @@ export default async function DocumentoDetallePage({
   const estadoMeta = ESTADO_DOC_META[doc.estado];
   const transiciones = TRANSICIONES_DOC[doc.estado];
 
+  const esAnalizable = doc.tipo === "CERTIFICACION" || doc.tipo === "MENSUAL";
+  const observaciones = doc.observaciones
+    ? (doc.observaciones as unknown as ObservacionSeccion[])
+    : null;
+
   return (
     <div className="flex flex-col gap-5">
       <Breadcrumbs
@@ -72,6 +78,14 @@ export default async function DocumentoDetallePage({
             {doc.prestadora.razonSocial}
           </div>
         </div>
+        {esEnte && esAnalizable && (
+          <Link
+            href={`/admin/documentacion/${doc.id}/analizar`}
+            className="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-navy-2 text-white font-bold text-sm"
+          >
+            Analizar certificación
+          </Link>
+        )}
       </header>
 
       <div className="grid lg:grid-cols-[1fr_360px] gap-5 items-start">
@@ -129,6 +143,72 @@ export default async function DocumentoDetallePage({
                   })}
                 </div>
               )}
+            </Card>
+          )}
+
+          {/* Observaciones del análisis ENCOSEP */}
+          {observaciones && observaciones.length > 0 && (
+            <Card titulo="Observaciones del análisis ENCOSEP">
+              <div className="flex flex-col gap-4">
+                {observaciones
+                  .filter((o) => o.texto.trim().length > 0)
+                  .map((obs) => (
+                    <div key={obs.seccion}>
+                      <div className="text-xs font-bold text-navy uppercase tracking-wide mb-1">
+                        {obs.titulo}
+                      </div>
+                      <p className="text-sm text-navy whitespace-pre-wrap leading-relaxed">
+                        {obs.texto}
+                      </p>
+                    </div>
+                  ))}
+              </div>
+              {doc.conclusionGeneral && (
+                <div className="mt-4 pt-4 border-t border-line">
+                  <div className="text-xs font-bold text-navy uppercase tracking-wide mb-1">
+                    Conclusión general
+                  </div>
+                  <p className="text-sm text-navy whitespace-pre-wrap leading-relaxed">
+                    {doc.conclusionGeneral}
+                  </p>
+                  {doc.montoMaximo && (
+                    <div className="mt-2 text-sm font-semibold text-navy">
+                      Monto máximo certificado: {doc.montoMaximo}
+                    </div>
+                  )}
+                </div>
+              )}
+            </Card>
+          )}
+
+          {/* Nota ENCOSEP generada */}
+          {doc.notaDocxUrl && (
+            <Card titulo="Nota ENCOSEP emitida">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <div className="text-sm font-semibold text-navy">
+                    Nota N° {doc.notaNumero}
+                  </div>
+                  {doc.notaEmitidaEn && (
+                    <div className="text-xs text-muted mt-1">
+                      Emitida el{" "}
+                      {doc.notaEmitidaEn.toLocaleString("es-AR", {
+                        day: "2-digit",
+                        month: "long",
+                        year: "numeric",
+                      })}
+                    </div>
+                  )}
+                </div>
+                <a
+                  href={doc.notaDocxUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-svc-green text-white font-bold text-sm whitespace-nowrap"
+                >
+                  Descargar .docx
+                </a>
+              </div>
             </Card>
           )}
         </div>
