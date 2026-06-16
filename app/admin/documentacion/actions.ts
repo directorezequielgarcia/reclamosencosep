@@ -86,19 +86,34 @@ export async function subirDocumento(formData: FormData) {
     },
   });
 
-  // Subir archivo a Blob
+  // Subir archivo: Vercel Blob si hay token, Neon DB si no
   try {
-    const saved = await guardarDocumentoPrestadora(prestadoraId, doc.id, file);
+    let archivoUrl: string;
+    let mimeType = file.type;
+    const bytes = file.size;
+
+    if (process.env.BLOB_READ_WRITE_TOKEN) {
+      const saved = await guardarDocumentoPrestadora(prestadoraId, doc.id, file);
+      archivoUrl = saved.url;
+      mimeType = saved.mimeType;
+    } else {
+      const buf = Buffer.from(await file.arrayBuffer());
+      await prisma.archivoBlob.create({
+        data: {
+          documentoId: doc.id,
+          tipo: "archivo",
+          contenido: buf as unknown as Uint8Array<ArrayBuffer>,
+          mimeType: file.type,
+        },
+      });
+      archivoUrl = `/api/documentos/${doc.id}/archivo`;
+    }
+
     await prisma.documento.update({
       where: { id: doc.id },
-      data: {
-        archivoUrl: saved.url,
-        mimeType: saved.mimeType,
-        bytes: saved.bytes,
-      },
+      data: { archivoUrl, mimeType, bytes },
     });
   } catch (e) {
-    // Si falla el upload, borrar el registro
     await prisma.documento.delete({ where: { id: doc.id } });
     throw e;
   }

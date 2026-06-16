@@ -4,8 +4,6 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { put } from "@vercel/blob";
-import { promises as fs } from "node:fs";
-import path from "node:path";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { esDireccion, puedeRevisarDocumentos } from "@/lib/admin";
@@ -124,7 +122,7 @@ export async function generarNota(formData: FormData) {
     montoMaximo: parsed.data.montoMaximo,
   });
 
-  // Subir a Vercel Blob o filesystem local
+  // Subir docx: Vercel Blob si hay token, Neon DB si no
   let docxUrl: string;
   const filename = `nota-${parsed.data.notaNumero.replace("/", "-")}-${doc.id}.docx`;
 
@@ -136,10 +134,18 @@ export async function generarNota(formData: FormData) {
     });
     docxUrl = blob.url;
   } else {
-    const dir = path.join(process.cwd(), "public", "uploads", "notas");
-    await fs.mkdir(dir, { recursive: true });
-    await fs.writeFile(path.join(dir, filename), buffer);
-    docxUrl = `/uploads/notas/${filename}`;
+    await prisma.archivoBlob.upsert({
+      where: { documentoId_tipo: { documentoId: doc.id, tipo: "nota" } },
+      update: { contenido: buffer as unknown as Uint8Array<ArrayBuffer> },
+      create: {
+        documentoId: doc.id,
+        tipo: "nota",
+        contenido: buffer as unknown as Uint8Array<ArrayBuffer>,
+        mimeType:
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      },
+    });
+    docxUrl = `/api/documentos/${doc.id}/nota`;
   }
 
   await prisma.documento.update({

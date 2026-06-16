@@ -160,9 +160,26 @@ model Documento {
   notaDocxUrl        String?
   notaEmitidaEn      DateTime?
 
+  archivosBlob  ArchivoBlob[]
+
   @@index([prestadoraId, estado])
   @@index([tipo, periodo])
   @@index([estado])
+}
+
+// Almacena el contenido binario de archivos (PDF subidos, docx generados)
+// en Neon cuando no hay Vercel Blob configurado. Tabla separada para que
+// las queries de lista/detalle de Documento no carguen bytes innecesarios.
+model ArchivoBlob {
+  id          String    @id @default(cuid())
+  documentoId String
+  tipo        String    // "archivo" | "nota"
+  contenido   Bytes
+  mimeType    String?
+  documento   Documento @relation(fields: [documentoId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+
+  @@unique([documentoId, tipo])
 }
 
 // ─────────────────────────────────────────────
