@@ -147,7 +147,7 @@ function fechaLarga(d: Date): string {
 /** Descarga o lee desde filesystem la imagen y la devuelve como buffer. */
 async function fetchFotoBuffer(
   url: string,
-): Promise<{ data: Uint8Array; type: "jpg" | "png" | "webp" } | null> {
+): Promise<{ data: Uint8Array; type: "jpg" | "png" } | null> {
   try {
     let buffer: Buffer;
     let ext = "jpg";
@@ -164,12 +164,11 @@ async function fetchFotoBuffer(
       buffer = Buffer.from(await res.arrayBuffer());
       const ct = res.headers.get("content-type") ?? "";
       if (ct.includes("png")) ext = "png";
-      else if (ct.includes("webp")) ext = "webp";
       else ext = "jpg";
     }
 
-    const type: "jpg" | "png" | "webp" =
-      ext === "png" ? "png" : ext === "webp" ? "webp" : "jpg";
+    // docx solo acepta "jpg" o "png" — webp/heic se tratan como jpg
+    const type: "jpg" | "png" = ext === "png" ? "png" : "jpg";
 
     return { data: new Uint8Array(buffer), type };
   } catch {
