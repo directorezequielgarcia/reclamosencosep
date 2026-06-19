@@ -8,11 +8,17 @@ import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 
 export const metadata = { title: "Nueva inspección · Panel ENCOSEP" };
 
-export default async function NuevaInspeccionPage() {
+export default async function NuevaInspeccionPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ reclamoId?: string; servicioId?: string }>;
+}) {
   const session = await auth();
   if (!session || !puedeGestionarInspecciones(session.user.rol)) {
     redirect("/admin");
   }
+
+  const { reclamoId, servicioId: servicioPreseleccionado } = await searchParams;
 
   const [servicios, prestadoras, expedientes] = await Promise.all([
     prisma.servicio.findMany({
@@ -64,6 +70,8 @@ export default async function NuevaInspeccionPage() {
         prestadoras={prestadoras}
         expedientes={expedientes}
         fechaPorDefecto={fechaPorDefecto}
+        reclamoId={reclamoId}
+        servicioPreseleccionado={servicioPreseleccionado}
       />
     </div>
   );

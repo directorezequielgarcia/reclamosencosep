@@ -2,9 +2,11 @@
  * Generación del Acta de Inspección en formato .docx.
  *
  * Respeta las convenciones del ENCOSEP: Calibri 11 pt, interlineado simple,
- * prosa sin bullets para el cuerpo principal. El acta es un documento formal
- * que el inspector firma y el Directorio archiva.
+ * prosa sin bullets para el cuerpo principal. Soporta formato A4 y OFICIO.
+ * Las fotos se embeben como imágenes en el documento.
  */
+import { readFile } from "fs/promises";
+import { join } from "path";
 import {
   AlignmentType,
   BorderStyle,
@@ -23,6 +25,8 @@ import {
 import { TIPO_INSPECCION_META } from "@/lib/inspecciones";
 import { cargarLogoBuffer } from "@/lib/docx-logo";
 import type { TipoInspeccion } from "@prisma/client";
+
+export type FormatoActa = "a4" | "oficio";
 
 type InspeccionParaActa = {
   codigo: string;
@@ -44,10 +48,14 @@ type InspeccionParaActa = {
 };
 
 const FONT = "Calibri";
-const SIZE_BODY = 22; // 11 pt (1pt = 2 half-points)
+const SIZE_BODY = 22; // 11 pt
 const SIZE_HEADING = 28; // 14 pt
 const SIZE_TITLE = 36; // 18 pt
 const SIZE_SMALL = 18; // 9 pt
+
+// Tamaños de página en TWIPs (1 pulgada = 1440 TWIPs)
+const PAGE_A4 = { width: 11906, height: 16838 }; // 210 × 297 mm
+const PAGE_OFICIO = { width: 12240, height: 18720 }; // 8.5" × 13"
 
 function p(
   text: string,
@@ -61,7 +69,7 @@ function p(
 ): Paragraph {
   return new Paragraph({
     alignment: opts.align ?? AlignmentType.JUSTIFIED,
-    spacing: { after: opts.spaceAfter ?? 120, line: 276 }, // line 276 = 1.15 spacing approx single
+    spacing: { after: opts.spaceAfter ?? 120, line: 276 },
     children: [
       new TextRun({
         text,
@@ -105,12 +113,7 @@ function fila(label: string, value: string): TableRow {
           new Paragraph({
             spacing: { after: 60 },
             children: [
-              new TextRun({
-                text: label,
-                font: FONT,
-                size: SIZE_BODY,
-                bold: true,
-              }),
+              new TextRun({ text: label, font: FONT, size: SIZE_BODY, bold: true }),
             ],
           }),
         ],
@@ -122,11 +125,7 @@ function fila(label: string, value: string): TableRow {
           new Paragraph({
             spacing: { after: 60 },
             children: [
-              new TextRun({
-                text: value || "—",
-                font: FONT,
-                size: SIZE_BODY,
-              }),
+              new TextRun({ text: value || "—", font: FONT, size: SIZE_BODY }),
             ],
           }),
         ],
@@ -145,9 +144,44 @@ function fechaLarga(d: Date): string {
   });
 }
 
+/** Descarga o lee desde filesystem la imagen y la devuelve como buffer. */
+async function fetchFotoBuffer(
+  url: string,
+): Promise<{ data: Uint8Array; type: "jpg" | "png" | "webp" } | null> {
+  try {
+    let buffer: Buffer;
+    let ext = "jpg";
+
+    if (url.startsWith("/")) {
+      // Archivo local (desarrollo o uploads en filesystem)
+      buffer = await readFile(join(process.cwd(), "public", url));
+      const parts = url.split(".");
+      ext = parts[parts.length - 1]?.toLowerCase() ?? "jpg";
+    } else {
+      // URL externa (Vercel Blob, CDN, etc.)
+      const res = await fetch(url);
+      if (!res.ok) return null;
+      buffer = Buffer.from(await res.arrayBuffer());
+      const ct = res.headers.get("content-type") ?? "";
+      if (ct.includes("png")) ext = "png";
+      else if (ct.includes("webp")) ext = "webp";
+      else ext = "jpg";
+    }
+
+    const type: "jpg" | "png" | "webp" =
+      ext === "png" ? "png" : ext === "webp" ? "webp" : "jpg";
+
+    return { data: new Uint8Array(buffer), type };
+  } catch {
+    return null;
+  }
+}
+
 export async function generarActaInspeccion(
   insp: InspeccionParaActa,
+  formato: FormatoActa = "a4",
 ): Promise<Buffer> {
+  const pageSize = formato === "oficio" ? PAGE_OFICIO : PAGE_A4;
   const ubicacion = [insp.direccion, insp.barrio].filter(Boolean).join(", ");
   const coordenadas =
     insp.lat != null && insp.lng != null
@@ -159,7 +193,10 @@ export async function generarActaInspeccion(
     rows: [
       fila("Código de acta", insp.codigo),
       fila("Fecha y hora", fechaLarga(insp.fecha)),
-      fila("Inspector actuante", `${insp.inspector.nombre} ${insp.inspector.apellido} (DNI ${insp.inspector.dni})`),
+      fila(
+        "Inspector actuante",
+        `${insp.inspector.nombre} ${insp.inspector.apellido} (DNI ${insp.inspector.dni})`,
+      ),
       fila("Tipo de inspección", TIPO_INSPECCION_META[insp.tipo].label),
       fila("Servicio inspeccionado", insp.servicio.nombre),
       fila("Prestadora", insp.prestadora?.razonSocial ?? ""),
@@ -176,7 +213,7 @@ export async function generarActaInspeccion(
 
   const children: (Paragraph | Table)[] = [];
 
-  // Logo institucional centrado en la carátula (si está disponible)
+  // Logo institucional
   const logoBuffer = await cargarLogoBuffer();
   if (logoBuffer) {
     children.push(
@@ -223,13 +260,13 @@ export async function generarActaInspeccion(
   // Datos generales
   children.push(heading("Datos del relevamiento"), datosTable);
 
-  // Observaciones (cuerpo principal)
+  // Observaciones
   children.push(heading("Observaciones del inspector"));
   for (const parrafo of insp.observaciones.split(/\n+/).filter((s) => s.trim())) {
     children.push(p(parrafo));
   }
 
-  // Transcripción del audio (si existe)
+  // Transcripción del audio
   if (insp.transcripcionAudio && insp.transcripcionAudio.trim().length) {
     children.push(heading("Transcripción del audio dictado en campo"));
     for (const parrafo of insp.transcripcionAudio
@@ -239,23 +276,28 @@ export async function generarActaInspeccion(
     }
   }
 
-  // Documental anexa
+  // Documental fotográfica — con imágenes embebidas
   if (insp.fotos.length > 0) {
-    children.push(heading("Documental anexa"));
+    children.push(heading("Documental fotográfica"));
     children.push(
       p(
         `Se adjuntan ${insp.fotos.length} ${
           insp.fotos.length === 1 ? "fotografía" : "fotografías"
         } tomadas durante el relevamiento, las cuales forman parte integral de esta acta:`,
+        { spaceAfter: 240 },
       ),
     );
-    insp.fotos.forEach((f, i) => {
-      const desc = f.descripcion?.trim()
-        ? f.descripcion
-        : "Fotografía sin descripción";
+
+    for (let i = 0; i < insp.fotos.length; i++) {
+      const foto = insp.fotos[i];
+      const desc = foto.descripcion?.trim()
+        ? foto.descripcion
+        : `Fotografía ${i + 1}`;
+
+      // Título de la foto
       children.push(
         new Paragraph({
-          spacing: { after: 60 },
+          spacing: { before: 200, after: 80 },
           children: [
             new TextRun({
               text: `Foto ${i + 1}. `,
@@ -264,16 +306,37 @@ export async function generarActaInspeccion(
               bold: true,
             }),
             new TextRun({ text: desc, font: FONT, size: SIZE_BODY }),
-            new TextRun({
-              text: `  (${f.url})`,
-              font: FONT,
-              size: SIZE_SMALL,
-              italics: true,
-            }),
           ],
         }),
       );
-    });
+
+      // Imagen embebida
+      const imgData = await fetchFotoBuffer(foto.url);
+      if (imgData) {
+        children.push(
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 300 },
+            children: [
+              new ImageRun({
+                data: imgData.data,
+                transformation: { width: 400, height: 300 },
+                type: imgData.type,
+              }),
+            ],
+          }),
+        );
+      } else {
+        // Fallback si la imagen no pudo cargarse
+        children.push(
+          p(`[imagen no disponible — ${foto.url}]`, {
+            italic: true,
+            size: SIZE_SMALL,
+            spaceAfter: 160,
+          }),
+        );
+      }
+    }
   }
 
   // Pie con firmas
@@ -317,11 +380,14 @@ export async function generarActaInspeccion(
         }),
       ],
     }),
-    p(`Documento generado el ${fechaLarga(new Date())}.`, {
-      align: AlignmentType.CENTER,
-      italic: true,
-      size: SIZE_SMALL,
-    }),
+    p(
+      `Documento generado el ${fechaLarga(new Date())}. Formato: ${formato === "oficio" ? "OFICIO (8,5″ × 13″)" : "A4 (21 × 29,7 cm)"}.`,
+      {
+        align: AlignmentType.CENTER,
+        italic: true,
+        size: SIZE_SMALL,
+      },
+    ),
   );
 
   const doc = new Document({
@@ -332,7 +398,11 @@ export async function generarActaInspeccion(
       {
         properties: {
           page: {
-            size: { orientation: PageOrientation.PORTRAIT },
+            size: {
+              width: pageSize.width,
+              height: pageSize.height,
+              orientation: PageOrientation.PORTRAIT,
+            },
             margin: { top: 1134, right: 1134, bottom: 1134, left: 1134 },
           },
         },

@@ -16,6 +16,8 @@ type Props = {
   prestadoras: Prestadora[];
   expedientes: Expediente[];
   fechaPorDefecto: string;
+  reclamoId?: string;
+  servicioPreseleccionado?: string;
 };
 
 export function NuevaInspeccionForm({
@@ -23,6 +25,8 @@ export function NuevaInspeccionForm({
   prestadoras,
   expedientes,
   fechaPorDefecto,
+  reclamoId,
+  servicioPreseleccionado,
 }: Props) {
   const [tipo, setTipo] = useState<string>("OFICIO");
   const [coord, setCoord] = useState<{ lat: number; lng: number } | null>(null);
@@ -69,7 +73,7 @@ export function NuevaInspeccionForm({
           <select
             name="servicioId"
             required
-            defaultValue=""
+            defaultValue={servicioPreseleccionado ?? ""}
             className="px-3 py-2 rounded-lg border border-line-strong bg-paper text-navy"
           >
             <option value="" disabled>
@@ -232,6 +236,10 @@ export function NuevaInspeccionForm({
         <strong> texto, audio dictado en campo, fotos desde la cámara</strong> y
         GPS de alta precisión — todo en cualquier combinación.
       </div>
+
+      {reclamoId && (
+        <input type="hidden" name="reclamoId" value={reclamoId} />
+      )}
 
       <div className="flex gap-2 items-center pt-2">
         <SubmitButton

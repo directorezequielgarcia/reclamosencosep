@@ -518,16 +518,24 @@ export default async function InspeccionDetallePage({
 
           <Card titulo="Acta de inspección">
             <p className="text-xs text-muted mb-3">
-              Descarga el .docx formal con encabezado del Ente, datos del
-              relevamiento, observaciones, transcripción del audio y línea de
-              firma para el inspector.
+              Descargá el .docx formal con encabezado del Ente, datos del
+              relevamiento, observaciones, fotos embebidas y línea de firma.
+              Elegí el tamaño de hoja:
             </p>
-            <a
-              href={`/api/inspecciones/${insp.id}/acta`}
-              className="inline-flex items-center justify-center w-full px-4 py-2.5 rounded-lg bg-navy text-white text-sm font-bold hover:opacity-90"
-            >
-              📄 Descargar acta (.docx)
-            </a>
+            <div className="flex flex-col gap-2">
+              <a
+                href={`/api/inspecciones/${insp.id}/acta?formato=oficio`}
+                className="inline-flex items-center justify-center w-full px-4 py-2.5 rounded-lg bg-navy text-white text-sm font-bold hover:opacity-90"
+              >
+                📄 OFICIO (8,5″ × 13″)
+              </a>
+              <a
+                href={`/api/inspecciones/${insp.id}/acta?formato=a4`}
+                className="inline-flex items-center justify-center w-full px-4 py-2.5 rounded-lg border border-line-strong text-navy text-sm font-bold hover:bg-paper-2"
+              >
+                📄 A4 (21 × 29,7 cm)
+              </a>
+            </div>
             {insp.actaGeneradaEn && (
               <div className="text-[10px] text-muted mt-2 text-center">
                 Última generación:{" "}

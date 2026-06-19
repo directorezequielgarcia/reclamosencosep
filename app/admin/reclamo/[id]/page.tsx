@@ -7,6 +7,7 @@ import {
   ROLES_EDIT,
   TRANSICIONES,
   whereReclamosByRol,
+  puedeGestionarInspecciones,
 } from "@/lib/admin";
 import { EstadoBadge } from "@/components/ui/EstadoBadge";
 import { SubmitButton } from "@/components/ui/SubmitButton";
@@ -50,6 +51,16 @@ export default async function ReclamoDetallePage({
         orderBy: { createdAt: "asc" },
         include: { autor: true },
       },
+      inspecciones: {
+        select: {
+          id: true,
+          codigo: true,
+          titulo: true,
+          estado: true,
+          updatedAt: true,
+        },
+        orderBy: { createdAt: "desc" },
+      },
     },
   });
   if (!reclamo) notFound();
@@ -76,6 +87,7 @@ export default async function ReclamoDetallePage({
       })
     : [];
 
+  const puedeInspeccionar = puedeGestionarInspecciones(session!.user.rol);
   const fotos = reclamo.adjuntos.filter((a) => a.tipo === "FOTO");
   const documentos = reclamo.adjuntos.filter((a) => a.tipo === "DOCUMENTO");
   const fechaLarga = reclamo.createdAt.toLocaleString("es-AR", {
@@ -359,6 +371,66 @@ export default async function ReclamoDetallePage({
                   </SubmitButton>
                 </div>
               </form>
+            )}
+          </Card>
+          {/* Inspecciones vinculadas al reclamo */}
+          <Card
+            titulo={`Inspecciones (${reclamo.inspecciones.length})`}
+          >
+            {puedeInspeccionar && (
+              <div className="flex gap-2 mb-4 flex-wrap">
+                <Link
+                  href={`/admin/inspecciones/nueva/movil?reclamoId=${reclamo.id}&servicioId=${reclamo.servicioId}`}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-navy text-white text-xs font-bold hover:opacity-90"
+                >
+                  📱 Nueva desde celular
+                </Link>
+                <Link
+                  href={`/admin/inspecciones/nueva?reclamoId=${reclamo.id}&servicioId=${reclamo.servicioId}`}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-line-strong text-navy text-xs font-bold hover:bg-paper-2"
+                >
+                  💻 Nueva desde PC
+                </Link>
+              </div>
+            )}
+
+            {reclamo.inspecciones.length === 0 ? (
+              <p className="text-xs text-muted italic">
+                Sin inspecciones vinculadas todavía.
+              </p>
+            ) : (
+              <ul className="flex flex-col gap-2">
+                {reclamo.inspecciones.map((insp) => (
+                  <li key={insp.id}>
+                    <Link
+                      href={`/admin/inspecciones/${insp.id}`}
+                      className="flex items-center gap-2 text-sm hover:bg-paper-2 rounded-lg px-2 py-1.5 -mx-2 transition-colors"
+                    >
+                      <span className="font-mono font-bold text-navy shrink-0">
+                        {insp.codigo}
+                      </span>
+                      <span className="text-muted text-xs truncate flex-1">
+                        {insp.titulo}
+                      </span>
+                      <span
+                        className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ${
+                          insp.estado === "BORRADOR"
+                            ? "bg-paper-3 text-muted border border-line-strong"
+                            : insp.estado === "PUBLICADA"
+                              ? "bg-svc-green/15 text-svc-green border border-svc-green/30"
+                              : "bg-paper-3 text-muted border border-line-strong"
+                        }`}
+                      >
+                        {insp.estado === "BORRADOR"
+                          ? "Borrador"
+                          : insp.estado === "PUBLICADA"
+                            ? "Publicada"
+                            : "Archivada"}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
             )}
           </Card>
         </div>

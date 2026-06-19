@@ -37,6 +37,7 @@ const CrearInspeccionSchema = z.object({
     .optional()
     .or(z.literal(""))
     .transform((s) => (s && s.length ? parseFloat(s) : null)),
+  reclamoId: z.string().optional().or(z.literal("")),
 });
 
 /** Alta de una inspección de campo. Queda en BORRADOR. */
@@ -58,6 +59,7 @@ export async function crearInspeccion(formData: FormData) {
     expedienteId: String(formData.get("expedienteId") ?? "").trim(),
     lat: String(formData.get("lat") ?? "").trim(),
     lng: String(formData.get("lng") ?? "").trim(),
+    reclamoId: String(formData.get("reclamoId") ?? "").trim(),
   };
 
   const parsed = CrearInspeccionSchema.safeParse(raw);
@@ -89,10 +91,16 @@ export async function crearInspeccion(formData: FormData) {
       barrio: datos.barrio?.length ? datos.barrio : null,
       lat: datos.lat,
       lng: datos.lng,
+      ...(datos.reclamoId?.length
+        ? { reclamos: { connect: { id: datos.reclamoId } } }
+        : {}),
     },
   });
 
   revalidatePath("/admin/inspecciones");
+  if (datos.reclamoId?.length) {
+    revalidatePath(`/admin/reclamo/${datos.reclamoId}`);
+  }
   redirect(`/admin/inspecciones/${insp.id}`);
 }
 
@@ -329,4 +337,106 @@ export async function crearReclamoOficio(formData: FormData) {
 
   revalidatePath(`/admin/inspecciones/${insp.id}`);
   revalidatePath("/admin/bandeja");
+}
+
+/**
+ * Carga rápida desde celular: crea una inspección en BORRADOR con sólo
+ * observaciones, dirección y GPS. Retorna datos (no redirige) para que el
+ * cliente muestre la confirmación con timestamp.
+ */
+const RapidoSchema = z.object({
+  servicioId: z.string().min(1, "Servicio requerido"),
+  reclamoId: z.string().optional().or(z.literal("")),
+  observaciones: z.string().max(20000).optional().or(z.literal("")),
+  direccion: z.string().max(200).optional().or(z.literal("")),
+  lat: z
+    .string()
+    .optional()
+    .or(z.literal(""))
+    .transform((s) => (s && s.length ? parseFloat(s) : null)),
+  lng: z
+    .string()
+    .optional()
+    .or(z.literal(""))
+    .transform((s) => (s && s.length ? parseFloat(s) : null)),
+});
+
+export async function crearInspeccionRapido(
+  formData: FormData,
+): Promise<
+  | { ok: true; id: string; codigo: string; savedAt: string }
+  | { ok: false; error: string }
+> {
+  const session = await auth();
+  if (!session || !puedeGestionarInspecciones(session.user.rol)) {
+    return { ok: false, error: "Sin permisos para cargar inspecciones" };
+  }
+
+  const parsed = RapidoSchema.safeParse({
+    servicioId: formData.get("servicioId"),
+    reclamoId: String(formData.get("reclamoId") ?? ""),
+    observaciones: String(formData.get("observaciones") ?? ""),
+    direccion: String(formData.get("direccion") ?? ""),
+    lat: String(formData.get("lat") ?? ""),
+    lng: String(formData.get("lng") ?? ""),
+  });
+
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? "Datos inválidos",
+    };
+  }
+
+  const datos = parsed.data;
+  const ahora = new Date();
+  const anio = ahora.getFullYear();
+
+  try {
+    const codigo = await siguienteCodigoInspeccion(anio);
+    const tituloAuto = `Inspección rápida — ${ahora.toLocaleDateString("es-AR", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    })} ${ahora.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}`;
+
+    const insp = await prisma.inspeccion.create({
+      data: {
+        codigo,
+        fecha: ahora,
+        inspectorId: session.user.id,
+        servicioId: datos.servicioId,
+        tipo: "DENUNCIA_VECINO",
+        estado: "BORRADOR",
+        titulo: tituloAuto,
+        observaciones: datos.observaciones?.length ? datos.observaciones : "",
+        direccion: datos.direccion?.length ? datos.direccion : null,
+        lat: datos.lat,
+        lng: datos.lng,
+        ...(datos.reclamoId?.length
+          ? { reclamos: { connect: { id: datos.reclamoId } } }
+          : {}),
+      },
+    });
+
+    revalidatePath("/admin/inspecciones");
+    if (datos.reclamoId?.length) {
+      revalidatePath(`/admin/reclamo/${datos.reclamoId}`);
+    }
+
+    return {
+      ok: true,
+      id: insp.id,
+      codigo: insp.codigo,
+      savedAt: ahora.toLocaleString("es-AR", {
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    };
+  } catch {
+    return { ok: false, error: "Error al crear la inspección. Intentá de nuevo." };
+  }
 }

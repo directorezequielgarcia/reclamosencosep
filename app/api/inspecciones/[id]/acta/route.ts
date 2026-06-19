@@ -8,10 +8,10 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { puedeVerInspecciones } from "@/lib/admin";
 import { whereInspeccionesByRol } from "@/lib/inspecciones";
-import { generarActaInspeccion } from "@/lib/docx-acta-inspeccion";
+import { generarActaInspeccion, type FormatoActa } from "@/lib/docx-acta-inspeccion";
 
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const session = await auth();
@@ -20,6 +20,9 @@ export async function GET(
   }
 
   const { id } = await params;
+  const url = new URL(req.url);
+  const formato: FormatoActa =
+    url.searchParams.get("formato") === "oficio" ? "oficio" : "a4";
   const visibilidadWhere = whereInspeccionesByRol(
     session.user.rol,
     session.user.id,
@@ -69,7 +72,7 @@ export async function GET(
       descripcion: f.descripcion,
     })),
     createdAt: insp.createdAt,
-  });
+  }, formato);
 
   // Marcar que se generó una vez (la URL queda vacía hasta que en 2D
   // persistamos a Vercel Blob; por ahora solo registramos la fecha).
@@ -80,7 +83,8 @@ export async function GET(
     });
   }
 
-  const filename = `Acta_${insp.codigo.replace(/[^A-Za-z0-9-]/g, "_")}.docx`;
+  const sufijo = formato === "oficio" ? "_OFICIO" : "_A4";
+  const filename = `Acta_${insp.codigo.replace(/[^A-Za-z0-9-]/g, "_")}${sufijo}.docx`;
 
   return new NextResponse(new Uint8Array(buffer), {
     status: 200,
