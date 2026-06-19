@@ -113,7 +113,7 @@ export function FormMovil({
       if (fotos.length > 0) {
         setPhase("uploading");
         const fotoFd = new FormData();
-        fotos.forEach((f) => fotoFd.append("foto", f));
+        fotos.forEach((f) => fotoFd.append("fotos", f));
         const fotoRes = await fetch(`/api/inspecciones/${res.id}/fotos`, {
           method: "POST",
           body: fotoFd,
