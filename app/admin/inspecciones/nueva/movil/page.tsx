@@ -45,9 +45,14 @@ export default async function MovilPage({
     servicioNombre = servicio?.nombre ?? "";
   }
 
-  if (!servicioId) {
-    redirect("/admin/inspecciones/nueva");
-  }
+  // Si no hay servicio pre-seleccionado, cargamos la lista para el selector
+  const servicios =
+    servicioId
+      ? []
+      : await prisma.servicio.findMany({
+          orderBy: { nombreCorto: "asc" },
+          select: { id: true, nombre: true, nombreCorto: true },
+        });
 
   return (
     <div className="flex flex-col gap-5 max-w-lg mx-auto">
@@ -71,24 +76,28 @@ export default async function MovilPage({
         <h1 className="text-xl font-extrabold text-navy">
           Carga rápida desde celular
         </h1>
-        <p className="text-sm text-muted mt-1">
-          Servicio: <strong className="text-navy">{servicioNombre}</strong>
-          {relamoCodigo && (
-            <>
-              {" · "}Reclamo{" "}
-              <strong className="text-navy font-mono">#{relamoCodigo}</strong>
-            </>
-          )}
-        </p>
-        <p className="text-xs text-muted mt-1">
-          Cargá fotos, GPS y observaciones. La inspección queda en borrador y
-          podés editarla después desde la PC.
-        </p>
+        {servicioNombre ? (
+          <p className="text-sm text-muted mt-1">
+            Servicio: <strong className="text-navy">{servicioNombre}</strong>
+            {relamoCodigo && (
+              <>
+                {" · "}Reclamo{" "}
+                <strong className="text-navy font-mono">#{relamoCodigo}</strong>
+              </>
+            )}
+          </p>
+        ) : (
+          <p className="text-sm text-muted mt-1">
+            Cargá fotos, GPS y observaciones. Queda en borrador y podés editarla
+            desde la PC después.
+          </p>
+        )}
       </header>
 
       <FormMovil
         servicioId={servicioId}
         servicioNombre={servicioNombre}
+        servicios={servicios}
         reclamoId={reclamoId}
         relamoCodigo={relamoCodigo}
       />

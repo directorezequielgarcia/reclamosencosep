@@ -4,9 +4,12 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { crearInspeccionRapido } from "@/app/admin/inspecciones/actions";
 
+type Servicio = { id: string; nombre: string; nombreCorto: string };
+
 type Props = {
   servicioId: string;
   servicioNombre: string;
+  servicios?: Servicio[]; // lista para selector cuando no viene pre-seleccionado
   reclamoId?: string;
   relamoCodigo?: string;
 };
@@ -14,11 +17,13 @@ type Props = {
 type Phase = "form" | "saving" | "uploading" | "done" | "error";
 
 export function FormMovil({
-  servicioId,
+  servicioId: servicioIdInicial,
   servicioNombre,
+  servicios = [],
   reclamoId,
   relamoCodigo,
 }: Props) {
+  const [servicioId, setServicioId] = useState(servicioIdInicial);
   const [phase, setPhase] = useState<Phase>("form");
   const [observaciones, setObservaciones] = useState("");
   const [direccion, setDireccion] = useState("");
@@ -187,6 +192,29 @@ export function FormMovil({
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      {/* SERVICIO — solo si no viene pre-seleccionado */}
+      {servicios.length > 0 && (
+        <div className="rounded-2xl border border-line bg-paper p-4 flex flex-col gap-3">
+          <div className="text-[11px] uppercase tracking-wider text-muted font-semibold">
+            Servicio a inspeccionar <span className="text-svc-red">*</span>
+          </div>
+          <select
+            required
+            value={servicioId}
+            onChange={(e) => setServicioId(e.target.value)}
+            disabled={saving}
+            className="px-3 py-2.5 rounded-xl border border-line-strong bg-paper text-navy text-sm disabled:opacity-60"
+          >
+            <option value="">— Elegí un servicio —</option>
+            {servicios.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.nombre}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       {/* FOTOS */}
       <div className="rounded-2xl border border-line bg-paper p-4 flex flex-col gap-3">
         <div className="text-[11px] uppercase tracking-wider text-muted font-semibold">

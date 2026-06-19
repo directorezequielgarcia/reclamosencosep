@@ -87,12 +87,20 @@ export default async function InspeccionesPage({
           </p>
         </div>
         {puedeGestionarInspecciones(session.user.rol) && (
-          <Link
-            href="/admin/inspecciones/nueva"
-            className="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-svc-red text-white text-sm font-bold"
-          >
-            + Nueva inspección
-          </Link>
+          <div className="flex gap-2">
+            <Link
+              href="/admin/inspecciones/nueva/movil"
+              className="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-navy text-white text-sm font-bold"
+            >
+              📱 Celular
+            </Link>
+            <Link
+              href="/admin/inspecciones/nueva"
+              className="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-svc-red text-white text-sm font-bold"
+            >
+              💻 Nueva PC
+            </Link>
+          </div>
         )}
       </header>
 
