@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState } from "react";
+import { useActionState, useState, startTransition } from "react";
 import { controlarFactura, type ControlState } from "./actions";
 import type { Proyeccion } from "@/lib/factura-parse";
 import { pesos } from "@/lib/tarifas";
@@ -101,6 +101,23 @@ export function ControlForm() {
             <span className="text-[11px] text-muted">
               Usá el PDF original que te llega por mail. Es la opción más precisa.
             </span>
+            {state.esEscaneado ? (
+              <div className="rounded-lg border border-svc-yellow/50 bg-svc-yellow/10 p-3 flex flex-col gap-2">
+                <div className="text-xs text-navy">
+                  Este PDF parece ser una imagen escaneada (no trae texto): no
+                  lo podemos leer automáticamente. Sacale una foto o una
+                  captura de pantalla y usá la opción «Foto» — ahí sí lo
+                  leemos con reconocimiento óptico.
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setModo("FOTO")}
+                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-navy text-white font-bold text-xs hover:opacity-90 w-fit"
+                >
+                  📷 Usar la opción Foto
+                </button>
+              </div>
+            ) : null}
           </div>
         ) : (
           <div className="flex flex-col gap-2">
@@ -165,13 +182,15 @@ export function ControlForm() {
         </button>
       </form>
 
-      {state.mensaje && !state.ok ? (
+      {state.mensaje && !state.ok && !state.esEscaneado ? (
         <div className="rounded-xl border border-svc-red/40 bg-svc-red/10 p-4 text-sm text-navy">
           {state.mensaje}
         </div>
       ) : null}
 
-      {state.ok && state.extraida ? <Resultado state={state} /> : null}
+      {state.ok && state.extraida ? (
+        <Resultado state={state} action={action} />
+      ) : null}
     </div>
   );
 }
@@ -198,9 +217,15 @@ function comprobanteControlHTML(state: ControlState): string {
       (f) =>
         `<tr${f.alerta ? ' class="alerta"' : ""}><td>${f.concepto}${
           f.alerta ? ' <b class="rev">⚠ revisar</b>' : ""
+        }${
+          f.noComparable
+            ? ' <span class="rev" style="color:#889">(no comparable)</span>'
+            : ""
         }</td><td class="num">${
           f.facturado != null ? pesos(f.facturado) : "—"
-        }</td><td class="num">${pesos(f.segunCuadro)}</td><td class="num">${
+        }</td><td class="num">${
+          f.noComparable ? "—" : pesos(f.segunCuadro)
+        }</td><td class="num">${
           f.difPorc == null
             ? "—"
             : `${f.difPorc >= 0 ? "+" : ""}${(f.difPorc * 100).toFixed(1)}%`
@@ -269,7 +294,13 @@ ${state.composicion ? donutComprobanteHTML(state.composicion, "Composición de t
 </body></html>`;
 }
 
-function Resultado({ state }: { state: ControlState }) {
+function Resultado({
+  state,
+  action,
+}: {
+  state: ControlState;
+  action: (payload: FormData) => void;
+}) {
   const e = state.extraida!;
   const filas = state.filas ?? [];
   const conAlerta = filas.filter((f) => f.alerta);
@@ -358,12 +389,17 @@ function Resultado({ state }: { state: ControlState }) {
                   {f.alerta ? (
                     <span className="ml-2 text-svc-red font-bold">⚠ revisar</span>
                   ) : null}
+                  {f.noComparable ? (
+                    <span className="ml-2 text-muted font-normal">
+                      (no comparable)
+                    </span>
+                  ) : null}
                 </td>
                 <td className="px-4 py-2 text-right tabular-nums text-navy">
                   {f.facturado != null ? pesos(f.facturado) : "—"}
                 </td>
                 <td className="px-4 py-2 text-right tabular-nums text-muted">
-                  {pesos(f.segunCuadro)}
+                  {f.noComparable ? "—" : pesos(f.segunCuadro)}
                 </td>
                 <td className="px-4 py-2 text-right tabular-nums font-semibold text-navy">
                   {f.difPorc == null
@@ -375,6 +411,10 @@ function Resultado({ state }: { state: ControlState }) {
           </tbody>
         </table>
       </div>
+
+      {state.sinConsumo ? (
+        <ConsumoManualForm state={state} action={action} />
+      ) : null}
 
       {state.composicion ? (
         <GraficoComposicion composicion={state.composicion} />
@@ -413,6 +453,58 @@ function Resultado({ state }: { state: ControlState }) {
         </Link>{" "}
         adjuntando tu factura. Este control es orientativo y no reemplaza la
         liquidación oficial de la prestadora.
+      </div>
+    </div>
+  );
+}
+
+function ConsumoManualForm({
+  state,
+  action,
+}: {
+  state: ControlState;
+  action: (payload: FormData) => void;
+}) {
+  const [valor, setValor] = useState("");
+
+  function enviar() {
+    const kwh = Number(valor.replace(",", "."));
+    if (!kwh || kwh <= 0 || !state.texto) return;
+    const fd = new FormData();
+    fd.set("textoOcr", state.texto);
+    fd.set("consumoManual", String(kwh));
+    startTransition(() => {
+      action(fd);
+    });
+  }
+
+  return (
+    <div className="rounded-2xl border border-svc-yellow/50 bg-svc-yellow/10 p-4 flex flex-col gap-3">
+      <div className="text-sm text-navy">
+        <b>No pudimos leer tu consumo de luz (kWh)</b> de la factura —es
+        frecuente en fotos o escaneos—, así que no comparamos el cargo fijo,
+        el cargo variable, la compra de energía ni el alumbrado público.{" "}
+        <b>¿Lo cargás vos?</b> Mirá el casillero «Total Consumo Activo» de tu
+        factura.
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          type="number"
+          inputMode="decimal"
+          min={1}
+          placeholder="kWh del período"
+          value={valor}
+          onChange={(ev) => setValor(ev.target.value)}
+          className="w-40 rounded-lg border border-line-strong px-3 py-1.5 text-sm text-navy bg-paper"
+        />
+        <button
+          type="button"
+          onClick={enviar}
+          disabled={!valor}
+          className="inline-flex items-center px-4 py-1.5 rounded-lg bg-navy text-white font-bold text-sm hover:opacity-90 disabled:opacity-50"
+        >
+          Recalcular con este consumo
+        </button>
       </div>
     </div>
   );

@@ -83,6 +83,13 @@ export function parseFacturaTexto(text: string): FacturaExtraida {
     const nums = mAct[1].match(/-?[\d.,]+\.\d{2}|-?\d+\.\d{2}/g);
     if (nums && nums.length) consumoKwh = parseMonto(nums[nums.length - 1]);
   }
+  // El OCR de fotos/PDF-escaneados suele destrozar la tabla de lecturas del
+  // medidor: a veces confunde una LECTURA (miles) con el CONSUMO del período
+  // (decenas/centenas). Es más seguro no comparar que comparar contra un
+  // consumo imposible para un usuario residencial/comercial estándar.
+  if (consumoKwh != null && (consumoKwh <= 0 || consumoKwh > 3000)) {
+    consumoKwh = null;
+  }
 
   // m² (superficie cubierta declarada).
   const m2 = buscar(text, /Cubierta Declarada M2:\s*([\d.,]+)/i);
@@ -144,6 +151,9 @@ export type FilaControl = {
   segunCuadro: number;
   difPorc: number | null;
   alerta: boolean;
+  // No se pudo calcular "según cuadro" de forma confiable (ej. no se pudo
+  // leer el consumo de luz en kWh). Mejor avisarlo que comparar contra $0.
+  noComparable?: boolean;
 };
 
 export type Proyeccion = {
@@ -178,8 +188,14 @@ function difPorc(fact: number | null, calc: number): number | null {
 export function analizarFactura(
   text: string,
   cuadros: CuadroTarifario[],
+  // Consumo de luz cargado a mano por el usuario cuando no se pudo leer de
+  // la factura (frecuente en fotos/escaneos). Si viene, pisa lo extraído.
+  consumoManualKwh?: number | null,
 ): AnalisisFactura {
   const extraida = parseFacturaTexto(text);
+  if (consumoManualKwh != null && consumoManualKwh > 0) {
+    extraida.consumoKwh = consumoManualKwh;
+  }
 
   if (!cuadros.length) {
     return {
@@ -287,17 +303,44 @@ export function analizarFactura(
     };
   };
 
+  // Sin el consumo en kWh, "Cargo variable" y "Compra de energía" no se
+  // pueden calcular según el cuadro: mejor avisar que comparar contra $0.
+  const sinConsumo = extraida.consumoKwh == null;
+  const filaEnergia = (
+    concepto: string,
+    fact: number | null,
+    nombreLinea: string,
+  ): FilaControl =>
+    sinConsumo
+      ? {
+          concepto,
+          facturado: fact,
+          segunCuadro: 0,
+          difPorc: null,
+          alerta: false,
+          noComparable: true,
+        }
+      : fila(concepto, fact, nombreLinea);
+
   const filas: FilaControl[] = [
-    fila("Cargo fijo de energía", c.cargoFijo, "Cargo fijo de energía"),
-    fila("Cargo variable de energía", c.cargoVariable, "Cargo variable de energía"),
-    fila("Compra de energía", c.compra, "Compra de energía"),
-    fila("Alumbrado público", c.alumbrado, "Alumbrado público"),
+    filaEnergia("Cargo fijo de energía", c.cargoFijo, "Cargo fijo de energía"),
+    filaEnergia("Cargo variable de energía", c.cargoVariable, "Cargo variable de energía"),
+    filaEnergia("Compra de energía", c.compra, "Compra de energía"),
+    filaEnergia("Alumbrado público", c.alumbrado, "Alumbrado público"),
     fila("Servicio de agua", c.agua, "Servicio de agua"),
     fila("Servicio de cloacas", c.cloacas, "Servicio de cloacas"),
   ].filter((f) => f.facturado != null || f.segunCuadro > 0);
 
   // Chequeos independientes del prorrateo.
   const checks: { label: string; ok: boolean; detalle: string }[] = [];
+  if (sinConsumo) {
+    checks.push({
+      label: "Consumo de luz (kWh)",
+      ok: false,
+      detalle:
+        "No pudimos leerlo de la factura (frecuente en fotos/escaneos). Cargá tus datos a mano en la calculadora si querés comparar los conceptos de energía eléctrica.",
+    });
+  }
   if (c.agua != null && c.cloacas != null && c.agua > 0) {
     const ratio = c.cloacas / c.agua;
     const esperado = mejor.cuadro.cloacasPorc[extraida.tipo] ?? 0.5;
