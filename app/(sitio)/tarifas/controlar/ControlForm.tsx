@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useActionState, useState, startTransition } from "react";
 import { controlarFactura, type ControlState } from "./actions";
+import { leerFactura, type PasoLectura } from "./leerFactura";
 import type { Proyeccion } from "@/lib/factura-parse";
 import { pesos } from "@/lib/tarifas";
 import { GraficoComposicion } from "../GraficoComposicion";
@@ -17,172 +18,106 @@ const ESTADO_TXT: Record<string, string> = {
 
 const inicial: ControlState = { ok: false };
 
+function mensajePaso(paso: PasoLectura | null): string | null {
+  if (!paso) return null;
+  if (paso.paso === "leyendo-pdf") return "Leyendo el PDF…";
+  if (paso.paso === "convirtiendo-pdf")
+    return "Este PDF es una imagen escaneada: convirtiéndolo para leerlo con reconocimiento óptico…";
+  return `Leyendo con reconocimiento óptico… ${Math.round(paso.progreso * 100)}%`;
+}
+
 export function ControlForm() {
   const [state, action, pending] = useActionState(controlarFactura, inicial);
-  const [modo, setModo] = useState<"PDF" | "FOTO">("PDF");
-  const [nombrePdf, setNombrePdf] = useState("");
-  const [nombreFoto, setNombreFoto] = useState("");
+  const [nombreArchivo, setNombreArchivo] = useState("");
   const [ocrTexto, setOcrTexto] = useState("");
   const [ocrEstado, setOcrEstado] = useState<"idle" | "leyendo" | "listo" | "error">(
     "idle",
   );
-  const [progreso, setProgreso] = useState(0);
+  const [paso, setPaso] = useState<PasoLectura | null>(null);
 
-  async function correrOcr(file: File) {
-    setOcrEstado("leyendo");
-    setProgreso(0);
+  async function elegirArchivo(file: File) {
+    setNombreArchivo(file.name);
     setOcrTexto("");
+    setOcrEstado("leyendo");
+    setPaso(null);
     try {
-      const T = await import("tesseract.js");
-      const worker = await T.createWorker("spa", 1, {
-        logger: (m: { status: string; progress: number }) => {
-          if (m.status === "recognizing text") setProgreso(m.progress);
-        },
-      });
-      const { data } = await worker.recognize(file);
-      await worker.terminate();
-      setOcrTexto(data.text ?? "");
+      const texto = await leerFactura(file, setPaso);
+      setOcrTexto(texto);
       setOcrEstado("listo");
     } catch {
       setOcrEstado("error");
     }
   }
 
+  function enviar() {
+    const fd = new FormData();
+    fd.set("textoOcr", ocrTexto);
+    startTransition(() => {
+      action(fd);
+    });
+  }
+
   return (
     <div className="flex flex-col gap-6">
-      {/* Selector de modo */}
-      <div className="inline-flex rounded-xl border border-line-strong overflow-hidden w-fit">
-        {(["PDF", "FOTO"] as const).map((m) => (
-          <button
-            key={m}
-            type="button"
-            onClick={() => setModo(m)}
-            className={
-              "px-4 py-2 text-sm font-bold " +
-              (modo === m
-                ? "bg-svc-red text-white"
-                : "bg-paper text-navy hover:bg-paper-2")
-            }
-          >
-            {m === "PDF" ? "📄 PDF" : "📷 Foto"}
-          </button>
-        ))}
-      </div>
-
-      <form
-        action={action}
-        className="rounded-2xl border border-line bg-paper p-5 flex flex-col gap-4"
-      >
-        <input type="hidden" name="textoOcr" value={modo === "FOTO" ? ocrTexto : ""} />
-
-        {modo === "PDF" ? (
-          <div className="flex flex-col gap-1">
-            <span className="text-xs font-bold uppercase tracking-wider text-muted">
-              PDF de tu factura SCPL
+      <div className="rounded-2xl border border-line bg-paper p-5 flex flex-col gap-4">
+        <div className="flex flex-col gap-2">
+          <span className="text-xs font-bold uppercase tracking-wider text-muted">
+            Tu factura de la SCPL
+          </span>
+          <label className="cursor-pointer flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-line-strong bg-paper-2 px-4 py-7 text-center hover:border-svc-red hover:bg-svc-red/5 transition">
+            <span className="text-3xl" aria-hidden>
+              🧾
             </span>
-            <label className="cursor-pointer flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-line-strong bg-paper-2 px-4 py-7 text-center hover:border-svc-red hover:bg-svc-red/5 transition">
-              <span className="text-3xl" aria-hidden>
-                📄
-              </span>
-              <span className="text-sm font-bold text-navy">
-                {nombrePdf ? `✓ ${nombrePdf}` : "Tocá acá para elegir tu PDF"}
-              </span>
-              <span className="inline-flex items-center gap-1 px-4 py-2 rounded-lg bg-navy text-white text-xs font-bold">
-                {nombrePdf ? "Cambiar archivo" : "Seleccionar archivo"}
-              </span>
-              <input
-                type="file"
-                name="factura"
-                accept="application/pdf"
-                className="hidden"
-                onChange={(ev) => setNombrePdf(ev.target.files?.[0]?.name ?? "")}
-              />
-            </label>
-            <span className="text-[11px] text-muted">
-              Usá el PDF original que te llega por mail. Es la opción más precisa.
+            <span className="text-sm font-bold text-navy">
+              {nombreArchivo
+                ? `✓ ${nombreArchivo}`
+                : "Tocá acá para subir tu factura"}
             </span>
-            {state.esEscaneado ? (
-              <div className="rounded-lg border border-svc-yellow/50 bg-svc-yellow/10 p-3 flex flex-col gap-2">
-                <div className="text-xs text-navy">
-                  Este PDF parece ser una imagen escaneada (no trae texto): no
-                  lo podemos leer automáticamente. Sacale una foto o una
-                  captura de pantalla y usá la opción «Foto» — ahí sí lo
-                  leemos con reconocimiento óptico.
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setModo("FOTO")}
-                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-navy text-white font-bold text-xs hover:opacity-90 w-fit"
-                >
-                  📷 Usar la opción Foto
-                </button>
-              </div>
-            ) : null}
-          </div>
-        ) : (
-          <div className="flex flex-col gap-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-muted">
-              Foto de tu factura
+            <span className="inline-flex items-center gap-1 px-4 py-2 rounded-lg bg-navy text-white text-xs font-bold">
+              {nombreArchivo ? "Cambiar archivo" : "PDF, foto o captura"}
             </span>
-            <label className="cursor-pointer flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-line-strong bg-paper-2 px-4 py-7 text-center hover:border-svc-red hover:bg-svc-red/5 transition">
-              <span className="text-3xl" aria-hidden>
-                📷
-              </span>
-              <span className="text-sm font-bold text-navy">
-                {nombreFoto
-                  ? `✓ ${nombreFoto}`
-                  : "Tocá acá para sacar o elegir una foto"}
-              </span>
-              <span className="inline-flex items-center gap-1 px-4 py-2 rounded-lg bg-navy text-white text-xs font-bold">
-                {nombreFoto ? "Cambiar foto" : "Cámara o galería"}
-              </span>
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(ev) => {
-                  const f = ev.target.files?.[0];
-                  setNombreFoto(f?.name ?? "");
-                  if (f) correrOcr(f);
-                }}
-              />
-            </label>
-            <span className="text-[11px] text-muted">
-              Sacala derecha, con buena luz y enfocada. La lectura se hace en tu
-              teléfono (gratis); puede tardar unos segundos.
-            </span>
-            {ocrEstado === "leyendo" ? (
-              <div className="text-xs text-navy">
-                Leyendo la foto… {Math.round(progreso * 100)}%
-              </div>
-            ) : null}
-            {ocrEstado === "listo" ? (
-              <div className="text-xs text-svc-green font-semibold">
-                ✓ Foto leída. Ya podés controlar la factura.
-              </div>
-            ) : null}
-            {ocrEstado === "error" ? (
-              <div className="text-xs text-svc-red">
-                No se pudo leer la foto. Probá con otra o usá el PDF.
-              </div>
-            ) : null}
-          </div>
-        )}
+            <input
+              type="file"
+              accept="application/pdf,image/*"
+              className="hidden"
+              onChange={(ev) => {
+                const f = ev.target.files?.[0];
+                if (f) elegirArchivo(f);
+              }}
+            />
+          </label>
+          <span className="text-[11px] text-muted">
+            Subí el PDF que te llega por mail (lo más preciso) o una foto bien
+            enfocada y con buena luz. La lectura se hace en tu dispositivo
+            (gratis); puede tardar unos segundos.
+          </span>
+          {ocrEstado === "leyendo" ? (
+            <div className="text-xs text-navy">{mensajePaso(paso)}</div>
+          ) : null}
+          {ocrEstado === "listo" ? (
+            <div className="text-xs text-svc-green font-semibold">
+              ✓ Factura leída. Ya podés controlarla.
+            </div>
+          ) : null}
+          {ocrEstado === "error" ? (
+            <div className="text-xs text-svc-red">
+              No se pudo leer el archivo. Probá con otra foto (más nítida) o
+              con el PDF original.
+            </div>
+          ) : null}
+        </div>
 
         <button
-          type="submit"
-          disabled={
-            pending ||
-            (modo === "PDF" && !nombrePdf) ||
-            (modo === "FOTO" && ocrEstado !== "listo")
-          }
+          type="button"
+          onClick={enviar}
+          disabled={pending || ocrEstado !== "listo"}
           className="inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-svc-red text-white font-bold text-sm shadow-md shadow-svc-red/30 hover:opacity-90 disabled:opacity-60 w-fit"
         >
           {pending ? "Analizando…" : "Controlar factura"}
         </button>
-      </form>
+      </div>
 
-      {state.mensaje && !state.ok && !state.esEscaneado ? (
+      {state.mensaje && !state.ok ? (
         <div className="rounded-xl border border-svc-red/40 bg-svc-red/10 p-4 text-sm text-navy">
           {state.mensaje}
         </div>
