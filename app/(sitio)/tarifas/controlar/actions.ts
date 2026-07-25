@@ -16,9 +16,11 @@ export type ControlState = {
   // o foto por OCR), para poder recalcular con un consumo cargado a mano sin
   // tener que volver a subir el archivo.
   texto?: string;
-  // No se pudo leer el consumo de luz (kWh): el cliente puede ofrecer
-  // cargarlo a mano y reintentar con `consumoManual`.
+  // No se pudo leer el consumo de luz (kWh) y/o el dato de agua (m³ medida o
+  // m² de superficie): el cliente puede ofrecer cargarlos a mano y reintentar
+  // con `consumoManual` / `m2Manual` / `m3Manual`.
   sinConsumo?: boolean;
+  sinAgua?: boolean;
   extraida?: FacturaExtraida;
   cuadroMatchNombre?: string | null;
   cuadroMatchEstado?: string | null;
@@ -43,18 +45,23 @@ export async function controlarFactura(
     };
   }
 
-  // Consumo cargado a mano (reintento tras avisar "no pudimos leerlo").
+  // Datos cargados a mano (reintento tras avisar "no pudimos leerlo").
   const consumoManualTxt = String(formData.get("consumoManual") ?? "").trim();
   const consumoManual = consumoManualTxt ? Number(consumoManualTxt) : null;
+  const m2ManualTxt = String(formData.get("m2Manual") ?? "").trim();
+  const m2Manual = m2ManualTxt ? Number(m2ManualTxt) : null;
+  const m3ManualTxt = String(formData.get("m3Manual") ?? "").trim();
+  const m3Manual = m3ManualTxt ? Number(m3ManualTxt) : null;
 
   const cuadros = await cuadrosPublicados();
-  const a = analizarFactura(texto, cuadros, consumoManual);
+  const a = analizarFactura(texto, cuadros, consumoManual, m2Manual, m3Manual);
 
   return {
     ok: a.ok,
     mensaje: a.mensaje,
     texto,
-    sinConsumo: a.extraida.consumoKwh == null,
+    sinConsumo: a.sinConsumo,
+    sinAgua: a.sinAgua,
     extraida: a.extraida,
     cuadroMatchNombre: a.cuadroMatch?.nombre ?? null,
     cuadroMatchEstado: a.cuadroMatch?.estado ?? null,

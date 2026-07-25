@@ -56,7 +56,22 @@ async function renderizarPrimeraPagina(file: File): Promise<HTMLCanvasElement> {
   } finally {
     clearTimeout(limite);
   }
-  return canvas;
+  return contraste(canvas);
+}
+
+// Escaneos de baja resolución (JPEG chico incrustado en el PDF) le cuestan al
+// OCR, sobre todo los dígitos chicos de la tabla de lecturas. Pasar la imagen
+// a blanco y negro con más contraste no agrega detalle que no esté, pero
+// ayuda a Tesseract a distinguir mejor los bordes de cada carácter.
+function contraste(origen: HTMLCanvasElement): HTMLCanvasElement {
+  const salida = document.createElement("canvas");
+  salida.width = origen.width;
+  salida.height = origen.height;
+  const ctx = salida.getContext("2d");
+  if (!ctx) return origen;
+  ctx.filter = "grayscale(1) contrast(1.6) brightness(1.1)";
+  ctx.drawImage(origen, 0, 0);
+  return salida;
 }
 
 // El reconocimiento óptico en un celular viejo puede ser lento, pero tampoco

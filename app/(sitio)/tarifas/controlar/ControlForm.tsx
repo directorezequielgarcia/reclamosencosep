@@ -166,6 +166,34 @@ function comprobanteControlHTML(state: ControlState): string {
       ? `${e.m3Medido ?? "?"} m³ (medida)`
       : `${e.m2 ?? "?"} m² (estimada)`;
 
+  // Cuánto daría tu mismo consumo bajo cada cuadro conocido (vigente, pedido,
+  // anterior) — para ver de un vistazo si viene un aumento o cuánto subió.
+  const ordenEstado: Record<string, number> = { VIGENTE: 0, PEDIDO: 1, ANTERIOR: 2 };
+  const proyecciones = [...(state.proyecciones ?? [])].sort(
+    (a, b) => (ordenEstado[a.estado ?? ""] ?? 9) - (ordenEstado[b.estado ?? ""] ?? 9),
+  );
+  const proyeccionesHTML =
+    proyecciones.length > 1
+      ? `<div class="chart" style="margin-top:14px">
+<div class="chart-t">Tu mismo consumo en cada cuadro (estimación)</div>
+<table><thead><tr><th>Cuadro</th><th class="num">Total</th><th class="num">Vs. tu factura</th></tr></thead>
+<tbody>${proyecciones
+          .map((p) => {
+            const dif =
+              state.totalFacturado != null && state.totalFacturado > 0
+                ? (p.total - state.totalFacturado) / state.totalFacturado
+                : null;
+            const nombre = `${p.nombre}${p.estado ? ` (${ESTADO_TXT[p.estado] ?? p.estado})` : ""}${p.esMatch ? " ← te facturaron con este" : ""}`;
+            return `<tr><td>${nombre}</td><td class="num">${pesos(p.total)}</td><td class="num">${
+              dif == null || p.esMatch
+                ? "—"
+                : `${dif >= 0 ? "+" : ""}${(dif * 100).toFixed(1)}%`
+            }</td></tr>`;
+          })
+          .join("")}</tbody></table>
+</div>`
+      : "";
+
   return `<!doctype html><html lang="es"><head><meta charset="utf-8">
 <title>Control de factura - Calculadora ENCOSEP</title>
 <style>
@@ -220,6 +248,7 @@ function comprobanteControlHTML(state: ControlState): string {
 </div>
 <table><thead><tr><th>Concepto</th><th class="num">Te cobraron</th><th class="num">Según cuadro</th><th class="num">Dif.</th></tr></thead>
 <tbody>${filasHTML}</tbody></table>
+${proyeccionesHTML}
 ${state.composicion ? donutComprobanteHTML(state.composicion, "Composición de tu factura (según el cuadro)") : ""}
 <div class="nota">Control orientativo. Las diferencias chicas (hasta ~3%) son normales por el prorrateo de los días del período y por adhesiones opcionales. No reemplaza la liquidación oficial de la prestadora.</div>
 <script>window.onload=function(){setTimeout(function(){window.print()},200)}</script>
@@ -350,8 +379,8 @@ function Resultado({
         </table>
       </div>
 
-      {state.sinConsumo ? (
-        <ConsumoManualForm state={state} action={action} />
+      {state.sinConsumo || state.sinAgua ? (
+        <DatosManualesForm state={state} action={action} />
       ) : null}
 
       {state.composicion ? (
@@ -396,52 +425,91 @@ function Resultado({
   );
 }
 
-function ConsumoManualForm({
+function DatosManualesForm({
   state,
   action,
 }: {
   state: ControlState;
   action: (payload: FormData) => void;
 }) {
-  const [valor, setValor] = useState("");
+  const [kwh, setKwh] = useState("");
+  const [agua, setAgua] = useState("");
+  const modoMedida = state.extraida?.modoAgua === "MEDIDA";
 
   function enviar() {
-    const kwh = Number(valor.replace(",", "."));
-    if (!kwh || kwh <= 0 || !state.texto) return;
+    if (!state.texto) return;
+    const kwhNum = Number(kwh.replace(",", "."));
+    const aguaNum = Number(agua.replace(",", "."));
+    if ((state.sinConsumo && !(kwhNum > 0)) || (state.sinAgua && !(aguaNum > 0)))
+      return;
     const fd = new FormData();
     fd.set("textoOcr", state.texto);
-    fd.set("consumoManual", String(kwh));
+    if (kwhNum > 0) fd.set("consumoManual", String(kwhNum));
+    if (aguaNum > 0) fd.set(modoMedida ? "m3Manual" : "m2Manual", String(aguaNum));
     startTransition(() => {
       action(fd);
     });
   }
 
+  const listo =
+    (!state.sinConsumo || Number(kwh.replace(",", ".")) > 0) &&
+    (!state.sinAgua || Number(agua.replace(",", ".")) > 0);
+
   return (
     <div className="rounded-2xl border border-svc-yellow/50 bg-svc-yellow/10 p-4 flex flex-col gap-3">
       <div className="text-sm text-navy">
-        <b>No pudimos leer tu consumo de luz (kWh)</b> de la factura —es
-        frecuente en fotos o escaneos—, así que no comparamos el cargo fijo,
-        el cargo variable, la compra de energía ni el alumbrado público.{" "}
-        <b>¿Lo cargás vos?</b> Mirá el casillero «Total Consumo Activo» de tu
-        factura.
+        <b>Necesitamos confirmar</b>{" "}
+        {state.sinConsumo && state.sinAgua
+          ? "tu consumo de luz y de agua"
+          : state.sinConsumo
+            ? "tu consumo de luz"
+            : "tu consumo de agua"}{" "}
+        —no pudimos leerlo de la factura, es frecuente en fotos o escaneos—,
+        así que no comparamos los conceptos que dependen de ese dato.{" "}
+        <b>¿Lo cargás vos?</b>
       </div>
-      <div className="flex flex-wrap items-center gap-2">
-        <input
-          type="number"
-          inputMode="decimal"
-          min={1}
-          placeholder="kWh del período"
-          value={valor}
-          onChange={(ev) => setValor(ev.target.value)}
-          className="w-40 rounded-lg border border-line-strong px-3 py-1.5 text-sm text-navy bg-paper"
-        />
+      <div className="flex flex-wrap items-end gap-3">
+        {state.sinConsumo ? (
+          <label className="flex flex-col gap-1">
+            <span className="text-[11px] text-muted">
+              kWh del período («Total Consumo Activo»)
+            </span>
+            <input
+              type="number"
+              inputMode="decimal"
+              min={1}
+              placeholder="kWh"
+              value={kwh}
+              onChange={(ev) => setKwh(ev.target.value)}
+              className="w-36 rounded-lg border border-line-strong px-3 py-1.5 text-sm text-navy bg-paper"
+            />
+          </label>
+        ) : null}
+        {state.sinAgua ? (
+          <label className="flex flex-col gap-1">
+            <span className="text-[11px] text-muted">
+              {modoMedida
+                ? "m³ del período («Total Consumo Medido»)"
+                : "Superficie cubierta (m²)"}
+            </span>
+            <input
+              type="number"
+              inputMode="decimal"
+              min={1}
+              placeholder={modoMedida ? "m³" : "m²"}
+              value={agua}
+              onChange={(ev) => setAgua(ev.target.value)}
+              className="w-36 rounded-lg border border-line-strong px-3 py-1.5 text-sm text-navy bg-paper"
+            />
+          </label>
+        ) : null}
         <button
           type="button"
           onClick={enviar}
-          disabled={!valor}
+          disabled={!listo}
           className="inline-flex items-center px-4 py-1.5 rounded-lg bg-navy text-white font-bold text-sm hover:opacity-90 disabled:opacity-50"
         >
-          Recalcular con este consumo
+          Recalcular
         </button>
       </div>
     </div>

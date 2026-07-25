@@ -218,6 +218,10 @@ export type AnalisisFactura = {
   // Composición de la factura (por rubro) según el cuadro con el que matcheó,
   // para el gráfico de torta y el comprobante.
   composicion: Record<ComposicionCat, number> | null;
+  // Qué datos no se pudieron leer de la factura y hacen falta a mano para
+  // completar la comparación (frecuente en fotos/escaneos).
+  sinConsumo: boolean;
+  sinAgua: boolean;
 };
 
 const UMBRAL = 0.03; // 3% de tolerancia para marcar alerta
@@ -230,14 +234,28 @@ function difPorc(fact: number | null, calc: number): number | null {
 export function analizarFactura(
   text: string,
   cuadros: CuadroTarifario[],
-  // Consumo de luz cargado a mano por el usuario cuando no se pudo leer de
-  // la factura (frecuente en fotos/escaneos). Si viene, pisa lo extraído.
+  // Datos cargados a mano por el usuario cuando no se pudieron leer de la
+  // factura (frecuente en fotos/escaneos). Si vienen, pisan lo extraído.
   consumoManualKwh?: number | null,
+  m2Manual?: number | null,
+  m3MedidoManual?: number | null,
 ): AnalisisFactura {
   const extraida = parseFacturaTexto(text);
   if (consumoManualKwh != null && consumoManualKwh > 0) {
     extraida.consumoKwh = consumoManualKwh;
   }
+  if (m2Manual != null && m2Manual > 0) {
+    extraida.m2 = m2Manual;
+  }
+  if (m3MedidoManual != null && m3MedidoManual > 0) {
+    extraida.m3Medido = m3MedidoManual;
+  }
+
+  const sinConsumo = extraida.consumoKwh == null;
+  const sinAgua =
+    extraida.modoAgua === "MEDIDA"
+      ? extraida.m3Medido == null || extraida.m3Medido <= 0
+      : extraida.m2 == null || extraida.m2 <= 0;
 
   if (!cuadros.length) {
     return {
@@ -251,6 +269,8 @@ export function analizarFactura(
       totalFacturado: extraida.total,
       totalCuadro: null,
       composicion: null,
+      sinConsumo,
+      sinAgua,
     };
   }
   if (extraida.consumoKwh == null && extraida.conceptos.cargoFijo == null) {
@@ -266,6 +286,8 @@ export function analizarFactura(
       totalFacturado: extraida.total,
       totalCuadro: null,
       composicion: null,
+      sinConsumo,
+      sinAgua,
     };
   }
 
@@ -325,6 +347,8 @@ export function analizarFactura(
       totalFacturado: extraida.total,
       totalCuadro: null,
       composicion: null,
+      sinConsumo,
+      sinAgua,
     };
   }
 
@@ -345,9 +369,8 @@ export function analizarFactura(
     };
   };
 
-  // Sin el consumo en kWh, "Cargo variable" y "Compra de energía" no se
-  // pueden calcular según el cuadro: mejor avisar que comparar contra $0.
-  const sinConsumo = extraida.consumoKwh == null;
+  // Sin datos de consumo (luz o agua) los conceptos que dependen de ellos no
+  // se pueden calcular según el cuadro: mejor avisar que comparar contra $0.
   const filaEnergia = (
     concepto: string,
     fact: number | null,
@@ -364,13 +387,29 @@ export function analizarFactura(
         }
       : fila(concepto, fact, nombreLinea);
 
+  const filaAgua = (
+    concepto: string,
+    fact: number | null,
+    nombreLinea: string,
+  ): FilaControl =>
+    sinAgua
+      ? {
+          concepto,
+          facturado: fact,
+          segunCuadro: 0,
+          difPorc: null,
+          alerta: false,
+          noComparable: true,
+        }
+      : fila(concepto, fact, nombreLinea);
+
   const filas: FilaControl[] = [
     filaEnergia("Cargo fijo de energía", c.cargoFijo, "Cargo fijo de energía"),
     filaEnergia("Cargo variable de energía", c.cargoVariable, "Cargo variable de energía"),
     filaEnergia("Compra de energía", c.compra, "Compra de energía"),
     filaEnergia("Alumbrado público", c.alumbrado, "Alumbrado público"),
-    fila("Servicio de agua", c.agua, "Servicio de agua"),
-    fila("Servicio de cloacas", c.cloacas, "Servicio de cloacas"),
+    filaAgua("Servicio de agua", c.agua, "Servicio de agua"),
+    filaAgua("Servicio de cloacas", c.cloacas, "Servicio de cloacas"),
   ].filter((f) => f.facturado != null || f.segunCuadro > 0);
 
   // Chequeos independientes del prorrateo.
@@ -380,7 +419,18 @@ export function analizarFactura(
       label: "Consumo de luz (kWh)",
       ok: false,
       detalle:
-        "No pudimos leerlo de la factura (frecuente en fotos/escaneos). Cargá tus datos a mano en la calculadora si querés comparar los conceptos de energía eléctrica.",
+        "No pudimos leerlo de la factura (frecuente en fotos/escaneos). Cargá tus datos a mano si querés comparar los conceptos de energía eléctrica.",
+    });
+  }
+  if (sinAgua) {
+    checks.push({
+      label:
+        extraida.modoAgua === "MEDIDA"
+          ? "Consumo de agua (m³)"
+          : "Superficie cubierta (m²)",
+      ok: false,
+      detalle:
+        "No pudimos leerlo de la factura (frecuente en fotos/escaneos). Cargá el dato a mano si querés comparar agua y cloacas.",
     });
   }
   if (c.agua != null && c.cloacas != null && c.agua > 0) {
@@ -424,6 +474,8 @@ export function analizarFactura(
     totalFacturado: extraida.total,
     totalCuadro: res.total,
     composicion: res.composicion,
+    sinConsumo,
+    sinAgua,
   };
 }
 
