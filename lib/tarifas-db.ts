@@ -3,7 +3,7 @@ import { prisma } from "./prisma";
 import {
   CUADRO_ANTERIOR_AGO_2025,
   CUADRO_FEB_2026,
-  CUADRO_PEDIDO_JUN_2026,
+  CUADRO_JUN_2026,
   cuadroSerializable,
   datosDeCuadro,
   type CuadroEstado,
@@ -13,9 +13,9 @@ import {
 
 // Cuadros del código, usados como fallback público y como semilla inicial.
 const CUADROS_SEMILLA = [
+  CUADRO_JUN_2026,
   CUADRO_FEB_2026,
   CUADRO_ANTERIOR_AGO_2025,
-  CUADRO_PEDIDO_JUN_2026,
 ];
 import type { CuadroTarifario as DbCuadro } from "@prisma/client";
 

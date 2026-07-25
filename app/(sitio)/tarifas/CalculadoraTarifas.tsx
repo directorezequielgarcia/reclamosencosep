@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { GraficoComposicion } from "./GraficoComposicion";
 import {
+  ESTADO_TXT,
   TIPO_LABEL,
   type CuadroTarifario,
   type EntradaCalculo,
@@ -246,7 +247,7 @@ export function CalculadoraTarifas({ cuadros }: { cuadros: CuadroTarifario[] }) 
   <div><b>Mes:</b> ${MESES[mes - 1]}</div>
   <div><b>Cuadro:</b> ${cuadro.nombre}${
     cuadro.expediente ? ` (${cuadro.expediente})` : ""
-  }</div>
+  }${cuadro.estado ? ` · ${ESTADO_TXT[cuadro.estado] ?? cuadro.estado}` : ""}</div>
 </div>
 <table><tbody>${filas}</tbody></table>
 <div class="total"><div>Total estimado de tu factura</div><div class="v">${pesos(

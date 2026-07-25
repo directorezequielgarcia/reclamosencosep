@@ -5,16 +5,9 @@ import { useActionState, useState, startTransition } from "react";
 import { controlarFactura, type ControlState } from "./actions";
 import { leerFactura, type PasoLectura } from "./leerFactura";
 import type { Proyeccion } from "@/lib/factura-parse";
-import { pesos } from "@/lib/tarifas";
+import { ESTADO_TXT, pesos } from "@/lib/tarifas";
 import { GraficoComposicion } from "../GraficoComposicion";
 import { abrirComprobante, donutComprobanteHTML } from "@/lib/comprobante";
-
-const ESTADO_TXT: Record<string, string> = {
-  VIGENTE: "Vigente",
-  PEDIDO: "Aumento pedido",
-  ANTERIOR: "Anterior",
-  BORRADOR: "Borrador",
-};
 
 const inicial: ControlState = { ok: false };
 
@@ -205,7 +198,11 @@ function comprobanteControlHTML(state: ControlState): string {
   <div><b>Período:</b> ${e.periodo ?? "—"}</div>
   <div><b>Consumo de luz:</b> ${e.consumoKwh ?? "?"} kWh</div>
   <div><b>Agua:</b> ${aguaTxt}</div>
-  <div><b>Comparada con:</b> ${state.cuadroMatchNombre ?? "—"}</div>
+  <div><b>Comparada con:</b> ${state.cuadroMatchNombre ?? "—"}${
+    state.cuadroMatchEstado
+      ? ` · ${ESTADO_TXT[state.cuadroMatchEstado] ?? state.cuadroMatchEstado}`
+      : ""
+  }</div>
   <div><b>Subsidio nacional:</b> ${e.conSubsidio ? "Sí" : "No"}</div>
 </div>
 <div class="tot">
@@ -261,6 +258,12 @@ function Resultado({
         </div>
         <div className="text-xs text-muted mt-1">
           Comparada con: <b className="text-navy">{state.cuadroMatchNombre}</b>
+          {state.cuadroMatchEstado ? (
+            <span className="font-semibold text-svc-green">
+              {" "}
+              ({ESTADO_TXT[state.cuadroMatchEstado] ?? state.cuadroMatchEstado})
+            </span>
+          ) : null}
           {e.periodo ? ` · período ${e.periodo}` : ""} · {e.consumoKwh ?? "?"} kWh
           {e.m2 ? ` · ${e.m2} m²` : ""}
         </div>
@@ -465,6 +468,9 @@ function Proyecciones({
         </div>
         <div className="text-xs text-muted">
           Con los datos de tu factura, cuánto daría bajo cada cuadro tarifario.
+          Es una <b>estimación al mismo nivel de consumo</b> (el kWh de esta
+          factura) — si comparás distintos meses, el monto de cada cuadro va a
+          variar porque cambia el consumo, no el cuadro.
         </div>
       </div>
       <div className="divide-y divide-line">

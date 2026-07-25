@@ -67,39 +67,81 @@ const TIPO_TEXTO: [RegExp, TipoUsuario][] = [
 ];
 
 export function parseFacturaTexto(text: string): FacturaExtraida {
-  // Tipo de usuario (de la línea del servicio eléctrico).
-  const mServ = text.match(/Servicio El[eé]ctrico:\s*([A-ZÁÉÍÓÚ ]+)/i);
-  const tipoTxt = mServ ? mServ[1] : text;
+  // Tipo de usuario: la categoría aparece pegada a la etiqueta "Servicio
+  // Eléctrico:", pero no siempre DESPUÉS. En el texto embebido de algunos PDF
+  // (a diferencia del OCR de una foto, que sigue el orden visual) la
+  // categoría se dibuja ANTES de la etiqueta — ej. "COMERCIAL GENERAL
+  // Servicio Eléctrico:". Por eso buscamos en una ventana alrededor de la
+  // etiqueta en vez de solo hacia adelante.
+  const idxServicio = text.search(/Servicio El[eé]ctrico:/i);
+  const ventanaServicio =
+    idxServicio >= 0
+      ? text.slice(Math.max(0, idxServicio - 60), idxServicio + 60)
+      : text;
   let tipo: TipoUsuario = "RESIDENCIAL";
-  for (const [re, t] of TIPO_TEXTO) if (re.test(tipoTxt)) { tipo = t; break; }
+  for (const [re, t] of TIPO_TEXTO) if (re.test(ventanaServicio)) { tipo = t; break; }
 
   // Modo de agua.
   const modoAgua: ModoAgua = /AGUA\s+MEDIDA/i.test(text) ? "MEDIDA" : "ESTIMADA";
 
-  // Consumo eléctrico: último decimal del bloque del medidor activo.
-  let consumoKwh: number | null = null;
-  const mAct = text.match(/TOTAL CONSUMO ACTIVO([\s\S]*?)(REACTIVA|Servicios)/i);
-  if (mAct) {
-    const nums = mAct[1].match(/-?[\d.,]+\.\d{2}|-?\d+\.\d{2}/g);
-    if (nums && nums.length) consumoKwh = parseMonto(nums[nums.length - 1]);
+  // La factura tiene dos bloques de "TOTAL CONSUMO ..." (luz en kWh dentro de
+  // "Servicio Eléctrico", agua en m³ dentro de "Servicios Sanitarios"). En
+  // fotos/PDF escaneados el OCR a veces pierde el corte por "REACTIVA" y
+  // termina leyendo el consumo de AGUA como si fuera el de luz (o viceversa),
+  // así que acotamos cada búsqueda a su propia sección antes de buscar el
+  // número, en vez de confiar solo en el corte interno.
+  const idxSanitarios = text.search(/Servicios?\s+Sanitarios/i);
+  const seccionElectrica =
+    idxSanitarios >= 0 ? text.slice(0, idxSanitarios) : text;
+  const seccionSanitaria = idxSanitarios >= 0 ? text.slice(idxSanitarios) : "";
+
+  // Fila de lecturas del medidor: N° medidor, lectura actual (día mes año
+  // valor), lectura anterior (día mes año valor) y el total del período. El
+  // OCR de fotos/PDF-escaneados suele destrozar las ETIQUETAS ("TOTAL CONSUMO
+  // ACTIVO" puede salir como "707A: Consumo ACTIVO"), pero la fila de números
+  // en sí casi siempre sale limpia — así que la leemos directo en vez de
+  // depender del título.
+  const FILA_LECTURA =
+    /\d{5,9}\s+\d{1,2}\s+\d{1,2}\s+\d{4}\s+(-?[\d.,]+\.\d{2})\s+\d{1,2}\s+\d{1,2}\s+\d{4}\s+(-?[\d.,]+\.\d{2})\s+(-?[\d.,]+\.\d{2})/;
+
+  function totalDeFilaLectura(seccion: string): number | null {
+    const m = seccion.match(FILA_LECTURA);
+    return m ? parseMonto(m[3]) : null;
   }
-  // El OCR de fotos/PDF-escaneados suele destrozar la tabla de lecturas del
-  // medidor: a veces confunde una LECTURA (miles) con el CONSUMO del período
-  // (decenas/centenas). Es más seguro no comparar que comparar contra un
-  // consumo imposible para un usuario residencial/comercial estándar.
-  if (consumoKwh != null && (consumoKwh <= 0 || consumoKwh > 3000)) {
+
+  // Consumo eléctrico.
+  let consumoKwh: number | null = totalDeFilaLectura(seccionElectrica);
+  if (consumoKwh == null) {
+    // Fallback: por si la fila de números no calzó pero la etiqueta sí
+    // sobrevivió al OCR (ej. PDF con texto embebido, más prolijo).
+    const mAct = seccionElectrica.match(
+      /TOTAL CONSUMO ACTIVO([\s\S]*?)(REACTIVA|$)/i,
+    );
+    if (mAct) {
+      const nums = mAct[1].match(/-?[\d.,]+\.\d{2}|-?\d+\.\d{2}/g);
+      if (nums && nums.length) consumoKwh = parseMonto(nums[nums.length - 1]);
+    }
+  }
+  // Última red de seguridad: si por algún motivo se coló una LECTURA (miles)
+  // en vez del CONSUMO del período, mejor avisar que comparar contra un
+  // consumo imposible.
+  if (consumoKwh != null && (consumoKwh <= 0 || consumoKwh > 20000)) {
     consumoKwh = null;
   }
 
   // m² (superficie cubierta declarada).
   const m2 = buscar(text, /Cubierta Declarada M2:\s*([\d.,]+)/i);
 
-  // m³ medido (si corresponde).
-  let m3Medido: number | null = null;
-  const mMed = text.match(/TOTAL CONSUMO MEDIDO([\s\S]*?)(CONSUMOS|SERVICIOS)/i);
-  if (mMed) {
-    const nums = mMed[1].match(/-?\d+\.\d{2}/g);
-    if (nums && nums.length) m3Medido = parseMonto(nums[nums.length - 1]);
+  // m³ medido (si corresponde) — solo dentro de la sección sanitaria.
+  let m3Medido: number | null = totalDeFilaLectura(seccionSanitaria);
+  if (m3Medido == null) {
+    const mMed = seccionSanitaria.match(
+      /TOTAL CONSUMO MEDIDO([\s\S]*?)(CONSUMOS|SERVICIOS|$)/i,
+    );
+    if (mMed) {
+      const nums = mMed[1].match(/-?\d+\.\d{2}/g);
+      if (nums && nums.length) m3Medido = parseMonto(nums[nums.length - 1]);
+    }
   }
 
   // Período (mes/año).

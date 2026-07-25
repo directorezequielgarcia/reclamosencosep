@@ -32,6 +32,11 @@ async function textoEmbebidoDePdf(file: File): Promise<string> {
   return texto;
 }
 
+// El render de pdfjs-dist puede quedarse colgado sin avisar (visto en la
+// práctica, no siempre reproducible). Si tarda más de este límite, se cancela
+// explícitamente en vez de dejar al usuario esperando para siempre.
+const LIMITE_RENDER_MS = 25_000;
+
 async function renderizarPrimeraPagina(file: File): Promise<HTMLCanvasElement> {
   const pdfjsLib = await cargarPdfjs();
   const buf = await file.arrayBuffer();
@@ -44,9 +49,19 @@ async function renderizarPrimeraPagina(file: File): Promise<HTMLCanvasElement> {
   canvas.height = viewport.height;
   // Con pdfjs-dist v6, pasar canvasContext junto con canvas cuelga el render:
   // solo se debe pasar `canvas` (ver tipo RenderParameters).
-  await page.render({ canvas, viewport }).promise;
+  const task = page.render({ canvas, viewport });
+  const limite = setTimeout(() => task.cancel(), LIMITE_RENDER_MS);
+  try {
+    await task.promise;
+  } finally {
+    clearTimeout(limite);
+  }
   return canvas;
 }
+
+// El reconocimiento óptico en un celular viejo puede ser lento, pero tampoco
+// puede quedar esperando indefinidamente si el worker se traba.
+const LIMITE_OCR_MS = 90_000;
 
 async function ocr(
   fuente: File | HTMLCanvasElement,
@@ -58,9 +73,14 @@ async function ocr(
       if (m.status === "recognizing text") onProgreso(m.progress);
     },
   });
-  const { data } = await worker.recognize(fuente);
-  await worker.terminate();
-  return data.text ?? "";
+  const limite = setTimeout(() => worker.terminate(), LIMITE_OCR_MS);
+  try {
+    const { data } = await worker.recognize(fuente);
+    return data.text ?? "";
+  } finally {
+    clearTimeout(limite);
+    await worker.terminate().catch(() => {});
+  }
 }
 
 export type PasoLectura =

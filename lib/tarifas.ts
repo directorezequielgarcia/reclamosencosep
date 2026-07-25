@@ -120,6 +120,13 @@ export type SubsidioNoResidencial = {
 
 export type CuadroEstado = "VIGENTE" | "ANTERIOR" | "PEDIDO" | "BORRADOR";
 
+export const ESTADO_TXT: Record<string, string> = {
+  VIGENTE: "Vigente",
+  PEDIDO: "Aumento pedido",
+  ANTERIOR: "Anterior",
+  BORRADOR: "Borrador",
+};
+
 /** Número centinela: un tramo con `hasta >= HASTA_MAX` no tiene límite
  *  superior. Se usa para poder serializar a JSON (Infinity no es válido). */
 export const HASTA_MAX = 9_999_999;
@@ -390,7 +397,8 @@ export const CUADRO_FEB_2026: CuadroTarifario = {
   nombre: "Readecuación tarifaria — febrero 2026",
   expediente: "Exp. 014/2026",
   vigenteDesde: "2026-02-01",
-  estado: "VIGENTE",
+  // Superado por CUADRO_JUN_2026 (Dictamen N° 02/2026, aprobado 13/07/2026).
+  estado: "ANTERIOR",
   pdfUrl: "/tarifas/cuadro-tarifario-feb-2026.pdf",
   fuente:
     "Dictamen N° 01/2026 EnCoSeP — Boletín Oficial Municipal N° 058 (04/06/2026). Anexos I a VI.",
@@ -665,41 +673,51 @@ export const CUADRO_ANTERIOR_AGO_2025: CuadroTarifario = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────
-// CUADRO PEDIDO — junio 2026 (a tratarse en audiencia, NO aprobado)
-// Fuente: Nota N° 1746/26. Respecto del vigente feb-2026 sube la energía
-// (146,2829 → 162,5569) y baja el subsidio (92,1210 → 84,5786); el cargo fijo
-// y el cargo variable no cambian. Es un pass-through del precio mayorista.
+// CUADRO VIGENTE — junio 2026 (Dictamen N° 02/2026 EnCoSeP, aprobado)
+// Fuente: Dictamen N° 02/2026 EnCoSeP (13/07/2026), dictamen favorable art. 45
+// Ord. 6050-5/23, Exp. 016/2026 (solicitud SCPL) — Boletín Oficial Municipal
+// N° 076 (16/07/2026), aplicación período de consumo jun-26.
+// Respecto del vigente feb-2026: sube la energía (146,2829 → 162,5569, pass
+// -through del precio mayorista) y sube el alumbrado público; el cargo fijo,
+// el cargo variable y el subsidio nacional a la energía (92,1210 $/kWh) NO
+// cambian — lo pedido en la Nota N° 1746/26 planteaba bajar el subsidio a
+// 84,5786, pero el cuadro finalmente aprobado y publicado lo mantiene.
 // ─────────────────────────────────────────────────────────────────────────
 
-const ENERGIA_PEDIDO_JUN26: CuadroTarifario["energia"] = {};
+const ENERGIA_JUN26: CuadroTarifario["energia"] = {};
 for (const [k, tramos] of Object.entries(CUADRO_FEB_2026.energia)) {
   if (tramos)
-    ENERGIA_PEDIDO_JUN26[k as TipoUsuario] = tramos.map((t) => ({
+    ENERGIA_JUN26[k as TipoUsuario] = tramos.map((t) => ({
       ...t,
       energia: 162.5569,
     }));
 }
 
-export const CUADRO_PEDIDO_JUN_2026: CuadroTarifario = {
+export const CUADRO_JUN_2026: CuadroTarifario = {
   ...CUADRO_FEB_2026,
-  id: "ped-jun-2026",
-  nombre: "Aumento pedido SCPL — junio 2026 (a tratarse)",
-  expediente: "Nota N° 1746/26",
-  vigenteDesde: "2026-07-01",
-  estado: "PEDIDO",
-  pdfUrl: "/tarifas/pedido-scpl-jun-2026.pdf",
+  id: "jun-2026",
+  nombre: "Readecuación tarifaria — junio 2026",
+  expediente: "Exp. 016/2026",
+  vigenteDesde: "2026-06-01",
+  estado: "VIGENTE",
+  pdfUrl: "/tarifas/cuadro-tarifario-jun-2026.pdf",
   fuente:
-    "Nota N° 1746/26 — pedido de readecuación de energía y alumbrado, a tratarse en audiencia pública. No aprobado.",
-  energia: ENERGIA_PEDIDO_JUN26,
-  subsidioEnergia: {
-    ...CUADRO_FEB_2026.subsidioEnergia,
-    precioPorKwh: 84.5786,
+    "Dictamen N° 02/2026 EnCoSeP (13/07/2026) — Boletín Oficial Municipal N° 076 (16/07/2026), págs. 25-26. Solo energía y alumbrado público; agua y cloacas sin cambios respecto de feb-2026.",
+  energia: ENERGIA_JUN26,
+  alumbradoPublico: {
+    RESIDENCIAL: 8981.13,
+    COMERCIAL: 26943.39,
+    OBRADOR: 26943.39,
+    ENTIDAD_SIN_FINES: 8981.13,
+    ENTES_OFICIALES: 107773.56,
+    PEQUENA_INDUSTRIA: 80830.17,
+    GRAN_USUARIO: 134716.95,
   },
 };
 
 /** Todos los cuadros conocidos, del más nuevo al más viejo. */
 export const CUADROS: CuadroTarifario[] = [
-  CUADRO_PEDIDO_JUN_2026,
+  CUADRO_JUN_2026,
   CUADRO_FEB_2026,
   CUADRO_ANTERIOR_AGO_2025,
 ];
