@@ -76,6 +76,19 @@ export default async function HomeInstitucional() {
 
   return (
     <>
+      {/* ===================== AVISO SOL BUS ===================== */}
+      {/* Franja destacada, lo primero que ve el vecino al entrar. Nuevo
+          sistema de transporte (Grupo MR S.R.L. / Sol Bus, reemplaza a
+          Patagonia desde el 1° de agosto de 2026) — orienta y deriva a la
+          página de líneas y recorridos. Retirar cuando deje de ser novedad. */}
+      <Link
+        href="/areas-fiscalizadas/transporte#lineas"
+        className="block bg-[#7e57c2] text-white text-center px-4 py-2.5 text-sm font-semibold hover:bg-[#6e49b2] transition"
+      >
+        🚌 Nuevo sistema de transporte: Sol Bus ya está en funcionamiento —
+        consultá tu línea y recorrido <span aria-hidden>›</span>
+      </Link>
+
       {/* ===================== HERO ===================== */}
       {/* Foto real de Comodoro (sin espejo), velo navy institucional para
           legibilidad, y el logo nuevo nítido sobre una placa clara: respeta
@@ -263,7 +276,7 @@ export default async function HomeInstitucional() {
               </span>
             </div>
             <p className="text-sm text-navy leading-relaxed flex-1">
-              Acceso para CLEAR URBANA, SCPL, PATAGONIA y DIADEMA: reclamos
+              Acceso para CLEAR URBANA, SCPL, SOL BUS y DIADEMA: reclamos
               asignados, descargo en expedientes, normativa vigente y
               vencimientos.
             </p>

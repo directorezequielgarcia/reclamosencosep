@@ -22,9 +22,9 @@ const SERVICIOS = [
   },
   {
     slug: "transporte",
-    titulo: "Transporte Público Interurbano",
+    titulo: "Transporte Público Urbano y Suburbano",
     archivo: "transporte.png",
-    prestadora: "PATAGONIA · DIADEMA",
+    prestadora: "SOL BUS · DIADEMA",
   },
 ];
 

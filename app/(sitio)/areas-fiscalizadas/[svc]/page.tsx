@@ -13,6 +13,10 @@ type AreaConfig = {
   queSePuedeReclamar: string[];
   normativa: Array<{ norma: string; titulo: string }>;
   acento: "blue" | "yellow" | "green" | "purple";
+  // Solo Transporte: listado de líneas y recorridos resumidos (origen → destino),
+  // para orientar al vecino sin la letra técnica calle por calle de la resolución.
+  lineas?: Array<{ numero: string; recorrido: string }>;
+  lineasNota?: string;
 };
 
 const AREAS: Record<string, AreaConfig> = {
@@ -120,11 +124,11 @@ const AREAS: Record<string, AreaConfig> = {
     acento: "green",
   },
   transporte: {
-    titulo: "Transporte Público Interurbano",
+    titulo: "Transporte Público Urbano y Suburbano",
     archivo: "transporte.png",
-    prestadora: "PATAGONIA Argentina S.R.L. · TRANSPORTE DIADEMA S.A.",
+    prestadora: "SOL BUS (Grupo MR S.R.L.) · TRANSPORTE DIADEMA S.A.",
     prestadoraDetalle:
-      "Empresas concesionarias del servicio de transporte urbano e interurbano de pasajeros (contratos prorrogados).",
+      "Desde el 1° de agosto de 2026, Grupo MR S.R.L. — marca comercial SOL BUS — presta el servicio urbano y suburbano de pasajeros, en reemplazo de Patagonia Argentina S.R.L. Diadema continúa con sus líneas.",
     descripcionCorta:
       "Servicio de colectivos urbanos e interurbanos que conectan los barrios de Comodoro Rivadavia, Rada Tilly y zonas aledañas.",
     queFiscaliza: [
@@ -141,15 +145,45 @@ const AREAS: Record<string, AreaConfig> = {
       "Mal estado de la unidad",
       "Mal trato del chofer o personal",
       "Cartel o parada dañada",
+      "Cambio de parada o lugar de levantamiento (Sol Bus)",
       "Cobro fuera del cuadro tarifario",
     ],
     normativa: [
       {
-        norma: "Pliego licitatorio 2025",
-        titulo: "Concesión del servicio de Transporte Urbano — proceso en curso",
+        norma: "Resolución Municipal Nº 1.399/26 (20-07-2026)",
+        titulo:
+          "Establece las líneas, ramales y recorridos de la Etapa Inicial del servicio a cargo de Grupo MR S.R.L. (Sol Bus), vigente desde el 1° de agosto de 2026",
+      },
+      {
+        norma: "Ordenanza Municipal Nº 17.335/25",
+        titulo: "Pliego de Bases y Condiciones — frecuencias, horarios y parámetros operativos",
       },
     ],
     acento: "purple",
+    lineasNota:
+      "Recorridos resumidos (origen → destino). El detalle calle por calle está en el Anexo I de la Resolución 1.399/26.",
+    lineas: [
+      { numero: "1", recorrido: "Centro – Máximo Abásolo" },
+      { numero: "2", recorrido: "Centro – Máximo Abásolo" },
+      { numero: "3", recorrido: "Industrial – Centro" },
+      { numero: "4", recorrido: "Industrial – Centro" },
+      { numero: "5", recorrido: "Industrial – Centro / Industrial – Universidad – Las Orquídeas" },
+      { numero: "6", recorrido: "Circular: Estadio Municipal – Stella Maris – Abásolo – Gral. Mosconi – Centro" },
+      { numero: "7", recorrido: "Estadio – Centro – Laprida" },
+      { numero: "8", recorrido: "Standard – Palazzo" },
+      { numero: "9", recorrido: "Centro – Barrio Industrial" },
+      { numero: "12", recorrido: "Centro – Abásolo" },
+      { numero: "13", recorrido: "Centro – Standard" },
+      { numero: "14", recorrido: "Industrial – Fracción 14 y 15 – B. Vista – Los Bretes – Cerro Solo" },
+      { numero: "15", recorrido: "Centro – Los Tres Pinos" },
+      { numero: "16", recorrido: "Centro – Saavedra" },
+      { numero: "17", recorrido: "Centro – Ciudadela – Padre Corti" },
+      { numero: "18", recorrido: "Centro – Restinga Alí" },
+      { numero: "19", recorrido: "Centro – Caleta Córdova" },
+      { numero: "20", recorrido: "Industrial – Stella Maris – Hospital Alvear" },
+      { numero: "21", recorrido: "Ciudadela – Don Bosco – Standard" },
+      { numero: "22", recorrido: "Centro – Standard – Km. 11" },
+    ],
   },
 };
 
@@ -226,6 +260,34 @@ export default async function AreaFiscalizadaPage({
             Hacer un reclamo →
           </Link>
         </section>
+
+        {/* LINEAS Y RECORRIDOS (solo Transporte) */}
+        {area.lineas && (
+          <section id="lineas">
+            <div className="text-xs font-bold tracking-widest uppercase text-muted">
+              Sol Bus
+            </div>
+            <h2 className="text-2xl font-extrabold text-navy mt-1">
+              Líneas y recorridos
+            </h2>
+            {area.lineasNota && (
+              <p className="text-sm text-muted mt-2 max-w-2xl">{area.lineasNota}</p>
+            )}
+            <ul className="grid sm:grid-cols-2 gap-2 mt-4">
+              {area.lineas.map((l) => (
+                <li
+                  key={l.numero}
+                  className="flex items-start gap-3 rounded-xl border border-line bg-paper p-3"
+                >
+                  <span className="shrink-0 w-9 h-9 rounded-full bg-[#7e57c2]/15 border-2 border-[#7e57c2]/60 text-[#7e57c2] font-extrabold text-sm flex items-center justify-center">
+                    {l.numero}
+                  </span>
+                  <span className="text-sm text-navy pt-1.5">{l.recorrido}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         {/* QUE FISCALIZA EL ENTE */}
         <section>
