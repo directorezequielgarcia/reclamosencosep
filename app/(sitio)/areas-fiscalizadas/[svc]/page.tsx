@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { SeccionHeader } from "@/components/ui/SeccionHeader";
 import { MigajasSitio, VolverInicio } from "@/components/ui/MigajasSitio";
 import { ZorritoTour } from "@/components/tour/ZorritoTour";
+import { ZorritoGuia } from "@/components/tour/ZorritoGuia";
 
 type AreaConfig = {
   titulo: string;
@@ -455,10 +456,17 @@ export default async function AreaFiscalizadaPage({
               </a>
             )}
 
+            <div className="mt-4">
+              <ZorritoGuia />
+            </div>
+
             <ul className="flex flex-col gap-2 mt-4">
               {area.lineas.map((l) => (
                 <li key={l.numero}>
-                  <details className="group rounded-xl border border-line bg-paper open:border-[#7e57c2]/50">
+                  <details
+                    id={`linea-${l.numero}`}
+                    className="group rounded-xl border border-line bg-paper open:border-[#7e57c2]/50 scroll-mt-24"
+                  >
                     <summary className="flex items-center gap-3 p-3 cursor-pointer list-none">
                       <span className="shrink-0 w-9 h-9 rounded-full bg-[#7e57c2]/15 border-2 border-[#7e57c2]/60 text-[#7e57c2] font-extrabold text-sm flex items-center justify-center">
                         {l.numero}
