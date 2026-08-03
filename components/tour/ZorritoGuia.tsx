@@ -35,10 +35,16 @@ type Parada = {
   refugio: boolean;
 };
 
+// El dataset mezcla LineString (coordinates: [[lng,lat],...]) y
+// MultiLineString (coordinates: [[[lng,lat],...], [[lng,lat],...]]) según la
+// línea — hay que soportar las dos formas o esa línea queda invisible.
 type LineaGeoJSON = {
   features: Array<{
     properties: { linea: string; sentido: string };
-    geometry: { type: string; coordinates: [number, number][] };
+    geometry:
+      | { type: "LineString"; coordinates: [number, number][] }
+      | { type: "MultiLineString"; coordinates: [number, number][][] }
+      | { type: string; coordinates: unknown };
   }>;
 };
 
@@ -82,19 +88,32 @@ function distPuntoSegmento(px: number, py: number, ax: number, ay: number, bx: n
   return Math.hypot(px - cx, py - cy);
 }
 
+function distanciaSegmentos(p: { x: number; y: number }, lat: number, coords: [number, number][]) {
+  let min = Infinity;
+  for (let i = 0; i < coords.length - 1; i++) {
+    const [lngA, latA] = coords[i];
+    const [lngB, latB] = coords[i + 1];
+    const a = proyectar(latA, lngA, lat);
+    const b = proyectar(latB, lngB, lat);
+    const d = distPuntoSegmento(p.x, p.y, a.x, a.y, b.x, b.y);
+    if (d < min) min = d;
+  }
+  return min;
+}
+
 function distanciaAminea(lat: number, lng: number, linea: LineaGeoJSON) {
   const p = proyectar(lat, lng, lat);
   let min = Infinity;
   for (const f of linea.features) {
-    if (f.geometry?.type !== "LineString") continue;
-    const coords = f.geometry.coordinates;
-    for (let i = 0; i < coords.length - 1; i++) {
-      const [lngA, latA] = coords[i];
-      const [lngB, latB] = coords[i + 1];
-      const a = proyectar(latA, lngA, lat);
-      const b = proyectar(latB, lngB, lat);
-      const d = distPuntoSegmento(p.x, p.y, a.x, a.y, b.x, b.y);
+    const geom = f.geometry;
+    if (geom?.type === "LineString") {
+      const d = distanciaSegmentos(p, lat, geom.coordinates as [number, number][]);
       if (d < min) min = d;
+    } else if (geom?.type === "MultiLineString") {
+      for (const linea2 of geom.coordinates as [number, number][][]) {
+        const d = distanciaSegmentos(p, lat, linea2);
+        if (d < min) min = d;
+      }
     }
   }
   return min;
@@ -217,18 +236,22 @@ export function ZorritoGuia() {
             </div>
             <div className="flex flex-col gap-1.5">
               {resultado.paradasCercanas.map((p) => (
-                <div
+                <a
                   key={p.id}
-                  className="flex items-center justify-between gap-2 rounded-lg border border-line bg-paper px-3 py-2"
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}&travelmode=walking`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between gap-2 rounded-lg border border-line bg-paper px-3 py-2 hover:border-[#7e57c2]/50 hover:bg-[#7e57c2]/5 transition"
+                  title="Ir hasta esta parada con Google Maps"
                 >
                   <span className="text-xs text-navy">
-                    {p.calle} y {p.esquina}
+                    🧭 {p.calle} y {p.esquina}
                     {p.refugio && " 🏠"}
                   </span>
                   <span className="text-xs text-muted font-mono shrink-0">
                     {Math.round(p.distancia)} m
                   </span>
-                </div>
+                </a>
               ))}
             </div>
           </div>
