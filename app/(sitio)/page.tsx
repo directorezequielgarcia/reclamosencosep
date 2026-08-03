@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { BotoneraServicios } from "@/components/servicios/BotoneraServicios";
 import { prisma } from "@/lib/prisma";
+import { ZorritoTour } from "@/components/tour/ZorritoTour";
 
 export const metadata = {
   title: "EnCoSeP · Ente de Control de Servicios Públicos · Comodoro Rivadavia",
@@ -82,6 +83,7 @@ export default async function HomeInstitucional() {
           Patagonia desde el 1° de agosto de 2026) — orienta y deriva a la
           página de líneas y recorridos. Retirar cuando deje de ser novedad. */}
       <Link
+        id="aviso-solbus"
         href="/areas-fiscalizadas/transporte#lineas"
         className="block bg-[#7e57c2] text-white text-center px-4 py-2.5 text-sm font-semibold hover:bg-[#6e49b2] transition"
       >
@@ -152,6 +154,7 @@ export default async function HomeInstitucional() {
 
           <div className="flex flex-col sm:flex-row items-center gap-3">
             <Link
+              id="hero-reclamo"
               href="/reclamos"
               className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-svc-red text-white font-bold text-sm uppercase tracking-wider shadow-lg shadow-svc-red/40 hover:scale-105 transition"
             >
@@ -181,7 +184,7 @@ export default async function HomeInstitucional() {
       {/* Acceso único por rol: cada perfil entra a donde le corresponde.
           El camino del vecino incluye, adentro, sus dos formas de reclamar
           (con usuario o asistido por WhatsApp), para no repetir esa sección. */}
-      <section className="max-w-6xl mx-auto px-6 py-16">
+      <section id="quien-sos-hoy" className="max-w-6xl mx-auto px-6 py-16">
         <div className="text-center mb-10">
           <div className="text-xs font-bold tracking-widest uppercase text-muted">
             Accesos directos
@@ -325,7 +328,7 @@ export default async function HomeInstitucional() {
       </section>
 
       {/* ===================== ÁREAS FISCALIZADAS ===================== */}
-      <section className="bg-paper py-12 px-6 border-b border-line">
+      <section id="areas-fiscalizadas-home" className="bg-paper py-12 px-6 border-b border-line">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-8">
             <div className="text-xs font-bold tracking-[0.18em] uppercase text-muted">
@@ -500,6 +503,46 @@ export default async function HomeInstitucional() {
           </div>
         </div>
       </section>
+
+      <ZorritoTour
+        storageKey="zorrito-tour-home-v1"
+        pasos={[
+          {
+            pose: "parado",
+            texto:
+              "¡Hola! Soy el Zorrito de ENCOSEP 🦊. Te ayudo a moverte por el sitio.",
+          },
+          {
+            targetId: "aviso-solbus",
+            pose: "colectivo",
+            texto:
+              "¿Viste el aviso de arriba? Ahí te cuento sobre el nuevo sistema de transporte Sol Bus.",
+          },
+          {
+            targetId: "hero-reclamo",
+            pose: "parado",
+            texto:
+              "Si tenés un problema con un servicio público, tocá acá para hacer tu reclamo.",
+          },
+          {
+            targetId: "quien-sos-hoy",
+            pose: "parado",
+            texto:
+              "Elegí tu perfil: vecino, prestadora, o si sos parte del Ente, entrá con tu usuario.",
+          },
+          {
+            targetId: "areas-fiscalizadas-home",
+            pose: "colectivo",
+            texto:
+              "Acá entrás a cada área que controlamos: Residuos, Electricidad, Agua o Transporte.",
+          },
+          {
+            pose: "agachado",
+            texto:
+              "¡Listo! Cuando quieras volver a verme, tocá mi carita en el botón de abajo.",
+          },
+        ]}
+      />
     </>
   );
 }
