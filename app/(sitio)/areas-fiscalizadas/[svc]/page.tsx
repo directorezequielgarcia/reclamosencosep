@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SeccionHeader } from "@/components/ui/SeccionHeader";
 import { MigajasSitio, VolverInicio } from "@/components/ui/MigajasSitio";
+import { ZorritoTour } from "@/components/tour/ZorritoTour";
 
 type AreaConfig = {
   titulo: string;
@@ -232,6 +233,7 @@ export default async function AreaFiscalizadaPage({
         <MigajasSitio items={[{ label: "Áreas fiscalizadas" }]} />
         {/* CABECERA CON ICONO + PRESTADORA + CTA */}
         <section
+          id="cabecera-transporte"
           className={`rounded-2xl border-2 ${acento.border} ${acento.bg} p-6 flex flex-col md:flex-row items-center gap-6`}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -333,7 +335,7 @@ export default async function AreaFiscalizadaPage({
               </li>
             ))}
           </ul>
-          <div className="mt-5 text-center">
+          <div id="cta-reclamo-transporte" className="mt-5 text-center">
             <Link
               href={`/ingresar?callbackUrl=/reclamo/nuevo?svc=${svc}`}
               className="inline-flex items-center justify-center px-6 py-3 rounded-xl bg-svc-red text-white font-bold text-base shadow-lg shadow-svc-red/30"
@@ -374,6 +376,42 @@ export default async function AreaFiscalizadaPage({
 
         <VolverInicio />
       </main>
+
+      {svc === "transporte" && (
+        <ZorritoTour
+          storageKey="zorrito-tour-transporte-v1"
+          pasos={[
+            {
+              pose: "parado",
+              texto:
+                "¡Hola! Soy el Zorrito de ENCOSEP 🦊. Te ayudo a entender los cambios del transporte urbano.",
+            },
+            {
+              targetId: "cabecera-transporte",
+              pose: "colectivo",
+              texto:
+                "Desde el 1° de agosto de 2026, Sol Bus (Grupo MR S.R.L.) reemplaza a Patagonia en el servicio urbano y suburbano.",
+            },
+            {
+              targetId: "lineas",
+              pose: "colectivo",
+              texto:
+                "Acá abajo tenés las 22 líneas con su recorrido resumido. Buscá la tuya antes de subir al colectivo.",
+            },
+            {
+              targetId: "cta-reclamo-transporte",
+              pose: "parado",
+              texto:
+                "¿Te cambiaron la parada o el lugar de levantamiento? Tocá acá y elegí \"Cambio de parada o lugar de levantamiento (Sol Bus)\" para contarnos.",
+            },
+            {
+              pose: "agachado",
+              texto:
+                "¡Listo! Cuando quieras volver a verme, tocá mi carita en el botón de abajo.",
+            },
+          ]}
+        />
+      )}
     </>
   );
 }
