@@ -3,7 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { SvcIcon } from "@/components/servicios/SvcIcon";
-import { SVC_META, SVC_ORDER, type SvcKey } from "@/lib/servicios";
+import {
+  SVC_META,
+  SVC_ORDER,
+  TRANSPORTE_CAMBIO_PARADA_TITULO,
+  MOTIVOS_CAMBIO_PARADA,
+  type SvcKey,
+} from "@/lib/servicios";
 
 type Paso = "servicio" | "ubicacion" | "detalle" | "revision";
 
@@ -16,6 +22,11 @@ type State = {
   lat: number | null;
   lng: number | null;
   fotos: File[];
+  linea: string;
+  paradaAntes: string;
+  paradaAhora: string;
+  motivos: string[];
+  explayarse: string;
 };
 
 const INIT: State = {
@@ -26,7 +37,28 @@ const INIT: State = {
   lat: null,
   lng: null,
   fotos: [],
+  linea: "",
+  paradaAntes: "",
+  paradaAhora: "",
+  motivos: [],
+  explayarse: "",
 };
+
+function construirDescripcionCambioParada(s: {
+  linea: string;
+  paradaAntes: string;
+  paradaAhora: string;
+  motivos: string[];
+  explayarse: string;
+}): string {
+  const partes: string[] = [];
+  if (s.linea.trim()) partes.push(`Línea: ${s.linea.trim()}`);
+  if (s.paradaAntes.trim()) partes.push(`Antes (Patagonia): ${s.paradaAntes.trim()}`);
+  if (s.paradaAhora.trim()) partes.push(`Ahora (Sol Bus): ${s.paradaAhora.trim()}`);
+  if (s.motivos.length) partes.push(`Motivo: ${s.motivos.join(", ")}`);
+  if (s.explayarse.trim()) partes.push(`Detalle: ${s.explayarse.trim()}`);
+  return partes.join("\n");
+}
 
 export function WizardReclamo({ svcInicial }: { svcInicial?: SvcKey }) {
   const router = useRouter();
@@ -299,8 +331,45 @@ function PasoDetalle({
   onSiguiente: () => void;
 }) {
   const m = SVC_META[svc];
-  const puede =
-    state.titulo.trim().length >= 3 && state.descripcion.trim().length >= 5;
+  const esCambioParada =
+    svc === "transporte" && state.titulo === TRANSPORTE_CAMBIO_PARADA_TITULO;
+  const puede = esCambioParada
+    ? state.linea.trim().length >= 1 &&
+      state.paradaAhora.trim().length >= 3 &&
+      state.motivos.length >= 1
+    : state.titulo.trim().length >= 3 && state.descripcion.trim().length >= 5;
+
+  function actualizarCambioParada(
+    cambios: Partial<
+      Pick<State, "linea" | "paradaAntes" | "paradaAhora" | "motivos" | "explayarse">
+    >,
+  ) {
+    const next = { ...state, ...cambios };
+    const descripcion = construirDescripcionCambioParada(next);
+    setField("linea", next.linea);
+    setField("paradaAntes", next.paradaAntes);
+    setField("paradaAhora", next.paradaAhora);
+    setField("motivos", next.motivos);
+    setField("explayarse", next.explayarse);
+    setField("descripcion", descripcion);
+  }
+
+  function elegirTitulo(t: string) {
+    setField("titulo", t);
+    if (t !== TRANSPORTE_CAMBIO_PARADA_TITULO && esCambioParada) {
+      // Salir del mini-form de cambio de parada: no arrastrar la descripción compuesta.
+      setField("descripcion", "");
+    }
+  }
+
+  function toggleMotivo(motivo: string) {
+    const activo = state.motivos.includes(motivo);
+    actualizarCambioParada({
+      motivos: activo
+        ? state.motivos.filter((mt) => mt !== motivo)
+        : [...state.motivos, motivo],
+    });
+  }
 
   function onFotos(e: React.ChangeEvent<HTMLInputElement>) {
     const arr = Array.from(e.target.files ?? []);
@@ -329,7 +398,7 @@ function PasoDetalle({
             <button
               key={ex}
               type="button"
-              onClick={() => setField("titulo", ex)}
+              onClick={() => elegirTitulo(ex)}
               className={`text-left px-3 py-2.5 rounded-xl border text-sm transition ${
                 state.titulo === ex
                   ? "border-navy-2 bg-navy-2/5 text-navy font-semibold"
@@ -342,25 +411,100 @@ function PasoDetalle({
           <input
             type="text"
             value={m.examples.includes(state.titulo) ? "" : state.titulo}
-            onChange={(e) => setField("titulo", e.target.value)}
+            onChange={(e) => elegirTitulo(e.target.value)}
             placeholder="O escribilo con tus palabras…"
             className="mt-1 w-full px-3 py-2.5 rounded-xl border border-dashed border-line-strong bg-paper-2 text-navy text-sm focus:outline-none focus:border-navy-2 focus:bg-paper"
           />
         </div>
       </div>
 
-      <label className="flex flex-col gap-1">
-        <span className="text-xs font-semibold text-navy">
-          Contanos más detalles
-        </span>
-        <textarea
-          value={state.descripcion}
-          onChange={(e) => setField("descripcion", e.target.value)}
-          rows={4}
-          placeholder="Hace cuánto está el problema, en qué horario, si afecta a más vecinos…"
-          className="w-full px-3 py-3 rounded-xl border border-line-strong bg-paper text-navy text-sm focus:outline-none focus:border-navy-2 focus:ring-2 focus:ring-navy-2/20 resize-none"
-        />
-      </label>
+      {esCambioParada ? (
+        <div className="flex flex-col gap-3 rounded-2xl border border-line bg-paper-2 p-3">
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-semibold text-navy">Línea</span>
+            <input
+              type="text"
+              value={state.linea}
+              onChange={(e) => actualizarCambioParada({ linea: e.target.value })}
+              placeholder="Ej: 14"
+              className="w-full px-3 py-2.5 rounded-xl border border-line-strong bg-paper text-navy text-sm focus:outline-none focus:border-navy-2 focus:ring-2 focus:ring-navy-2/20"
+            />
+          </label>
+
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-semibold text-navy">
+              Antes, ¿dónde paraba (Patagonia)?{" "}
+              <span className="text-muted font-normal">(opcional)</span>
+            </span>
+            <input
+              type="text"
+              value={state.paradaAntes}
+              onChange={(e) => actualizarCambioParada({ paradaAntes: e.target.value })}
+              placeholder="Ej: San Martín y Rivadavia"
+              className="w-full px-3 py-2.5 rounded-xl border border-line-strong bg-paper text-navy text-sm focus:outline-none focus:border-navy-2 focus:ring-2 focus:ring-navy-2/20"
+            />
+          </label>
+
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-semibold text-navy">
+              Ahora, ¿dónde para o levanta (Sol Bus)?
+            </span>
+            <input
+              type="text"
+              value={state.paradaAhora}
+              onChange={(e) => actualizarCambioParada({ paradaAhora: e.target.value })}
+              placeholder="Ej: Belgrano y Mitre"
+              className="w-full px-3 py-2.5 rounded-xl border border-line-strong bg-paper text-navy text-sm focus:outline-none focus:border-navy-2 focus:ring-2 focus:ring-navy-2/20"
+            />
+          </label>
+
+          <div className="flex flex-col gap-1.5">
+            <span className="text-xs font-semibold text-navy">Motivo</span>
+            <div className="flex flex-col gap-1.5">
+              {MOTIVOS_CAMBIO_PARADA.map((motivo) => (
+                <button
+                  key={motivo}
+                  type="button"
+                  onClick={() => toggleMotivo(motivo)}
+                  className={`text-left px-3 py-2.5 rounded-xl border text-sm transition ${
+                    state.motivos.includes(motivo)
+                      ? "border-navy-2 bg-navy-2/5 text-navy font-semibold"
+                      : "border-line bg-paper text-navy hover:bg-paper-2"
+                  }`}
+                >
+                  {motivo}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-semibold text-navy">
+              Explayarse <span className="text-muted font-normal">(opcional)</span>
+            </span>
+            <textarea
+              value={state.explayarse}
+              onChange={(e) => actualizarCambioParada({ explayarse: e.target.value })}
+              rows={3}
+              placeholder="Algo más que quieras agregar…"
+              className="w-full px-3 py-3 rounded-xl border border-line-strong bg-paper text-navy text-sm focus:outline-none focus:border-navy-2 focus:ring-2 focus:ring-navy-2/20 resize-none"
+            />
+          </label>
+        </div>
+      ) : (
+        <label className="flex flex-col gap-1">
+          <span className="text-xs font-semibold text-navy">
+            Contanos más detalles
+          </span>
+          <textarea
+            value={state.descripcion}
+            onChange={(e) => setField("descripcion", e.target.value)}
+            rows={4}
+            placeholder="Hace cuánto está el problema, en qué horario, si afecta a más vecinos…"
+            className="w-full px-3 py-3 rounded-xl border border-line-strong bg-paper text-navy text-sm focus:outline-none focus:border-navy-2 focus:ring-2 focus:ring-navy-2/20 resize-none"
+          />
+        </label>
+      )}
 
       <div className="flex flex-col gap-2">
         <span className="text-xs font-semibold text-navy">

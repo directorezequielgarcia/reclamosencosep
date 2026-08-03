@@ -2,6 +2,20 @@ import type { ServicioKind } from "@prisma/client";
 
 export type SvcKey = "residuos" | "energia" | "agua" | "transporte";
 
+// Situación puntual de Transporte: cambio de parada/lugar de levantamiento
+// tras el recambio de prestadora PATAGONIA → SOL BUS. Dispara un mini-form
+// estructurado en el wizard (ver reclamo/nuevo/wizard.tsx) en vez del
+// textarea libre genérico.
+export const TRANSPORTE_CAMBIO_PARADA_TITULO =
+  "Cambio de parada o lugar de levantamiento (Sol Bus)";
+
+export const MOTIVOS_CAMBIO_PARADA = [
+  "Sin señalización",
+  "Parada poco segura",
+  "Lejos del lugar habitual / no es esquina de mayor circulación",
+  "No hay garita",
+];
+
 export const SVC_META: Record<
   SvcKey,
   {
@@ -68,6 +82,7 @@ export const SVC_META: Record<
       "Frecuencia irregular",
       "Mal estado de la unidad",
       "Cartel o parada dañada",
+      TRANSPORTE_CAMBIO_PARADA_TITULO,
     ],
   },
 };
