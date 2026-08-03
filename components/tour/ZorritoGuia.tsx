@@ -234,24 +234,42 @@ export function ZorritoGuia() {
             <div className="text-[11px] font-bold uppercase tracking-wider text-muted mb-1.5">
               Paradas más cercanas
             </div>
-            <div className="flex flex-col gap-1.5">
+            <div className="flex flex-col gap-2">
               {resultado.paradasCercanas.map((p) => (
-                <a
+                <div
                   key={p.id}
-                  href={`https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}&travelmode=walking`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-between gap-2 rounded-lg border border-line bg-paper px-3 py-2 hover:border-[#7e57c2]/50 hover:bg-[#7e57c2]/5 transition"
-                  title="Ir hasta esta parada con Google Maps"
+                  className="rounded-lg border border-line bg-paper px-3 py-2 flex flex-col gap-1.5"
                 >
-                  <span className="text-xs text-navy">
-                    🧭 {p.calle} y {p.esquina}
-                    {p.refugio && " 🏠"}
-                  </span>
-                  <span className="text-xs text-muted font-mono shrink-0">
-                    {Math.round(p.distancia)} m
-                  </span>
-                </a>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs text-navy min-w-0 truncate">
+                      {p.calle} y {p.esquina}
+                      {p.refugio && " 🏠"}
+                    </span>
+                    <span className="text-xs text-muted font-mono shrink-0">
+                      {Math.round(p.distancia)} m
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <a
+                      href={`https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}&travelmode=walking`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="Ir hasta esta parada con Google Maps"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full border border-[#7e57c2]/40 text-[11px] font-semibold text-[#7e57c2] hover:bg-[#7e57c2]/10 transition"
+                    >
+                      📍 Ir en Google Maps
+                    </a>
+                    <a
+                      href="https://comodoro-mit.github.io/transporte"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="Ver el mapa interactivo completo de Sol Bus"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full border border-line text-[11px] font-semibold text-navy hover:bg-paper-2 transition"
+                    >
+                      🗺️ Mapa Sol Bus
+                    </a>
+                  </div>
+                </div>
               ))}
             </div>
           </div>
