@@ -71,12 +71,15 @@ async function main() {
     },
   });
 
+  // Reemplazada por SOL BUS desde el 1/8/2026: se conserva inactiva para no
+  // perder el historial de sus reclamos y expedientes ya asignados.
   const patagonia = await prisma.prestadora.upsert({
     where: { cuit: "30-71000000-2" },
     update: {},
     create: {
       razonSocial: "PATAGONIA ARGENTINA S.R.L.",
       cuit: "30-71000000-2",
+      activa: false,
       servicios: { connect: [{ id: svc.TRANSPORTE.id }] },
     },
   });
@@ -156,7 +159,7 @@ async function main() {
 
   console.log("Seed OK:");
   console.log(` Servicios:    ${servicios.length}`);
-  console.log(` Prestadoras:  5 (CLEAR URBANA, SCPL, PATAGONIA, SOL BUS, DIADEMA)`);
+  console.log(` Prestadoras:  5 (CLEAR URBANA, SCPL, PATAGONIA [inactiva], SOL BUS, DIADEMA)`);
   console.log(` Usuarios:     4 (super, gestor, operadora, ciudadano)`);
   console.log(` Clave demo:   "demo1234"`);
 }

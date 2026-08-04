@@ -9,7 +9,7 @@ const TIPOS_ACCION = [
     icon: "🤝",
     titulo: "Mesas de trabajo",
     descripcion:
-      "Reuniones de coordinación con las prestadoras (SCPL, Clear Urbana, Patagonia, Diadema) y con las autoridades de aplicación. Anticipamos crisis y trabajamos sobre conflictos puntuales del servicio.",
+      "Reuniones de coordinación con las prestadoras (SCPL, Clear Urbana, Sol Bus, Diadema) y con las autoridades de aplicación. Anticipamos crisis y trabajamos sobre conflictos puntuales del servicio.",
   },
   {
     icon: "🏛️",

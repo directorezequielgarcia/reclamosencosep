@@ -37,7 +37,7 @@ const NORMATIVA: Acceso[] = [
   { emoji: "💧", titulo: "Agua y cloacas", detalle: "Marco regulatorio — SCPL", href: "/areas-fiscalizadas/agua" },
   { emoji: "⚡", titulo: "Energía y alumbrado", detalle: "Marco regulatorio — SCPL", href: "/areas-fiscalizadas/energia" },
   { emoji: "♻️", titulo: "Residuos / higiene urbana", detalle: "Marco regulatorio — Urbana", href: "/areas-fiscalizadas/residuos" },
-  { emoji: "🚌", titulo: "Transporte urbano", detalle: "Marco regulatorio — Patagonia / Diadema", href: "/areas-fiscalizadas/transporte" },
+  { emoji: "🚌", titulo: "Transporte urbano", detalle: "Marco regulatorio — Sol Bus / Diadema", href: "/areas-fiscalizadas/transporte" },
 ];
 
 // Específico de la Autoridad de Aplicación: fiscalización.

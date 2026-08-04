@@ -69,7 +69,7 @@ const NORMATIVA_POR_SERVICIO: Record<
       titulo:
         "Concesión del servicio de Transporte Urbano de Pasajeros — proceso en curso",
       detalle:
-        "El Concejo Deliberante aprobó el nuevo pliego. Prestadoras actuales con contrato prorrogado: PATAGONIA Argentina S.R.L. y TRANSPORTE DIADEMA S.A.",
+        "El Concejo Deliberante aprobó el nuevo pliego. Desde el 1° de agosto de 2026, SOL BUS (Grupo MR S.R.L.) presta el servicio en reemplazo de Patagonia Argentina S.R.L. Prestadoras actuales con contrato prorrogado: SOL BUS (Grupo MR S.R.L.) y TRANSPORTE DIADEMA S.A.",
     },
   ],
 };

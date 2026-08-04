@@ -66,7 +66,7 @@ export const PERFILES_ACCESO: Record<PerfilKey, PerfilAcceso> = {
     key: "prestadora",
     emoji: "🏢",
     titulo: "Prestadora",
-    rolLinea: "Empresa concesionaria del servicio (SCPL, Clear Urbana, Sol Bus, Patagonia, Diadema).",
+    rolLinea: "Empresa concesionaria del servicio (SCPL, Clear Urbana, Sol Bus, Diadema).",
     funcion:
       "Sos la prestadora del servicio. Ante el ENCOSEP respondés por la calidad de la prestación y por la información que el Ente requiere para ejercer su control.",
     secciones: [

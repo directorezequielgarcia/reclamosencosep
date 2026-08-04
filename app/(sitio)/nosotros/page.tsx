@@ -456,7 +456,7 @@ export default function Nosotros() {
           <ul className="mt-4 space-y-3">
             <AccionPlan titulo="Mesas de Diálogo Sectorial">
               Establecer una agenda fija de reuniones de trabajo con las
-              empresas prestadoras (SCPL, Patagonia Argentina, Diadema, etc.)
+              empresas prestadoras (SCPL, Sol Bus, Diadema, etc.)
               y las Autoridades de Aplicación (Secretarías Municipales) para
               prevenir conflictos y anticipar crisis.
             </AccionPlan>
@@ -522,7 +522,7 @@ export default function Nosotros() {
             <strong>Agua y cloacas</strong> · SCPL
           </div>
           <div>
-            <strong>Transporte Urbano</strong> · PATAGONIA Argentina S.R.L. y
+            <strong>Transporte Urbano</strong> · SOL BUS (Grupo MR S.R.L.) y
             TRANSPORTE DIADEMA S.A.
           </div>
         </div>

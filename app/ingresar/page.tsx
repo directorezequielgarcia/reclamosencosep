@@ -26,7 +26,7 @@ const PASOS_GUIA: { titulo: string; texto: string; destacado?: string }[] = [
   {
     titulo: "Iniciá el reclamo ante la empresa prestadora",
     texto:
-      "Presentá tu reclamo directamente ante la prestadora del servicio: SCPL, Urbana, Transporte Patagonia o Transporte Diadema, según corresponda.",
+      "Presentá tu reclamo directamente ante la prestadora del servicio: SCPL, Urbana, Sol Bus o Transporte Diadema, según corresponda.",
     destacado:
       "Importante: pedí siempre la constancia del trámite y el número de reclamo.",
   },

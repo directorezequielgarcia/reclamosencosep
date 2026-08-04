@@ -8,7 +8,6 @@ const PRESTADORAS = [
   { nombre: "CLEAR URBANA S.A.", servicio: "Higiene Urbana" },
   { nombre: "SCPL", servicio: "Energía eléctrica · Alumbrado · Agua y cloacas" },
   { nombre: "SOL BUS (Grupo MR S.R.L.)", servicio: "Transporte Urbano y Suburbano" },
-  { nombre: "PATAGONIA Argentina S.R.L.", servicio: "Transporte Urbano" },
   { nombre: "TRANSPORTE DIADEMA S.A.", servicio: "Transporte Urbano" },
 ];
 
