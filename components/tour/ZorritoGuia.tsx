@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 
 /**
  * "Zorrito Guía" — responde ¿dónde estoy? ¿qué paradas hay? ¿qué líneas pasan
@@ -124,9 +124,14 @@ type Resultado = {
   lineasCercanas: Array<{ codigo: string; distancia: number }>;
 };
 
+type Modo = "aca" | "destino";
+
 export function ZorritoGuia() {
+  const [modo, setModo] = useState<Modo>("aca");
   const [estado, setEstado] = useState<"idle" | "buscando" | "ok" | "error">("idle");
+  const [errorTexto, setErrorTexto] = useState<string | null>(null);
   const [resultado, setResultado] = useState<Resultado | null>(null);
+  const [destinoTexto, setDestinoTexto] = useState("");
 
   function irALinea(codigo: string) {
     const id = `linea-${numeroAncla(codigo)}`;
@@ -137,8 +142,38 @@ export function ZorritoGuia() {
     }
   }
 
+  function cambiarModo(nuevo: Modo) {
+    setModo(nuevo);
+    setEstado("idle");
+    setResultado(null);
+    setErrorTexto(null);
+  }
+
+  async function buscarPorCoords(lat: number, lng: number) {
+    const [paradas, ...lineas] = await Promise.all([
+      fetchDataJs<Parada[]>(`${BASE}/paradas_data.js`),
+      ...CODIGOS_LINEA.map((c) => fetchDataJs<LineaGeoJSON>(`${BASE}/linea_${c}_data.js`)),
+    ]);
+
+    const paradasCercanas = paradas
+      .map((p) => ({ ...p, distancia: distanciaMetros(lat, lng, p.lat, p.lng) }))
+      .sort((a, b) => a.distancia - b.distancia)
+      .slice(0, 4);
+
+    const lineasCercanas = CODIGOS_LINEA.map((codigo, i) => ({
+      codigo,
+      distancia: distanciaAminea(lat, lng, lineas[i]),
+    }))
+      .sort((a, b) => a.distancia - b.distancia)
+      .slice(0, 6);
+
+    setResultado({ paradasCercanas, lineasCercanas });
+    setEstado("ok");
+  }
+
   function buscar() {
     if (!navigator.geolocation) {
+      setErrorTexto("Tu navegador no soporta geolocalización.");
       setEstado("error");
       return;
     }
@@ -146,36 +181,35 @@ export function ZorritoGuia() {
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         try {
-          const { latitude: lat, longitude: lng } = pos.coords;
-
-          const [paradas, ...lineas] = await Promise.all([
-            fetchDataJs<Parada[]>(`${BASE}/paradas_data.js`),
-            ...CODIGOS_LINEA.map((c) =>
-              fetchDataJs<LineaGeoJSON>(`${BASE}/linea_${c}_data.js`),
-            ),
-          ]);
-
-          const paradasCercanas = paradas
-            .map((p) => ({ ...p, distancia: distanciaMetros(lat, lng, p.lat, p.lng) }))
-            .sort((a, b) => a.distancia - b.distancia)
-            .slice(0, 4);
-
-          const lineasCercanas = CODIGOS_LINEA.map((codigo, i) => ({
-            codigo,
-            distancia: distanciaAminea(lat, lng, lineas[i]),
-          }))
-            .sort((a, b) => a.distancia - b.distancia)
-            .slice(0, 6);
-
-          setResultado({ paradasCercanas, lineasCercanas });
-          setEstado("ok");
+          await buscarPorCoords(pos.coords.latitude, pos.coords.longitude);
         } catch {
+          setErrorTexto("No pudimos calcular paradas y líneas cercanas ahora.");
           setEstado("error");
         }
       },
-      () => setEstado("error"),
+      () => {
+        setErrorTexto("No pudimos obtener tu ubicación.");
+        setEstado("error");
+      },
       { enableHighAccuracy: true, timeout: 10000 },
     );
+  }
+
+  async function buscarDestino(e: FormEvent) {
+    e.preventDefault();
+    if (destinoTexto.trim().length < 3) return;
+    setEstado("buscando");
+    try {
+      const resp = await fetch(
+        `/api/geocode?direccion=${encodeURIComponent(destinoTexto.trim())}`,
+      );
+      if (!resp.ok) throw new Error("geocode falló");
+      const { lat, lng } = await resp.json();
+      await buscarPorCoords(lat, lng);
+    } catch {
+      setErrorTexto("No pudimos ubicar esa dirección. Probá con calle y altura.");
+      setEstado("error");
+    }
   }
 
   return (
@@ -192,12 +226,39 @@ export function ZorritoGuia() {
         <div>
           <div className="text-sm font-extrabold text-navy">Zorrito Guía</div>
           <div className="text-xs text-muted">
-            ¿Dónde estoy? ¿Qué paradas y líneas tengo cerca?
+            {modo === "aca"
+              ? "¿Dónde estoy? ¿Qué paradas y líneas tengo cerca?"
+              : "¿A dónde vas? Te muestro la parada y línea más cercanas al destino."}
           </div>
         </div>
       </div>
 
-      {estado === "idle" && (
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={() => cambiarModo("aca")}
+          className={`flex-1 px-3 py-2 rounded-lg text-xs font-bold transition ${
+            modo === "aca"
+              ? "bg-[#7e57c2] text-white"
+              : "bg-paper border border-line text-navy hover:bg-paper-2"
+          }`}
+        >
+          📍 ¿Dónde estoy?
+        </button>
+        <button
+          type="button"
+          onClick={() => cambiarModo("destino")}
+          className={`flex-1 px-3 py-2 rounded-lg text-xs font-bold transition ${
+            modo === "destino"
+              ? "bg-[#7e57c2] text-white"
+              : "bg-paper border border-line text-navy hover:bg-paper-2"
+          }`}
+        >
+          🎯 ¿A dónde vas?
+        </button>
+      </div>
+
+      {estado === "idle" && modo === "aca" && (
         <button
           type="button"
           onClick={buscar}
@@ -207,15 +268,36 @@ export function ZorritoGuia() {
         </button>
       )}
 
+      {estado === "idle" && modo === "destino" && (
+        <form onSubmit={buscarDestino} className="flex gap-2">
+          <input
+            type="text"
+            value={destinoTexto}
+            onChange={(e) => setDestinoTexto(e.target.value)}
+            placeholder="Calle y altura (ej: Rivadavia 1200)"
+            className="flex-1 min-w-0 px-3 py-2.5 rounded-xl border border-line-strong bg-paper text-navy text-sm focus:outline-none focus:border-[#7e57c2] focus:ring-2 focus:ring-[#7e57c2]/20"
+          />
+          <button
+            type="submit"
+            disabled={destinoTexto.trim().length < 3}
+            className="px-4 py-2.5 rounded-xl bg-[#7e57c2] text-white font-bold text-sm hover:scale-[1.02] transition disabled:opacity-40 disabled:hover:scale-100"
+          >
+            Buscar
+          </button>
+        </form>
+      )}
+
       {estado === "buscando" && (
         <div className="text-sm text-muted text-center py-2">
-          Buscando paradas y líneas cerca tuyo…
+          {modo === "aca"
+            ? "Buscando paradas y líneas cerca tuyo…"
+            : "Ubicando esa dirección y buscando paradas y líneas cerca…"}
         </div>
       )}
 
       {estado === "error" && (
         <div className="text-sm text-svc-red text-center py-2">
-          No pudimos obtener tu ubicación. Probá de nuevo o usá el{" "}
+          {errorTexto} Probá de nuevo o usá el{" "}
           <a
             href="https://comodoro-mit.github.io/transporte"
             target="_blank"
@@ -232,7 +314,7 @@ export function ZorritoGuia() {
         <div className="flex flex-col gap-3">
           <div>
             <div className="text-[11px] font-bold uppercase tracking-wider text-muted mb-1.5">
-              Paradas más cercanas
+              {modo === "aca" ? "Paradas más cercanas" : "Paradas cerca del destino"}
             </div>
             <div className="flex flex-col gap-2">
               {resultado.paradasCercanas.map((p) => (
@@ -298,10 +380,13 @@ export function ZorritoGuia() {
 
           <button
             type="button"
-            onClick={buscar}
+            onClick={() => {
+              setEstado("idle");
+              setResultado(null);
+            }}
             className="text-xs text-navy-2 underline underline-offset-4 self-center mt-1"
           >
-            Volver a buscar mi ubicación
+            {modo === "aca" ? "Volver a buscar mi ubicación" : "Buscar otro destino"}
           </button>
         </div>
       )}
