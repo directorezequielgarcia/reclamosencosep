@@ -6,6 +6,7 @@ import { InstructivoFactura } from "./InstructivoFactura";
 import { ExplicacionCuadros } from "./ExplicacionCuadros";
 import { MigajasSitio, VolverInicio } from "@/components/ui/MigajasSitio";
 import { cuadrosPublicados } from "@/lib/tarifas-db";
+import { ZorritoTour } from "@/components/tour/ZorritoTour";
 
 export const metadata = {
   title: "Calculadora ENCOSEP · Tarifas",
@@ -30,7 +31,7 @@ export default async function TarifasPage() {
       />
       <main className="max-w-6xl mx-auto px-6 py-10">
         <MigajasSitio items={[{ label: "Calculadora" }]} />
-        <div className="mb-6 rounded-2xl border border-line bg-paper p-5">
+        <div id="calculadora-que-podes-hacer" className="mb-6 rounded-2xl border border-line bg-paper p-5">
           <div className="text-sm font-bold text-navy mb-3">
             ¿Qué podés hacer acá?
           </div>
@@ -75,6 +76,7 @@ export default async function TarifasPage() {
         </div>
 
         <Link
+          id="calculadora-controlar-factura"
           href="/tarifas/controlar"
           className="mb-6 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5 rounded-2xl border border-svc-blue/40 bg-svc-blue/10 p-5 hover:bg-svc-blue/15 transition"
         >
@@ -101,7 +103,9 @@ export default async function TarifasPage() {
           {vigente.expediente ? ` · ${vigente.expediente}` : ""}
           {vigente.fuente ? ` · ${vigente.fuente}` : ""}
         </div>
-        <CalculadoraTarifas cuadros={cuadros} />
+        <div id="calculadora-form">
+          <CalculadoraTarifas cuadros={cuadros} />
+        </div>
 
         <div className="mt-6">
           <GlosarioCategorias />
@@ -114,6 +118,40 @@ export default async function TarifasPage() {
 
         <VolverInicio />
       </main>
+
+      <ZorritoTour
+        storageKey="zorrito-tour-calculadora-v1"
+        pasos={[
+          {
+            pose: "parado",
+            texto:
+              "¡Hola! Soy el Zorrito de ENCOSEP 🦊. Te ayudo a usar la Calculadora de tarifas.",
+          },
+          {
+            targetId: "calculadora-que-podes-hacer",
+            pose: "parado",
+            texto:
+              "Acá podés estimar tu factura, controlar la que ya te llegó, o comparar cuadros tarifarios.",
+          },
+          {
+            targetId: "calculadora-controlar-factura",
+            pose: "parado",
+            texto:
+              "Si ya tenés tu factura de la SCPL, subí el PDF o una foto y te marco dónde puede haber diferencias.",
+          },
+          {
+            targetId: "calculadora-form",
+            pose: "agachado",
+            texto:
+              "O si preferís, cargá acá tu categoría, consumo y metros cuadrados: te muestro cuánto debería dar tu factura.",
+          },
+          {
+            pose: "agachado",
+            texto:
+              "¡Listo! Cuando quieras volver a verme, tocá mi carita en el botón de abajo.",
+          },
+        ]}
+      />
     </>
   );
 }

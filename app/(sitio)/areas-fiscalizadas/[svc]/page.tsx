@@ -457,7 +457,7 @@ export default async function AreaFiscalizadaPage({
               </a>
             )}
 
-            <div className="mt-4">
+            <div id="zorrito-guia-widget" className="mt-4">
               <ZorritoGuia />
             </div>
 
@@ -586,6 +586,12 @@ export default async function AreaFiscalizadaPage({
               pose: "colectivo",
               texto:
                 "Acá tenés el mapa interactivo oficial para buscar tu línea por origen y destino, y el detalle calle por calle de las 22 líneas.",
+            },
+            {
+              targetId: "zorrito-guia-widget",
+              pose: "parado",
+              texto:
+                "¿No sabés qué línea te pasa cerca? Usá tu ubicación o escribí una dirección y te digo las paradas y líneas más cercanas.",
             },
             {
               targetId: "cta-reclamo-transporte",

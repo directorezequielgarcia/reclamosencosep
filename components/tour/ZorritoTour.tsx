@@ -97,7 +97,7 @@ export function ZorritoTour({
         }}
         aria-label="Abrir guía del Zorrito ENCOSEP"
         title="Guía del Zorrito ENCOSEP"
-        className="fixed bottom-5 left-1/2 -translate-x-1/2 z-40 w-14 h-14 rounded-full border-2 border-[#7e57c2] bg-white shadow-2xl shadow-[#7e57c2]/30 overflow-hidden hover:scale-105 transition"
+        className="fixed bottom-5 left-1/2 -translate-x-1/2 z-40 w-20 h-20 rounded-full border-2 border-[#7e57c2] bg-white shadow-2xl shadow-[#7e57c2]/30 overflow-hidden hover:scale-105 transition"
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
