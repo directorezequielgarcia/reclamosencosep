@@ -81,6 +81,16 @@ async function main() {
     },
   });
 
+  const solbus = await prisma.prestadora.upsert({
+    where: { cuit: "30-71000000-4" }, // marcador, ajustar con CUIT real de Grupo MR S.R.L.
+    update: {},
+    create: {
+      razonSocial: "GRUPO MR S.R.L. (SOL BUS)",
+      cuit: "30-71000000-4",
+      servicios: { connect: [{ id: svc.TRANSPORTE.id }] },
+    },
+  });
+
   const diadema = await prisma.prestadora.upsert({
     where: { cuit: "30-71000000-3" },
     update: {},
@@ -146,7 +156,7 @@ async function main() {
 
   console.log("Seed OK:");
   console.log(` Servicios:    ${servicios.length}`);
-  console.log(` Prestadoras:  4 (CLEAR URBANA, SCPL, PATAGONIA, DIADEMA)`);
+  console.log(` Prestadoras:  5 (CLEAR URBANA, SCPL, PATAGONIA, SOL BUS, DIADEMA)`);
   console.log(` Usuarios:     4 (super, gestor, operadora, ciudadano)`);
   console.log(` Clave demo:   "demo1234"`);
 }
