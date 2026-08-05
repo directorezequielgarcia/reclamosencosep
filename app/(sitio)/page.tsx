@@ -3,6 +3,7 @@ import Image from "next/image";
 import { BotoneraServicios } from "@/components/servicios/BotoneraServicios";
 import { prisma } from "@/lib/prisma";
 import { ZorritoTour } from "@/components/tour/ZorritoTour";
+import { ZorritoNoticias } from "@/components/tour/ZorritoNoticia";
 
 export const metadata = {
   title: "EnCoSeP · Ente de Control de Servicios Públicos · Comodoro Rivadavia",
@@ -89,6 +90,16 @@ export default async function HomeInstitucional() {
       >
         🚌 Nuevo sistema de transporte: Sol Bus ya está en funcionamiento —
         consultá tu línea y recorrido <span aria-hidden>›</span>
+      </Link>
+
+      {/* ===================== AVISO CALCULADORA ===================== */}
+      <Link
+        id="aviso-calculadora"
+        href="/tarifas"
+        className="block bg-svc-orange text-navy text-center px-4 py-2.5 text-sm font-semibold hover:brightness-95 transition"
+      >
+        🧮 Calculadora ENCOSEP — Controlá tu factura{" "}
+        <span aria-hidden>›</span>
       </Link>
 
       {/* ===================== HERO ===================== */}
@@ -540,6 +551,39 @@ export default async function HomeInstitucional() {
             pose: "agachado",
             texto:
               "¡Listo! Cuando quieras volver a verme, tocá mi carita en el botón de abajo.",
+          },
+        ]}
+      />
+
+      {/* ===================== NOTICIAS TEMPORALES DEL ZORRITO ===================== */}
+      {/* Avisos puntuales, NO forman parte del tour permanente. Se muestran de
+          a uno (cola). Borrar cada aviso de este array cuando deje de ser
+          noticia. */}
+      <ZorritoNoticias
+        avisos={[
+          {
+            id: "reunion-subsecretaria-transporte-2026-08-05",
+            pose: "colectivo",
+            etiqueta: "Hoy · 10:30 hs",
+            titulo: "📣 Reunión con la Subsecretaría de Transporte",
+            texto:
+              "Llevamos tus reclamos al Municipio: presentamos los más de 300 casos recibidos por WhatsApp y en esta plataforma, y planteamos paradas, recorridos y horarios de salida para que Sol Bus te lleve donde tenés que ir.",
+            cta: {
+              texto: "Ver líneas y recorridos de Sol Bus",
+              href: "/areas-fiscalizadas/transporte#lineas",
+            },
+          },
+          {
+            id: "invitacion-reclamos-generales-2026-08-05",
+            pose: "agachado",
+            etiqueta: "Tu voz cuenta",
+            titulo: "🦊 Seguí contándonos",
+            texto:
+              "Seguí registrando tus preferencias y reclamos: el servicio tiene que ajustarse a la generalidad de los usuarios y a todas las realidades. Te invitamos a reclamar también sobre residuos, luz, agua y cloacas en tu barrio.",
+            cta: {
+              texto: "Hacé tu reclamo",
+              href: "/reclamos",
+            },
           },
         ]}
       />
