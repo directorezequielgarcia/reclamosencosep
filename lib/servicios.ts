@@ -16,6 +16,17 @@ export const MOTIVOS_CAMBIO_PARADA = [
   "No hay garita",
 ];
 
+// Empresas de Transporte Urbano de Pasajeros vigentes desde el recambio del
+// 1°/08/2026 (Sol Bus reemplazó a Patagonia Argentina en la mayor parte del
+// sistema; Diadema adecúa recorridos puntuales bajo el Nuevo Pliego).
+export const EMPRESAS_TRANSPORTE = [
+  { value: "SOL_BUS", label: "Sol Bus" },
+  { value: "DIADEMA", label: "Transporte Diadema" },
+  { value: "NO_SABE", label: "No sé / no estoy seguro" },
+] as const;
+
+export type EmpresaTransporte = (typeof EMPRESAS_TRANSPORTE)[number]["value"];
+
 export const SVC_META: Record<
   SvcKey,
   {

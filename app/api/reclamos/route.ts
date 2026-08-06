@@ -3,7 +3,11 @@ import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { generarCodigo } from "@/lib/codigos";
-import { SVC_META, type SvcKey } from "@/lib/servicios";
+import {
+  SVC_META,
+  TRANSPORTE_CAMBIO_PARADA_TITULO,
+  type SvcKey,
+} from "@/lib/servicios";
 import { guardarFotoReclamo } from "@/lib/uploads";
 import { geocodificarDireccion } from "@/lib/geocode";
 
@@ -18,6 +22,8 @@ const BodySchema = z
     barrio: z.string().max(80).optional().nullable(),
     lat: z.number().min(-90).max(90).optional().nullable(),
     lng: z.number().min(-180).max(180).optional().nullable(),
+    linea: z.string().max(20).optional().nullable(),
+    empresa: z.enum(["SOL_BUS", "DIADEMA", "NO_SABE"]).optional().nullable(),
   })
   .refine(
     (d) =>
@@ -45,6 +51,8 @@ export async function POST(req: Request) {
       descripcion: fd.get("descripcion"),
       direccion: fd.get("direccion"),
       barrio: fd.get("barrio") || undefined,
+      linea: fd.get("linea") || undefined,
+      empresa: fd.get("empresa") || undefined,
     };
     const lat = fd.get("lat");
     const lng = fd.get("lng");
@@ -89,12 +97,29 @@ export async function POST(req: Request) {
 
   // Cuando hay más de una prestadora activa para el mismo servicio (p.ej.
   // Transporte con Sol Bus y Diadema tras el recambio de Patagonia del
-  // 1°/08/2026), se asigna la vinculada más recientemente: es la que
-  // refleja el último cambio de operador.
-  const prestadora = await prisma.prestadora.findFirst({
-    where: { servicios: { some: { id: servicio.id } }, activa: true },
-    orderBy: { createdAt: "desc" },
-  });
+  // 1°/08/2026), se prioriza lo que el propio vecino indicó (campo
+  // "empresa" del wizard). Sin esa indicación, se asigna la prestadora
+  // vinculada más recientemente al servicio.
+  const EMPRESA_KEYWORD: Record<string, string> = {
+    SOL_BUS: "SOL BUS",
+    DIADEMA: "DIADEMA",
+  };
+  let prestadora = null;
+  if (datos.empresa && EMPRESA_KEYWORD[datos.empresa]) {
+    prestadora = await prisma.prestadora.findFirst({
+      where: {
+        servicios: { some: { id: servicio.id } },
+        activa: true,
+        razonSocial: { contains: EMPRESA_KEYWORD[datos.empresa] },
+      },
+    });
+  }
+  if (!prestadora) {
+    prestadora = await prisma.prestadora.findFirst({
+      where: { servicios: { some: { id: servicio.id } }, activa: true },
+      orderBy: { createdAt: "desc" },
+    });
+  }
 
   let codigo = "";
   for (let i = 0; i < 5; i++) {
@@ -134,6 +159,30 @@ export async function POST(req: Request) {
     lng = geo.lng;
   }
 
+  // El mini-form de cambio de parada ya arma su propia descripción con la
+  // línea incluida; para el resto de reclamos de Transporte, la línea y la
+  // empresa declarada por el vecino se anteponen como encabezado legible.
+  let descripcionPersistida = datos.descripcion;
+  if (
+    svcKey === "transporte" &&
+    datos.titulo !== TRANSPORTE_CAMBIO_PARADA_TITULO &&
+    (datos.linea?.trim() || datos.empresa)
+  ) {
+    const encabezado = [
+      datos.linea?.trim() ? `Línea: ${datos.linea.trim()}` : null,
+      datos.empresa === "SOL_BUS"
+        ? "Empresa declarada: Sol Bus"
+        : datos.empresa === "DIADEMA"
+          ? "Empresa declarada: Transporte Diadema"
+          : datos.empresa === "NO_SABE"
+            ? "Empresa declarada: no sabe/no está seguro"
+            : null,
+    ]
+      .filter(Boolean)
+      .join(" · ");
+    descripcionPersistida = `${encabezado}\n${datos.descripcion}`;
+  }
+
   const reclamo = await prisma.reclamo.create({
     data: {
       codigo,
@@ -141,7 +190,7 @@ export async function POST(req: Request) {
       servicioId: servicio.id,
       prestadoraId: prestadora?.id ?? null,
       titulo: datos.titulo,
-      descripcion: datos.descripcion,
+      descripcion: descripcionPersistida,
       direccion: direccionPersistida,
       barrio: datos.barrio ?? null,
       lat,

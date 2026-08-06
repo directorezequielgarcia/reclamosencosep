@@ -3,12 +3,15 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { SvcIcon } from "@/components/servicios/SvcIcon";
+import { ZorritoTour } from "@/components/tour/ZorritoTour";
 import {
   SVC_META,
   SVC_ORDER,
   TRANSPORTE_CAMBIO_PARADA_TITULO,
   MOTIVOS_CAMBIO_PARADA,
+  EMPRESAS_TRANSPORTE,
   type SvcKey,
+  type EmpresaTransporte,
 } from "@/lib/servicios";
 
 type Paso = "servicio" | "ubicacion" | "detalle" | "revision";
@@ -23,6 +26,7 @@ type State = {
   lng: number | null;
   fotos: File[];
   linea: string;
+  empresa: EmpresaTransporte | "";
   paradaAntes: string;
   paradaAhora: string;
   motivos: string[];
@@ -38,6 +42,7 @@ const INIT: State = {
   lng: null,
   fotos: [],
   linea: "",
+  empresa: "",
   paradaAntes: "",
   paradaAhora: "",
   motivos: [],
@@ -58,6 +63,29 @@ function construirDescripcionCambioParada(s: {
   if (s.motivos.length) partes.push(`Motivo: ${s.motivos.join(", ")}`);
   if (s.explayarse.trim()) partes.push(`Detalle: ${s.explayarse.trim()}`);
   return partes.join("\n");
+}
+
+const ETIQUETA_CAMPO: Record<string, string> = {
+  titulo: "Situación",
+  descripcion: "Detalles",
+  direccion: "Dirección",
+  barrio: "Barrio",
+  svc: "Servicio",
+  lat: "GPS",
+  lng: "GPS",
+};
+
+function explicarError(data: {
+  error?: string;
+  detalle?: { fieldErrors?: Record<string, string[]>; formErrors?: string[] };
+}): string {
+  const fieldErrors = data.detalle?.fieldErrors ?? {};
+  const mensajes = Object.entries(fieldErrors)
+    .filter(([, msgs]) => msgs && msgs.length > 0)
+    .map(([campo, msgs]) => `${ETIQUETA_CAMPO[campo] ?? campo}: ${msgs[0]}`);
+  if (mensajes.length > 0) return mensajes.join(" · ");
+  if (data.detalle?.formErrors?.length) return data.detalle.formErrors[0];
+  return data.error || "No pudimos registrar el reclamo.";
 }
 
 export function WizardReclamo({ svcInicial }: { svcInicial?: SvcKey }) {
@@ -89,12 +117,14 @@ export function WizardReclamo({ svcInicial }: { svcInicial?: SvcKey }) {
       if (state.barrio) fd.append("barrio", state.barrio);
       if (state.lat !== null) fd.append("lat", String(state.lat));
       if (state.lng !== null) fd.append("lng", String(state.lng));
+      if (state.svc === "transporte" && state.linea.trim()) fd.append("linea", state.linea.trim());
+      if (state.svc === "transporte" && state.empresa) fd.append("empresa", state.empresa);
       for (const f of state.fotos) fd.append("foto", f);
 
       const res = await fetch("/api/reclamos", { method: "POST", body: fd });
       const data = await res.json();
       if (!res.ok || !data.ok) {
-        setError(data.error || "No pudimos registrar el reclamo.");
+        setError(explicarError(data));
         setEnviando(false);
         return;
       }
@@ -169,7 +199,7 @@ function PasoServicio({ onElegir }: { onElegir: (s: SvcKey) => void }) {
           Elegí el servicio público con el problema.
         </p>
       </header>
-      <div className="grid grid-cols-2 gap-3">
+      <div id="reclamo-grid-servicios" className="grid grid-cols-2 gap-3">
         {SVC_ORDER.map((kind) => {
           const m = SVC_META[kind];
           return (
@@ -188,6 +218,25 @@ function PasoServicio({ onElegir }: { onElegir: (s: SvcKey) => void }) {
           );
         })}
       </div>
+
+      <ZorritoTour
+        storageKey="zorrito-tour-reclamo-servicio-v1"
+        tamanoAvatar="w-24 h-24"
+        tamanoBoton="w-24 h-24"
+        pasos={[
+          {
+            pose: "parado",
+            texto:
+              "¡Hola! Soy el Zorrito de ENCOSEP 🦊. Te acompaño paso a paso para hacer tu reclamo.",
+          },
+          {
+            targetId: "reclamo-grid-servicios",
+            pose: "agachado",
+            texto:
+              "Primero tocá el ícono del servicio con el problema: residuos, electricidad, agua o transporte.",
+          },
+        ]}
+      />
     </>
   );
 }
@@ -244,7 +293,7 @@ function PasoUbicacion({
         subtitulo="Usá GPS, escribí la dirección, o las dos juntas."
       />
 
-      <label className="flex flex-col gap-1">
+      <label id="reclamo-campo-direccion" className="flex flex-col gap-1">
         <span className="text-xs font-semibold text-navy">
           Dirección{" "}
           <span className="text-muted font-normal">
@@ -260,7 +309,7 @@ function PasoUbicacion({
         />
       </label>
 
-      <label className="flex flex-col gap-1">
+      <label id="reclamo-campo-barrio" className="flex flex-col gap-1">
         <span className="text-xs font-semibold text-navy">
           Barrio <span className="text-muted font-normal">(opcional)</span>
         </span>
@@ -273,7 +322,7 @@ function PasoUbicacion({
         />
       </label>
 
-      <div className="rounded-2xl border border-dashed border-line-strong bg-paper-2 p-3">
+      <div id="reclamo-campo-gps" className="rounded-2xl border border-dashed border-line-strong bg-paper-2 p-3">
         {gpsState === "ok" && state.lat !== null && state.lng !== null ? (
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-svc-green/15 border-2 border-svc-green flex items-center justify-center text-svc-green text-lg">
@@ -313,6 +362,31 @@ function PasoUbicacion({
       </div>
 
       <BotoneraPaso onAtras={onAtras} onSiguiente={onSiguiente} puede={puede} />
+
+      <ZorritoTour
+        storageKey="zorrito-tour-reclamo-ubicacion-v1"
+        tamanoAvatar="w-24 h-24"
+        tamanoBoton="w-24 h-24"
+        pasos={[
+          {
+            targetId: "reclamo-campo-gps",
+            pose: "agachado",
+            texto:
+              "Lo más fácil: tocá 'Usar mi ubicación' y tomo tu GPS automáticamente, sin escribir nada.",
+          },
+          {
+            targetId: "reclamo-campo-direccion",
+            pose: "parado",
+            texto:
+              "Si preferís escribir, poné calle y altura, o una referencia conocida (ej: esquina, comercio).",
+          },
+          {
+            targetId: "reclamo-campo-barrio",
+            pose: "parado",
+            texto: "El barrio es opcional, pero ayuda a ubicar más rápido el reclamo.",
+          },
+        ]}
+      />
     </>
   );
 }
@@ -356,7 +430,10 @@ function PasoDetalle({
 
   function elegirTitulo(t: string) {
     setField("titulo", t);
-    if (t !== TRANSPORTE_CAMBIO_PARADA_TITULO && esCambioParada) {
+    if (t === TRANSPORTE_CAMBIO_PARADA_TITULO) {
+      // El cambio de parada es siempre sobre Sol Bus (así lo indica el propio mini-form).
+      setField("empresa", "SOL_BUS");
+    } else if (esCambioParada) {
       // Salir del mini-form de cambio de parada: no arrastrar la descripción compuesta.
       setField("descripcion", "");
     }
@@ -391,7 +468,7 @@ function PasoDetalle({
         subtitulo="Elegí lo que más se parezca y agregá detalles."
       />
 
-      <div className="flex flex-col gap-2">
+      <div id="reclamo-campo-situacion" className="flex flex-col gap-2">
         <span className="text-xs font-semibold text-navy">Situación</span>
         <div className="flex flex-col gap-1.5">
           {m.examples.map((ex) => (
@@ -411,10 +488,16 @@ function PasoDetalle({
           <input
             type="text"
             value={m.examples.includes(state.titulo) ? "" : state.titulo}
-            onChange={(e) => elegirTitulo(e.target.value)}
-            placeholder="O escribilo con tus palabras…"
+            onChange={(e) => elegirTitulo(e.target.value.slice(0, 120))}
+            maxLength={120}
+            placeholder="O escribilo con tus palabras… (resumen corto)"
             className="mt-1 w-full px-3 py-2.5 rounded-xl border border-dashed border-line-strong bg-paper-2 text-navy text-sm focus:outline-none focus:border-navy-2 focus:bg-paper"
           />
+          {!m.examples.includes(state.titulo) && state.titulo.length > 0 && (
+            <div className="text-[11px] text-muted text-right -mt-1">
+              {state.titulo.length}/120 — para el relato completo usá &quot;Contanos más detalles&quot; más abajo
+            </div>
+          )}
         </div>
       </div>
 
@@ -492,7 +575,47 @@ function PasoDetalle({
           </label>
         </div>
       ) : (
-        <label className="flex flex-col gap-1">
+        <>
+        {svc === "transporte" && (
+          <div id="reclamo-campo-linea-empresa" className="flex flex-col gap-3 rounded-2xl border border-line bg-paper-2 p-3">
+            <label className="flex flex-col gap-1">
+              <span className="text-xs font-semibold text-navy">
+                ¿Qué línea? <span className="text-muted font-normal">(opcional)</span>
+              </span>
+              <input
+                type="text"
+                value={state.linea}
+                onChange={(e) => setField("linea", e.target.value)}
+                placeholder="Ej: 5U, 14, 6A"
+                className="w-full px-3 py-2.5 rounded-xl border border-line-strong bg-paper text-navy text-sm focus:outline-none focus:border-navy-2 focus:ring-2 focus:ring-navy-2/20"
+              />
+            </label>
+            <div className="flex flex-col gap-1.5">
+              <span className="text-xs font-semibold text-navy">
+                ¿Qué empresa? <span className="text-muted font-normal">(opcional, si la conocés)</span>
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {EMPRESAS_TRANSPORTE.map((emp) => (
+                  <button
+                    key={emp.value}
+                    type="button"
+                    onClick={() =>
+                      setField("empresa", state.empresa === emp.value ? "" : emp.value)
+                    }
+                    className={`px-3 py-2 rounded-xl border text-xs font-semibold transition ${
+                      state.empresa === emp.value
+                        ? "border-navy-2 bg-navy-2/5 text-navy"
+                        : "border-line bg-paper text-navy hover:bg-paper-2"
+                    }`}
+                  >
+                    {emp.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+        <label id="reclamo-campo-detalles" className="flex flex-col gap-1">
           <span className="text-xs font-semibold text-navy">
             Contanos más detalles
           </span>
@@ -504,9 +627,10 @@ function PasoDetalle({
             className="w-full px-3 py-3 rounded-xl border border-line-strong bg-paper text-navy text-sm focus:outline-none focus:border-navy-2 focus:ring-2 focus:ring-navy-2/20 resize-none"
           />
         </label>
+        </>
       )}
 
-      <div className="flex flex-col gap-2">
+      <div id="reclamo-campo-fotos" className="flex flex-col gap-2">
         <span className="text-xs font-semibold text-navy">
           Fotos{" "}
           <span className="text-muted font-normal">
@@ -552,6 +676,31 @@ function PasoDetalle({
       </div>
 
       <BotoneraPaso onAtras={onAtras} onSiguiente={onSiguiente} puede={puede} />
+
+      <ZorritoTour
+        storageKey="zorrito-tour-reclamo-detalle-v1"
+        tamanoAvatar="w-24 h-24"
+        tamanoBoton="w-24 h-24"
+        pasos={[
+          {
+            targetId: "reclamo-campo-situacion",
+            pose: "parado",
+            texto:
+              "Elegí la opción que más se parece a lo que te pasó. Si no encaja ninguna, escribila corta con tus palabras (hasta 120 caracteres).",
+          },
+          {
+            targetId: "reclamo-campo-detalles",
+            pose: "agachado",
+            texto:
+              "Acá contá todo con más detalle: hace cuánto pasa, en qué horario, si afecta a más vecinos. El relato largo va acá, no en Situación.",
+          },
+          {
+            targetId: "reclamo-campo-fotos",
+            pose: "parado",
+            texto: "Si podés, sacá o subí una foto: ayuda mucho a entender el problema.",
+          },
+        ]}
+      />
     </>
   );
 }
@@ -579,7 +728,7 @@ function PasoRevision({
         titulo="Revisá y enviá"
         subtitulo="Si está todo bien, registramos tu reclamo."
       />
-      <div className="flex flex-col gap-2 rounded-2xl border border-line bg-paper p-4 text-sm">
+      <div id="reclamo-resumen" className="flex flex-col gap-2 rounded-2xl border border-line bg-paper p-4 text-sm">
         <Fila label="Servicio" value={m.label} />
         <Fila label="Dirección" value={state.direccion} />
         {state.barrio && <Fila label="Barrio" value={state.barrio} />}
@@ -590,6 +739,15 @@ function PasoRevision({
           />
         )}
         <Fila label="Situación" value={state.titulo} />
+        {state.svc === "transporte" && state.linea && (
+          <Fila label="Línea" value={state.linea} />
+        )}
+        {state.svc === "transporte" && state.empresa && (
+          <Fila
+            label="Empresa"
+            value={EMPRESAS_TRANSPORTE.find((e) => e.value === state.empresa)?.label ?? state.empresa}
+          />
+        )}
         {state.fotos.length > 0 && (
           <Fila
             label="Fotos"
@@ -612,7 +770,10 @@ function PasoRevision({
         </div>
       )}
 
-      <label className="flex items-start gap-2 rounded-xl border border-line-strong bg-paper-2 p-3 cursor-pointer mt-1">
+      <label
+        id="reclamo-checkbox-confirmar"
+        className="flex items-start gap-2 rounded-xl border border-line-strong bg-paper-2 p-3 cursor-pointer mt-1"
+      >
         <input
           type="checkbox"
           checked={confirmado}
@@ -643,6 +804,25 @@ function PasoRevision({
           {enviando ? "Enviando..." : "Registrar reclamo"}
         </button>
       </div>
+
+      <ZorritoTour
+        storageKey="zorrito-tour-reclamo-revision-v1"
+        tamanoAvatar="w-24 h-24"
+        tamanoBoton="w-24 h-24"
+        pasos={[
+          {
+            targetId: "reclamo-resumen",
+            pose: "agachado",
+            texto: "Dale una repasada a todo antes de enviar, que después no se puede editar.",
+          },
+          {
+            targetId: "reclamo-checkbox-confirmar",
+            pose: "parado",
+            texto:
+              "Tildá acá para confirmar y tocá 'Registrar reclamo'. Vas a recibir un número para seguirlo. ¡Gracias por avisarnos!",
+          },
+        ]}
+      />
     </>
   );
 }

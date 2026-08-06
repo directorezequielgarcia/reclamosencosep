@@ -26,9 +26,15 @@ const POSES: Record<PoseZorrito, string> = {
 export function ZorritoTour({
   storageKey,
   pasos,
+  tamanoAvatar = "w-16 h-16",
+  tamanoBoton = "w-20 h-20",
 }: {
   storageKey: string;
   pasos: PasoTour[];
+  /** Clases de tamaño (w-X h-X) del avatar dentro del panel del paso actual. */
+  tamanoAvatar?: string;
+  /** Clases de tamaño (w-X h-X) del botón flotante circular. */
+  tamanoBoton?: string;
 }) {
   const [abierto, setAbierto] = useState(false);
   const [paso, setPaso] = useState(0);
@@ -97,7 +103,7 @@ export function ZorritoTour({
         }}
         aria-label="Abrir guía del Zorrito ENCOSEP"
         title="Guía del Zorrito ENCOSEP"
-        className="fixed bottom-5 left-1/2 -translate-x-1/2 z-40 w-20 h-20 rounded-full border-2 border-[#7e57c2] bg-white shadow-2xl shadow-[#7e57c2]/30 overflow-hidden hover:scale-105 transition"
+        className={`fixed bottom-5 left-1/2 -translate-x-1/2 z-40 ${tamanoBoton} rounded-full border-2 border-[#7e57c2] bg-white shadow-2xl shadow-[#7e57c2]/30 overflow-hidden hover:scale-105 transition`}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -124,7 +130,7 @@ export function ZorritoTour({
 
           <div className="fixed inset-x-0 bottom-0 z-50 flex justify-center px-4 pb-4">
             <div className="w-full max-w-lg rounded-2xl border-2 border-[#7e57c2]/60 bg-paper shadow-2xl p-4 flex gap-3">
-              <div className="w-16 h-16 shrink-0 rounded-full overflow-hidden border-2 border-[#7e57c2]/50 bg-white">
+              <div className={`${tamanoAvatar} shrink-0 rounded-full overflow-hidden border-2 border-[#7e57c2]/50 bg-white`}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={POSES[actual.pose]}
