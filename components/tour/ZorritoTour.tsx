@@ -1,20 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-
-type PoseZorrito = "parado" | "agachado" | "colectivo";
+import { POSES, type PoseZorrito } from "./zorrito-poses";
 
 type PasoTour = {
   // Si no hay targetId, es un paso "centrado" (bienvenida / cierre) sin resaltado.
   targetId?: string;
   pose: PoseZorrito;
   texto: string;
-};
-
-const POSES: Record<PoseZorrito, string> = {
-  parado: "/imagenes/zorrito/zorrito-parado.png",
-  agachado: "/imagenes/zorrito/zorrito-agachado.png",
-  colectivo: "/imagenes/zorrito/zorrito-colectivo.png",
 };
 
 /**

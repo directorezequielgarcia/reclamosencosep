@@ -2,14 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-
-type PoseZorrito = "parado" | "agachado" | "colectivo";
-
-const POSES: Record<PoseZorrito, string> = {
-  parado: "/imagenes/zorrito/zorrito-parado.png",
-  agachado: "/imagenes/zorrito/zorrito-agachado.png",
-  colectivo: "/imagenes/zorrito/zorrito-colectivo.png",
-};
+import { POSES, type PoseZorrito } from "./zorrito-poses";
 
 export type AvisoZorrito = {
   /** Id único del aviso — cambiarlo para que un aviso nuevo se muestre de nuevo. */
