@@ -3,6 +3,7 @@
 
 import {
   calcularFactura,
+  calcularFacturaCategoriaMixta,
   type ComposicionCat,
   type CuadroTarifario,
   type EntradaCalculo,
@@ -40,6 +41,10 @@ function sumaONull(valores: (number | null)[]): number | null {
 
 export type FacturaExtraida = {
   tipo: TipoUsuario;
+  // Categoría del servicio de agua/cloacas, si SCPL la clasificó distinto de
+  // la de energía en esta factura (ver comentario donde se detecta). Casi
+  // siempre igual a `tipo`.
+  tipoAgua: TipoUsuario;
   modoAgua: ModoAgua;
   consumoKwh: number | null;
   m2: number | null;
@@ -98,7 +103,11 @@ const TIPO_TEXTO: [RegExp, TipoUsuario][] = [
   [/OBRADOR/i, "OBRADOR"],
   [/ENTIDAD/i, "ENTIDAD_SIN_FINES"],
   [/OFICIAL/i, "ENTES_OFICIALES"],
-  [/INDUSTRIA/i, "PEQUENA_INDUSTRIA"],
+  // SCPL abrevia "Pequeñas Indus(trias)" en la factura real — "INDUSTRIA"
+  // completo no matchea y la categoría caía por defecto en RESIDENCIAL,
+  // aplicando mal el cuadro tarifario a comercios/industrias.
+  [/PEQUE[ÑN]AS?\s+INDUS/i, "PEQUENA_INDUSTRIA"],
+  [/INDUS/i, "PEQUENA_INDUSTRIA"],
 ];
 
 export function parseFacturaTexto(text: string): FacturaExtraida {
@@ -129,6 +138,26 @@ export function parseFacturaTexto(text: string): FacturaExtraida {
   const seccionElectrica =
     idxSanitarios >= 0 ? text.slice(0, idxSanitarios) : text;
   const seccionSanitaria = idxSanitarios >= 0 ? text.slice(idxSanitarios) : "";
+
+  // Categoría del servicio de AGUA — no siempre es la misma que la de
+  // energía: SCPL clasifica cada servicio por separado, y en facturas reales
+  // de comercios/industrias es común ver "Pequeñas Indus" en energía pero
+  // "Comercial General" en agua. Si no se detecta nada acá, se usa `tipo`
+  // (caso típico: residencial, donde ambos servicios traen la misma
+  // categoría).
+  let tipoAgua: TipoUsuario = tipo;
+  if (idxSanitarios >= 0) {
+    const ventanaSanitarios = text.slice(
+      Math.max(0, idxSanitarios - 20),
+      idxSanitarios + 60,
+    );
+    for (const [re, t] of TIPO_TEXTO) {
+      if (re.test(ventanaSanitarios)) {
+        tipoAgua = t;
+        break;
+      }
+    }
+  }
 
   // Fila de lecturas del medidor: N° medidor, lectura actual (día mes año
   // valor), lectura anterior (día mes año valor) y el total del período. El
@@ -219,6 +248,7 @@ export function parseFacturaTexto(text: string): FacturaExtraida {
 
   return {
     tipo,
+    tipoAgua,
     modoAgua,
     consumoKwh,
     m2,
@@ -363,7 +393,7 @@ export function analizarFactura(
   const c = extraida.conceptos;
   const facturados = [c.cargoFijo, c.cargoVariable, c.compra, c.agua, c.cloacas];
   const calculados = cuadros.map((cuadro) => {
-    const res = calcularFactura(cuadro, entrada());
+    const res = calcularFacturaCategoriaMixta(cuadro, entrada(), extraida.tipoAgua);
     const calc = [
       sumaLinea(res, "Cargo fijo de energía"),
       sumaLinea(res, "Cargo variable de energía"),

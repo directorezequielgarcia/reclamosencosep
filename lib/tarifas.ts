@@ -811,7 +811,12 @@ export function consumoAguaEstimado(
   m2: number,
 ): number {
   const { baseM3, m3Por10m2 } = cuadro.aguaFormula;
-  return baseM3 + (m3Por10m2 * m2) / 10;
+  // "Por cada 10 m² cubiertos" cuenta decenas COMPLETAS, no una proporción
+  // continua — con una superficie residencial redonda (40, 60 m²) da lo
+  // mismo, pero en facturas reales con m² no redondos (ej. 151.05) la
+  // versión continua cruza de tramo de más y se aleja bastante del monto
+  // real facturado; con el piso a la decena, cierra casi exacto.
+  return baseM3 + m3Por10m2 * Math.floor(m2 / 10);
 }
 
 export function calcularFactura(
@@ -1085,6 +1090,63 @@ export function calcularFactura(
     subtotalServicios,
     iva,
     otrosConceptos,
+    total,
+    composicion,
+  };
+}
+
+/**
+ * Igual que `calcularFactura`, pero permite que el servicio de AGUA (y
+ * cloacas) se facture bajo una categoría de usuario distinta a la de
+ * energía. Pasa en facturas reales de SCPL: el rubro eléctrico y el
+ * sanitario pueden traer categorías distintas en la misma factura (ej.
+ * "Pequeñas Indus" en energía, "Comercial General" en agua) — SCPL clasifica
+ * cada servicio por separado, no toda la factura bajo una única categoría.
+ * Si `tipoAgua` coincide con `e.tipo`, es idéntica a `calcularFactura`.
+ */
+export function calcularFacturaCategoriaMixta(
+  cuadro: CuadroTarifario,
+  e: EntradaCalculo,
+  tipoAgua: TipoUsuario,
+): ResultadoCalculo {
+  const resEnergia = calcularFactura(cuadro, e);
+  if (tipoAgua === e.tipo) return resEnergia;
+
+  const resAgua = calcularFactura(cuadro, { ...e, tipo: tipoAgua });
+  const esAguaOCloacas = (l: LineaFactura) => l.grupo === "AGUA" || l.grupo === "CLOACAS";
+
+  const viejoAguaCloacas = resEnergia.lineas
+    .filter(esAguaOCloacas)
+    .reduce((a, l) => a + l.monto, 0);
+  const nuevasLineasAgua = resAgua.lineas.filter(esAguaOCloacas);
+  const nuevoAguaCloacas = nuevasLineasAgua.reduce((a, l) => a + l.monto, 0);
+
+  const lineas = [
+    ...resEnergia.lineas.filter((l) => !esAguaOCloacas(l)),
+    ...nuevasLineasAgua,
+  ];
+  // Agua y cloacas están gravadas por IVA en ambas categorías (mismo cuadro),
+  // así que el ajuste a la base gravada es directo: la diferencia entre lo
+  // nuevo y lo viejo se traslada 1:1 al IVA.
+  const deltaBase = nuevoAguaCloacas - viejoAguaCloacas;
+  const subtotalServicios = resEnergia.subtotalServicios + deltaBase;
+  const iva = resEnergia.iva + deltaBase * cuadro.iva;
+  const total = subtotalServicios + iva + resEnergia.otrosConceptos;
+
+  const composicion: Record<ComposicionCat, number> = {
+    ...resEnergia.composicion,
+    AGUA: resAgua.composicion.AGUA,
+    CLOACAS: resAgua.composicion.CLOACAS,
+  };
+
+  return {
+    lineas,
+    consumoAguaM3: resAgua.consumoAguaM3,
+    tramoEnergia: resEnergia.tramoEnergia,
+    tramoAgua: resAgua.tramoAgua,
+    subtotalServicios,
+    iva,
+    otrosConceptos: resEnergia.otrosConceptos,
     total,
     composicion,
   };
