@@ -87,8 +87,13 @@ export async function POST(req: Request) {
     );
   }
 
+  // Cuando hay más de una prestadora activa para el mismo servicio (p.ej.
+  // Transporte con Sol Bus y Diadema tras el recambio de Patagonia del
+  // 1°/08/2026), se asigna la vinculada más recientemente: es la que
+  // refleja el último cambio de operador.
   const prestadora = await prisma.prestadora.findFirst({
     where: { servicios: { some: { id: servicio.id } }, activa: true },
+    orderBy: { createdAt: "desc" },
   });
 
   let codigo = "";
