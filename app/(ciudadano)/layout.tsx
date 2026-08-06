@@ -4,6 +4,7 @@ import { auth, signOut } from "@/lib/auth";
 import { BrandHeader } from "@/components/ui/BrandHeader";
 import { FabAsistenciaWsp } from "@/components/ui/FabAsistenciaWsp";
 import { SubmitButton } from "@/components/ui/SubmitButton";
+import { VisitTracker } from "@/components/ui/VisitTracker";
 
 export default async function CiudadanoLayout({
   children,
@@ -36,6 +37,7 @@ export default async function CiudadanoLayout({
 
   return (
     <div className="flex flex-1 flex-col w-full max-w-md mx-auto px-4 sm:px-6">
+      <VisitTracker />
       <BrandHeader
         right={
           <div className="flex items-center gap-2">

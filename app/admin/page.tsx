@@ -5,6 +5,7 @@ import { ESTADO_META, TONE_CLASS, whereReclamosByRol } from "@/lib/admin";
 import { SvcIcon } from "@/components/servicios/SvcIcon";
 import { EstadoBadge } from "@/components/ui/EstadoBadge";
 import { svcFromKind } from "@/lib/servicios";
+import { resumenVisitas } from "@/lib/visitas";
 import type { ReclamoEstado } from "@prisma/client";
 
 export const metadata = { title: "Dashboard · Panel ENCOSEP" };
@@ -16,7 +17,7 @@ export default async function DashboardPage() {
     session!.user.prestadoraId,
   );
 
-  const [porEstado, porServicio, recientes, total] = await Promise.all([
+  const [porEstado, porServicio, recientes, total, visitas] = await Promise.all([
     prisma.reclamo.groupBy({
       by: ["estado"],
       where,
@@ -34,6 +35,7 @@ export default async function DashboardPage() {
       include: { servicio: true, prestadora: true, ciudadano: true },
     }),
     prisma.reclamo.count({ where }),
+    resumenVisitas(),
   ]);
 
   const servicios = await prisma.servicio.findMany();
@@ -175,6 +177,36 @@ export default async function DashboardPage() {
           </table>
         )}
       </Card>
+
+      <Card titulo="Visitas al sitio">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+          <MiniKpi label="Hoy" value={visitas.hoy} />
+          <MiniKpi label="Visitantes únicos hoy" value={visitas.unicosHoy} />
+          <MiniKpi label="Últimos 7 días" value={visitas.semana} />
+          <MiniKpi label="Únicos (7 días)" value={visitas.unicosSemana} />
+        </div>
+        <div className="flex items-end gap-1.5 h-24">
+          {visitas.serie.map((d) => {
+            const max = Math.max(1, ...visitas.serie.map((x) => x.visitas));
+            const alturaPct = Math.round((d.visitas / max) * 100);
+            return (
+              <div
+                key={d.fecha}
+                className="flex-1 flex flex-col items-center gap-1"
+                title={`${d.fecha}: ${d.visitas} visita${d.visitas === 1 ? "" : "s"}`}
+              >
+                <div className="w-full h-20 flex items-end">
+                  <div
+                    className="w-full bg-navy-2/70 hover:bg-navy-2 rounded-t-sm transition-colors"
+                    style={{ height: `${Math.max(alturaPct, d.visitas > 0 ? 6 : 0)}%` }}
+                  />
+                </div>
+                <span className="text-[9px] text-muted">{d.fecha}</span>
+              </div>
+            );
+          })}
+        </div>
+      </Card>
     </div>
   );
 }
@@ -204,6 +236,17 @@ function Kpi({
       <div className="text-3xl font-extrabold text-navy leading-none">
         {value}
       </div>
+    </div>
+  );
+}
+
+function MiniKpi({ label, value }: { label: string; value: number | string }) {
+  return (
+    <div className="rounded-xl border border-line bg-paper-2 px-3 py-2">
+      <div className="text-[10px] uppercase tracking-wider text-muted font-semibold">
+        {label}
+      </div>
+      <div className="text-xl font-extrabold text-navy leading-tight">{value}</div>
     </div>
   );
 }
