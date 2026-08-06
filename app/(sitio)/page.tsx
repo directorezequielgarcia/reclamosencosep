@@ -4,6 +4,7 @@ import { BotoneraServicios } from "@/components/servicios/BotoneraServicios";
 import { prisma } from "@/lib/prisma";
 import { ZorritoTour } from "@/components/tour/ZorritoTour";
 import { ZorritoNoticias } from "@/components/tour/ZorritoNoticia";
+import { POSE_POR_SERVICIO_KIND } from "@/components/tour/zorrito-poses";
 import { TIPO_BOLETIN_META } from "@/lib/boletines";
 
 export const metadata = {
@@ -657,7 +658,9 @@ export default async function HomeInstitucional() {
             ? [
                 {
                   id: `boletin-${ultimosBoletines[0].id}`,
-                  pose: "colectivo" as const,
+                  pose: ultimosBoletines[0].servicio
+                    ? POSE_POR_SERVICIO_KIND[ultimosBoletines[0].servicio]
+                    : ("colectivo" as const),
                   etiqueta: "Novedad del Ente",
                   titulo: `📣 ${ultimosBoletines[0].titulo}`,
                   texto:

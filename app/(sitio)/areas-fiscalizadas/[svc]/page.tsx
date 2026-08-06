@@ -5,6 +5,8 @@ import { MigajasSitio, VolverInicio } from "@/components/ui/MigajasSitio";
 import { ZorritoTour } from "@/components/tour/ZorritoTour";
 import { ZorritoGuia } from "@/components/tour/ZorritoGuia";
 import { LineaDetalle } from "@/components/tour/LineaDetalle";
+import { POSES, POSE_POR_SVC } from "@/components/tour/zorrito-poses";
+import type { SvcKey } from "@/lib/servicios";
 
 type AreaConfig = {
   titulo: string;
@@ -385,21 +387,20 @@ export default async function AreaFiscalizadaPage({
       <main className="max-w-5xl mx-auto px-6 py-10 flex flex-col gap-8">
         <MigajasSitio items={[{ label: "Áreas fiscalizadas" }]} />
 
-        {/* ZORRITO GRANDE — bienvenida visual solo en Transporte */}
-        {svc === "transporte" && (
-          <div className="flex flex-col items-center text-center gap-2 -mb-2">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/imagenes/zorrito/zorrito-colectivo.png"
-              alt="El Zorrito de ENCOSEP arriba de un colectivo de Sol Bus"
-              className="w-56 h-56 md:w-64 md:h-64 object-contain drop-shadow-xl"
-            />
-            <p className="text-sm text-navy font-semibold max-w-md">
-              ¡Hola! Soy el Zorrito de ENCOSEP. Te ayudo a entender el nuevo
-              sistema de transporte Sol Bus.
-            </p>
-          </div>
-        )}
+        {/* ZORRITO GRANDE — bienvenida visual, vestido para el servicio de esta área */}
+        <div className="flex flex-col items-center text-center gap-2 -mb-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={POSES[POSE_POR_SVC[svc as SvcKey]]}
+            alt={`El Zorrito de ENCOSEP, guía de ${area.titulo}`}
+            className="w-56 h-56 md:w-64 md:h-64 object-contain drop-shadow-xl"
+          />
+          <p className="text-sm text-navy font-semibold max-w-md">
+            {svc === "transporte"
+              ? "¡Hola! Soy el Zorrito de ENCOSEP. Te ayudo a entender el nuevo sistema de transporte Sol Bus."
+              : `¡Hola! Soy el Zorrito de ENCOSEP. Te ayudo a entender todo sobre ${area.titulo.toLowerCase()}.`}
+          </p>
+        </div>
 
         {/* CABECERA CON ICONO + PRESTADORA + CTA */}
         <section
@@ -571,7 +572,7 @@ export default async function AreaFiscalizadaPage({
           storageKey="zorrito-tour-transporte-v1"
           pasos={[
             {
-              pose: "parado",
+              pose: "colectivo",
               texto:
                 "¡Hola! Soy el Zorrito de ENCOSEP 🦊. Te ayudo a entender los cambios del transporte urbano.",
             },
@@ -589,20 +590,42 @@ export default async function AreaFiscalizadaPage({
             },
             {
               targetId: "zorrito-guia-widget",
-              pose: "parado",
+              pose: "colectivo",
               texto:
                 "¿No sabés qué línea te pasa cerca? Usá tu ubicación o escribí una dirección y te digo las paradas y líneas más cercanas.",
             },
             {
               targetId: "cta-reclamo-transporte",
-              pose: "parado",
+              pose: "colectivo",
               texto:
                 "¿Te cambiaron la parada o el lugar de levantamiento? Tocá acá y elegí \"Cambio de parada o lugar de levantamiento (Sol Bus)\" para contarnos.",
             },
             {
-              pose: "agachado",
+              pose: "colectivo",
               texto:
                 "¡Listo! Cuando quieras volver a verme, tocá mi carita en el botón de abajo.",
+            },
+          ]}
+        />
+      )}
+
+      {svc !== "transporte" && (
+        <ZorritoTour
+          storageKey={`zorrito-tour-${svc}-v1`}
+          pasos={[
+            {
+              pose: POSE_POR_SVC[svc as SvcKey],
+              texto: `¡Hola! Soy el Zorrito de ENCOSEP 🦊. Te ayudo con todo lo que necesites saber sobre ${area.titulo.toLowerCase()}.`,
+            },
+            {
+              targetId: "cabecera-transporte",
+              pose: POSE_POR_SVC[svc as SvcKey],
+              texto: `${area.prestadora} es la prestadora que controlamos en este servicio.`,
+            },
+            {
+              targetId: "cta-reclamo-transporte",
+              pose: POSE_POR_SVC[svc as SvcKey],
+              texto: "¿Tenés un problema con este servicio? Tocá acá y contanos qué pasó.",
             },
           ]}
         />

@@ -8,6 +8,7 @@ import {
   crearBoletin,
 } from "./actions";
 import { SubmitButton } from "@/components/ui/SubmitButton";
+import { SVC_ORDER, SVC_META } from "@/lib/servicios";
 import type { TipoBoletin } from "@prisma/client";
 
 export const metadata = { title: "Boletines · Panel ENCOSEP" };
@@ -63,6 +64,14 @@ export default async function BoletinesAdminPage() {
           </Field>
           <Field label="Enlace externo">
             <input name="enlaceExterno" type="url" placeholder="https://…" className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper" />
+          </Field>
+          <Field label="Servicio relacionado (opcional)">
+            <select name="servicio" defaultValue="" className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper">
+              <option value="">— General / sin servicio —</option>
+              {SVC_ORDER.map((k) => (
+                <option key={k} value={SVC_META[k].kind}>{SVC_META[k].label}</option>
+              ))}
+            </select>
           </Field>
           <Field label="Fecha de publicación *">
             <input name="fechaPublicacion" type="date" required defaultValue={hoy} className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper" />
@@ -166,6 +175,14 @@ export default async function BoletinesAdminPage() {
                       </Field>
                       <Field label="Enlace externo">
                         <input name="enlaceExterno" type="url" defaultValue={b.enlaceExterno ?? ""} className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper" />
+                      </Field>
+                      <Field label="Servicio relacionado (opcional)">
+                        <select name="servicio" defaultValue={b.servicio ?? ""} className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper">
+                          <option value="">— General / sin servicio —</option>
+                          {SVC_ORDER.map((k) => (
+                            <option key={k} value={SVC_META[k].kind}>{SVC_META[k].label}</option>
+                          ))}
+                        </select>
                       </Field>
                       <Field label="Fecha de publicación *">
                         <input name="fechaPublicacion" type="date" required defaultValue={b.fechaPublicacion.toISOString().slice(0, 10)} className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper" />

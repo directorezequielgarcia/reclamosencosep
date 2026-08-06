@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { SvcIcon } from "@/components/servicios/SvcIcon";
 import { ZorritoTour } from "@/components/tour/ZorritoTour";
+import { POSE_POR_SVC } from "@/components/tour/zorrito-poses";
 import {
   SVC_META,
   SVC_ORDER,
@@ -370,19 +371,19 @@ function PasoUbicacion({
         pasos={[
           {
             targetId: "reclamo-campo-gps",
-            pose: "agachado",
+            pose: POSE_POR_SVC[svc],
             texto:
               "Lo más fácil: tocá 'Usar mi ubicación' y tomo tu GPS automáticamente, sin escribir nada.",
           },
           {
             targetId: "reclamo-campo-direccion",
-            pose: "parado",
+            pose: POSE_POR_SVC[svc],
             texto:
               "Si preferís escribir, poné calle y altura, o una referencia conocida (ej: esquina, comercio).",
           },
           {
             targetId: "reclamo-campo-barrio",
-            pose: "parado",
+            pose: POSE_POR_SVC[svc],
             texto: "El barrio es opcional, pero ayuda a ubicar más rápido el reclamo.",
           },
         ]}
@@ -684,19 +685,19 @@ function PasoDetalle({
         pasos={[
           {
             targetId: "reclamo-campo-situacion",
-            pose: "parado",
+            pose: POSE_POR_SVC[svc],
             texto:
               "Elegí la opción que más se parece a lo que te pasó. Si no encaja ninguna, escribila corta con tus palabras (hasta 120 caracteres).",
           },
           {
             targetId: "reclamo-campo-detalles",
-            pose: "agachado",
+            pose: POSE_POR_SVC[svc],
             texto:
               "Acá contá todo con más detalle: hace cuánto pasa, en qué horario, si afecta a más vecinos. El relato largo va acá, no en Situación.",
           },
           {
             targetId: "reclamo-campo-fotos",
-            pose: "parado",
+            pose: POSE_POR_SVC[svc],
             texto: "Si podés, sacá o subí una foto: ayuda mucho a entender el problema.",
           },
         ]}
@@ -812,12 +813,12 @@ function PasoRevision({
         pasos={[
           {
             targetId: "reclamo-resumen",
-            pose: "agachado",
+            pose: POSE_POR_SVC[state.svc],
             texto: "Dale una repasada a todo antes de enviar, que después no se puede editar.",
           },
           {
             targetId: "reclamo-checkbox-confirmar",
-            pose: "parado",
+            pose: POSE_POR_SVC[state.svc],
             texto:
               "Tildá acá para confirmar y tocá 'Registrar reclamo'. Vas a recibir un número para seguirlo. ¡Gracias por avisarnos!",
           },

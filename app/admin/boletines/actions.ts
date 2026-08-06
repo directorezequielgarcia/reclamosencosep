@@ -17,6 +17,8 @@ const BoletinSchema = z.object({
   videoUrl: z.string().url().optional().or(z.literal("")),
   enlaceExterno: z.string().url().optional().or(z.literal("")),
   fuente: z.string().max(120).optional().nullable(),
+  // Servicio al que refiere la novedad — opcional, define qué Zorrito la acompaña.
+  servicio: z.enum(["RESIDUOS", "ENERGIA", "AGUA", "TRANSPORTE"]).optional().or(z.literal("")),
   fechaPublicacion: z.string().min(1),
   publicado: z.string().optional(),
 });
@@ -39,6 +41,7 @@ export async function crearBoletin(formData: FormData) {
     videoUrl: formData.get("videoUrl") || undefined,
     enlaceExterno: formData.get("enlaceExterno") || undefined,
     fuente: formData.get("fuente") || undefined,
+    servicio: formData.get("servicio") || undefined,
     fechaPublicacion: formData.get("fechaPublicacion"),
     publicado: formData.get("publicado") || undefined,
   });
@@ -55,6 +58,7 @@ export async function crearBoletin(formData: FormData) {
       videoUrl: d.videoUrl || null,
       enlaceExterno: d.enlaceExterno || null,
       fuente: d.fuente ?? null,
+      servicio: d.servicio || null,
       fechaPublicacion: new Date(d.fechaPublicacion),
       publicado: d.publicado === "on" || d.publicado === "true",
       autorId: session.user.id,
@@ -97,6 +101,7 @@ export async function actualizarBoletin(formData: FormData) {
     videoUrl: formData.get("videoUrl") || undefined,
     enlaceExterno: formData.get("enlaceExterno") || undefined,
     fuente: formData.get("fuente") || undefined,
+    servicio: formData.get("servicio") || undefined,
     fechaPublicacion: formData.get("fechaPublicacion"),
     publicado: formData.get("publicado") || undefined,
   });
@@ -122,6 +127,7 @@ export async function actualizarBoletin(formData: FormData) {
       fotoUrl,
       enlaceExterno: d.enlaceExterno || null,
       fuente: d.fuente ?? null,
+      servicio: d.servicio || null,
       fechaPublicacion: new Date(d.fechaPublicacion),
       publicado: d.publicado === "on" || d.publicado === "true",
     },

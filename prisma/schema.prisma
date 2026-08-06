@@ -542,6 +542,7 @@ model Boletin {
   archivoUrl      String?     // PDF / imagen adjunta opcional (para descargar)
   enlaceExterno   String?     // link a medio externo (para CLIPPING)
   fuente          String?     // p.ej. "Diario Crónica", "Twitter / X"
+  servicio        ServicioKind? // servicio al que refiere la novedad (opcional); define qué Zorrito la acompaña
   fechaPublicacion DateTime
   publicado       Boolean     @default(true)
   autorId         String
@@ -904,4 +905,21 @@ model CuadroTarifario {
   updatedAt    DateTime     @updatedAt
 
   @@index([publicado, estado])
+}
+
+// ─────────────────────────────────────────────
+// Contador de visitas (sitio público + portal ciudadano, no admin).
+// ipHash = SHA-256(ip + AUTH_SECRET): permite contar visitantes únicos
+// por día sin guardar la IP en texto plano.
+// ─────────────────────────────────────────────
+
+model Visita {
+  id        String   @id @default(cuid())
+  path      String
+  ipHash    String
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([ipHash, createdAt])
 }
