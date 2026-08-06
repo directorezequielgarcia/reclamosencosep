@@ -35,7 +35,7 @@ export default async function TarifasPage() {
           <div className="text-sm font-bold text-navy mb-3">
             ¿Qué podés hacer acá?
           </div>
-          <div className="grid sm:grid-cols-3 gap-4">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="flex gap-3">
               <div className="text-2xl" aria-hidden>🧮</div>
               <div>
@@ -61,6 +61,18 @@ export default async function TarifasPage() {
               </div>
             </div>
             <div className="flex gap-3">
+              <div className="text-2xl" aria-hidden>⚖️</div>
+              <div>
+                <div className="text-sm font-bold text-navy">
+                  Comparar dos facturas
+                </div>
+                <div className="text-xs text-muted leading-relaxed">
+                  Subí la anterior y la actual: te decimos cuánto es por
+                  consumo y cuánto por tarifa.
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-3">
               <div className="text-2xl" aria-hidden>📊</div>
               <div>
                 <div className="text-sm font-bold text-navy">
@@ -78,7 +90,7 @@ export default async function TarifasPage() {
         <Link
           id="calculadora-controlar-factura"
           href="/tarifas/controlar"
-          className="mb-6 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5 rounded-2xl border border-svc-blue/40 bg-svc-blue/10 p-5 hover:bg-svc-blue/15 transition"
+          className="mb-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5 rounded-2xl border border-svc-blue/40 bg-svc-blue/10 p-5 hover:bg-svc-blue/15 transition"
         >
           <div className="text-3xl" aria-hidden>
             📄
@@ -95,6 +107,28 @@ export default async function TarifasPage() {
           </div>
           <div className="text-svc-red font-bold text-sm whitespace-nowrap">
             Controlar factura →
+          </div>
+        </Link>
+
+        <Link
+          id="calculadora-comparar-facturas"
+          href="/tarifas/comparar"
+          className="mb-6 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5 rounded-2xl border border-[#7e57c2]/40 bg-[#7e57c2]/10 p-5 hover:bg-[#7e57c2]/15 transition"
+        >
+          <div className="text-3xl" aria-hidden>
+            ⚖️
+          </div>
+          <div className="flex-1">
+            <div className="text-sm font-bold text-navy">
+              ¿Te aumentó mucho? Compará dos facturas
+            </div>
+            <div className="text-xs text-muted leading-relaxed mt-0.5">
+              Subí tu factura anterior y la actual, y te separamos el aumento
+              entre mayor consumo y actualización de tarifas.
+            </div>
+          </div>
+          <div className="text-[#7e57c2] font-bold text-sm whitespace-nowrap">
+            Comparar facturas →
           </div>
         </Link>
 
@@ -138,6 +172,12 @@ export default async function TarifasPage() {
             pose: "parado",
             texto:
               "Si ya tenés tu factura de la SCPL, subí el PDF o una foto y te marco dónde puede haber diferencias.",
+          },
+          {
+            targetId: "calculadora-comparar-facturas",
+            pose: "parado",
+            texto:
+              "¿Te aumentó mucho de un mes a otro? Subí las dos facturas acá y te digo cuánto es por consumo y cuánto por tarifa.",
           },
           {
             targetId: "calculadora-form",

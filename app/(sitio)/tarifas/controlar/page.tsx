@@ -38,6 +38,14 @@ export default function ControlarPage() {
             >
               cargar tus datos a mano en la calculadora
             </Link>
+            . Y si lo que te preocupa es <b>cuánto aumentó</b> de un mes a
+            otro,{" "}
+            <Link
+              href="/tarifas/comparar"
+              className="font-bold underline underline-offset-2 text-[#7e57c2]"
+            >
+              comparala con la factura anterior
+            </Link>
             .
           </div>
         </div>

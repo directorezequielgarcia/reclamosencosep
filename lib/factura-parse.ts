@@ -32,6 +32,12 @@ function buscar(text: string, re: RegExp): number | null {
   return m ? parseMonto(m[1]) : null;
 }
 
+/** Suma valores no nulos; si todos son null, devuelve null (nada que sumar). */
+function sumaONull(valores: (number | null)[]): number | null {
+  const presentes = valores.filter((v): v is number => v != null);
+  return presentes.length ? presentes.reduce((a, v) => a + v, 0) : null;
+}
+
 export type FacturaExtraida = {
   tipo: TipoUsuario;
   modoAgua: ModoAgua;
@@ -53,6 +59,13 @@ export type FacturaExtraida = {
     cloacas: number | null;
     subsidio: number | null;
     iva: number | null;
+    // Impuestos y fondos con monto propio en la factura (a diferencia de
+    // conBomberos/conSepelios, que solo detectan si el concepto está
+    // presente). Se usan en el comparador de dos facturas para no dejar
+    // esos montos afuera del desglose.
+    leyI26: number | null;
+    enre: number | null;
+    bomberos: number | null;
   };
   total: number | null;
 };
@@ -162,9 +175,25 @@ export function parseFacturaTexto(text: string): FacturaExtraida {
     cloacas: buscar(text, /SERVICIO CLOACAS\s+([\d.,]+)/i),
     subsidio: buscar(text, /SUBSIDIO ESTADO NACIONAL\s+(-?[\d.,]+)/i),
     iva: buscar(text, /I\.?\s?V\.?\s?A\.?\s+([\d.,]+)/i),
+    leyI26: buscar(text, /LEY PROVINCIAL I-?26\s+([\d.,]+)/i),
+    enre: buscar(text, /TASA ENRE[A-ZÁ.\s]*?\s+([\d.,]+)/i),
+    bomberos: buscar(text, /BOMB[A-ZÁ.\s]*?VOLUNT[A-ZÁ.]*\s+([\d.,]+)/i),
   };
 
-  const total = buscar(text, /SUBTOTAL VARIOS\s+([\d.,]+)\s+\d{2}\/\d{2}\/\d{2}/i);
+  // El TOTAL real está al final de la fila "vencimiento aprox. / período /
+  // fecha de vencimiento / TOTAL" — ej. "06/08/26 4 / 2026 07/07/26
+  // 137,305.96". Ojo: un ancla ingenua tipo "SUBTOTAL VARIOS <monto> <fecha>"
+  // agarra por error el propio monto de SUBTOTAL VARIOS, porque la fecha de
+  // vencimiento aproximado lo sigue de inmediato y calza con el patrón.
+  const FILA_TOTAL =
+    /\d{2}\/\d{2}\/\d{2}\s+\d{1,2}\s*\/\s*\d{4}\s+\d{2}\/\d{2}\/\d{2}\s+([\d.,]+)/;
+  const total =
+    buscar(text, FILA_TOTAL) ??
+    sumaONull([
+      buscar(text, /SUBTOTAL SERVICIOS\s+([\d.,]+)/i),
+      buscar(text, /SUBTOTAL IMPUESTOS\s+([\d.,]+)/i),
+      buscar(text, /SUBTOTAL VARIOS\s+([\d.,]+)/i),
+    ]);
 
   return {
     tipo,
