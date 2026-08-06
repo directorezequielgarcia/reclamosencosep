@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useActionState, useState, startTransition } from "react";
 import { controlarFactura, type ControlState } from "./actions";
 import { leerDocumento, type PasoLectura } from "@/lib/leer-documento";
-import type { Proyeccion } from "@/lib/factura-parse";
+import type { FacturaExtraida, Proyeccion } from "@/lib/factura-parse";
 import { ESTADO_TXT, pesos } from "@/lib/tarifas";
 import { GraficoComposicion } from "../GraficoComposicion";
 import { abrirComprobante, donutComprobanteHTML } from "@/lib/comprobante";
@@ -27,12 +27,18 @@ export function ControlForm() {
     "idle",
   );
   const [paso, setPaso] = useState<PasoLectura | null>(null);
+  // Correcciones a mano acumuladas (consumo/agua y montos de conceptos mal
+  // leídos por el OCR): se guardan acá, no en los sub-componentes, para que
+  // cada "Recalcular" reenvíe TODAS las correcciones ya hechas, no solo la
+  // última.
+  const [overrides, setOverrides] = useState<Record<string, string>>({});
 
   async function elegirArchivo(file: File) {
     setNombreArchivo(file.name);
     setOcrTexto("");
     setOcrEstado("leyendo");
     setPaso(null);
+    setOverrides({});
     try {
       const texto = await leerDocumento(file, setPaso);
       setOcrTexto(texto);
@@ -42,9 +48,12 @@ export function ControlForm() {
     }
   }
 
-  function enviar() {
+  function enviarConOverrides(nuevos?: Record<string, string>) {
+    const combinados = nuevos ? { ...overrides, ...nuevos } : overrides;
+    if (nuevos) setOverrides(combinados);
     const fd = new FormData();
     fd.set("textoOcr", ocrTexto);
+    for (const [k, v] of Object.entries(combinados)) if (v) fd.set(k, v);
     startTransition(() => {
       action(fd);
     });
@@ -106,7 +115,7 @@ export function ControlForm() {
         <button
           id="controlar-boton-controlar"
           type="button"
-          onClick={enviar}
+          onClick={() => enviarConOverrides()}
           disabled={pending || ocrEstado !== "listo"}
           className="inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-svc-red text-white font-bold text-sm shadow-md shadow-svc-red/30 hover:opacity-90 disabled:opacity-60 w-fit"
         >
@@ -121,7 +130,7 @@ export function ControlForm() {
       ) : null}
 
       {state.ok && state.extraida ? (
-        <Resultado state={state} action={action} />
+        <Resultado state={state} onRecalcular={enviarConOverrides} />
       ) : null}
     </div>
   );
@@ -261,10 +270,10 @@ ${state.composicion ? donutComprobanteHTML(state.composicion, "Composición de t
 
 function Resultado({
   state,
-  action,
+  onRecalcular,
 }: {
   state: ControlState;
-  action: (payload: FormData) => void;
+  onRecalcular: (overrides?: Record<string, string>) => void;
 }) {
   const e = state.extraida!;
   const filas = state.filas ?? [];
@@ -365,6 +374,13 @@ function Resultado({
                       (no comparable)
                     </span>
                   ) : null}
+                  {f.alerta && f.campo ? (
+                    <CorregirMonto
+                      campo={f.campo}
+                      valorActual={f.facturado}
+                      onEnviar={onRecalcular}
+                    />
+                  ) : null}
                 </td>
                 <td className="px-4 py-2 text-right tabular-nums text-navy">
                   {f.facturado != null ? pesos(f.facturado) : "—"}
@@ -384,7 +400,7 @@ function Resultado({
       </div>
 
       {state.sinConsumo || state.sinAgua ? (
-        <DatosManualesForm state={state} action={action} />
+        <DatosManualesForm state={state} onEnviar={onRecalcular} />
       ) : null}
 
       {state.composicion ? (
@@ -431,28 +447,24 @@ function Resultado({
 
 function DatosManualesForm({
   state,
-  action,
+  onEnviar,
 }: {
   state: ControlState;
-  action: (payload: FormData) => void;
+  onEnviar: (overrides: Record<string, string>) => void;
 }) {
   const [kwh, setKwh] = useState("");
   const [agua, setAgua] = useState("");
   const modoMedida = state.extraida?.modoAgua === "MEDIDA";
 
   function enviar() {
-    if (!state.texto) return;
     const kwhNum = Number(kwh.replace(",", "."));
     const aguaNum = Number(agua.replace(",", "."));
     if ((state.sinConsumo && !(kwhNum > 0)) || (state.sinAgua && !(aguaNum > 0)))
       return;
-    const fd = new FormData();
-    fd.set("textoOcr", state.texto);
-    if (kwhNum > 0) fd.set("consumoManual", String(kwhNum));
-    if (aguaNum > 0) fd.set(modoMedida ? "m3Manual" : "m2Manual", String(aguaNum));
-    startTransition(() => {
-      action(fd);
-    });
+    const nuevos: Record<string, string> = {};
+    if (kwhNum > 0) nuevos.consumoManual = String(kwhNum);
+    if (aguaNum > 0) nuevos[modoMedida ? "m3Manual" : "m2Manual"] = String(aguaNum);
+    onEnviar(nuevos);
   }
 
   const listo =
@@ -528,6 +540,70 @@ function DatosManualesForm({
           Recalcular
         </button>
       </div>
+    </div>
+  );
+}
+
+// Corrección puntual de un monto que el OCR leyó mal (ej. pegó dos números
+// juntos): aparece solo en filas marcadas "⚠ revisar" que tienen un campo
+// propio de `conceptos` al que se le puede pisar el valor.
+function CorregirMonto({
+  campo,
+  valorActual,
+  onEnviar,
+}: {
+  campo: keyof FacturaExtraida["conceptos"];
+  valorActual: number | null;
+  onEnviar: (overrides: Record<string, string>) => void;
+}) {
+  const [abierto, setAbierto] = useState(false);
+  const [valor, setValor] = useState(valorActual != null ? String(valorActual) : "");
+
+  if (!abierto) {
+    return (
+      <div>
+        <button
+          type="button"
+          onClick={() => setAbierto(true)}
+          className="text-[11px] text-svc-blue underline underline-offset-2 font-semibold"
+        >
+          ¿Está mal el monto? Corregilo
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-2 mt-1">
+      <input
+        type="number"
+        inputMode="decimal"
+        step="0.01"
+        min={0}
+        value={valor}
+        onChange={(ev) => setValor(ev.target.value)}
+        placeholder="Monto correcto"
+        className="w-32 rounded-lg border border-line-strong px-2 py-1 text-xs text-navy bg-paper"
+      />
+      <button
+        type="button"
+        onClick={() => {
+          const n = Number(valor.replace(",", "."));
+          if (!(n > 0)) return;
+          onEnviar({ [`concepto_${campo}`]: String(n) });
+          setAbierto(false);
+        }}
+        className="px-2.5 py-1 rounded-lg bg-navy text-white text-[11px] font-bold hover:opacity-90"
+      >
+        Recalcular
+      </button>
+      <button
+        type="button"
+        onClick={() => setAbierto(false)}
+        className="text-[11px] text-muted underline underline-offset-2"
+      >
+        Cancelar
+      </button>
     </div>
   );
 }

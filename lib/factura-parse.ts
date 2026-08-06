@@ -240,6 +240,9 @@ export function parseFacturaTexto(text: string): FacturaExtraida {
 
 export type FilaControl = {
   concepto: string;
+  // A qué campo de `conceptos` corresponde esta fila (si tiene uno propio),
+  // para poder ofrecer "corregilo a mano" cuando el OCR lee mal el monto.
+  campo?: keyof FacturaExtraida["conceptos"];
   facturado: number | null;
   segunCuadro: number;
   difPorc: number | null;
@@ -290,6 +293,9 @@ export function analizarFactura(
   consumoManualKwh?: number | null,
   m2Manual?: number | null,
   m3MedidoManual?: number | null,
+  // Montos de conceptos corregidos a mano (el OCR a veces lee mal un número,
+  // ej. pega dos montos juntos). Pisan lo extraído para ese concepto puntual.
+  conceptosManual?: Partial<Record<keyof FacturaExtraida["conceptos"], number>>,
 ): AnalisisFactura {
   const extraida = parseFacturaTexto(text);
   if (consumoManualKwh != null && consumoManualKwh > 0) {
@@ -300,6 +306,13 @@ export function analizarFactura(
   }
   if (m3MedidoManual != null && m3MedidoManual > 0) {
     extraida.m3Medido = m3MedidoManual;
+  }
+  if (conceptosManual) {
+    for (const [k, v] of Object.entries(conceptosManual)) {
+      if (v != null && v > 0) {
+        extraida.conceptos[k as keyof FacturaExtraida["conceptos"]] = v;
+      }
+    }
   }
 
   const sinConsumo = extraida.consumoKwh == null;
@@ -394,11 +407,13 @@ export function analizarFactura(
     concepto: string,
     fact: number | null,
     nombreLinea: string,
+    campo: keyof FacturaExtraida["conceptos"],
   ): FilaControl => {
     const segun = sumaLinea(res, nombreLinea);
     const d = difPorc(fact, segun);
     return {
       concepto,
+      campo,
       facturado: fact,
       segunCuadro: segun,
       difPorc: d,
@@ -412,41 +427,45 @@ export function analizarFactura(
     concepto: string,
     fact: number | null,
     nombreLinea: string,
+    campo: keyof FacturaExtraida["conceptos"],
   ): FilaControl =>
     sinConsumo
       ? {
           concepto,
+          campo,
           facturado: fact,
           segunCuadro: 0,
           difPorc: null,
           alerta: false,
           noComparable: true,
         }
-      : fila(concepto, fact, nombreLinea);
+      : fila(concepto, fact, nombreLinea, campo);
 
   const filaAgua = (
     concepto: string,
     fact: number | null,
     nombreLinea: string,
+    campo: keyof FacturaExtraida["conceptos"],
   ): FilaControl =>
     sinAgua
       ? {
           concepto,
+          campo,
           facturado: fact,
           segunCuadro: 0,
           difPorc: null,
           alerta: false,
           noComparable: true,
         }
-      : fila(concepto, fact, nombreLinea);
+      : fila(concepto, fact, nombreLinea, campo);
 
   const filas: FilaControl[] = [
-    filaEnergia("Cargo fijo de energía", c.cargoFijo, "Cargo fijo de energía"),
-    filaEnergia("Cargo variable de energía", c.cargoVariable, "Cargo variable de energía"),
-    filaEnergia("Compra de energía", c.compra, "Compra de energía"),
-    filaEnergia("Alumbrado público", c.alumbrado, "Alumbrado público"),
-    filaAgua("Servicio de agua", c.agua, "Servicio de agua"),
-    filaAgua("Servicio de cloacas", c.cloacas, "Servicio de cloacas"),
+    filaEnergia("Cargo fijo de energía", c.cargoFijo, "Cargo fijo de energía", "cargoFijo"),
+    filaEnergia("Cargo variable de energía", c.cargoVariable, "Cargo variable de energía", "cargoVariable"),
+    filaEnergia("Compra de energía", c.compra, "Compra de energía", "compra"),
+    filaEnergia("Alumbrado público", c.alumbrado, "Alumbrado público", "alumbrado"),
+    filaAgua("Servicio de agua", c.agua, "Servicio de agua", "agua"),
+    filaAgua("Servicio de cloacas", c.cloacas, "Servicio de cloacas", "cloacas"),
   ].filter((f) => f.facturado != null || f.segunCuadro > 0);
 
   // Chequeos independientes del prorrateo.

@@ -53,8 +53,12 @@ export async function controlarFactura(
   const m3ManualTxt = String(formData.get("m3Manual") ?? "").trim();
   const m3Manual = m3ManualTxt ? Number(m3ManualTxt) : null;
 
+  // Montos de conceptos corregidos a mano cuando el OCR leyó mal un número
+  // (ej. pegó dos montos juntos) — "concepto_<campo>" en el FormData.
+  const conceptosManual = conceptosManualDeFormData(formData);
+
   const cuadros = await cuadrosPublicados();
-  const a = analizarFactura(texto, cuadros, consumoManual, m2Manual, m3Manual);
+  const a = analizarFactura(texto, cuadros, consumoManual, m2Manual, m3Manual, conceptosManual);
 
   return {
     ok: a.ok,
@@ -72,4 +76,28 @@ export async function controlarFactura(
     totalCuadro: a.totalCuadro,
     composicion: a.composicion,
   };
+}
+
+// Conceptos que se muestran en la tabla de control y se pueden corregir a
+// mano cuando quedan marcados "⚠ revisar" por una lectura de OCR errónea.
+const CAMPOS_CORREGIBLES = [
+  "cargoFijo",
+  "cargoVariable",
+  "compra",
+  "alumbrado",
+  "agua",
+  "cloacas",
+] as const;
+
+function conceptosManualDeFormData(
+  formData: FormData,
+): Partial<Record<(typeof CAMPOS_CORREGIBLES)[number], number>> {
+  const out: Partial<Record<(typeof CAMPOS_CORREGIBLES)[number], number>> = {};
+  for (const campo of CAMPOS_CORREGIBLES) {
+    const txt = String(formData.get(`concepto_${campo}`) ?? "").trim();
+    if (!txt) continue;
+    const n = Number(txt.replace(",", "."));
+    if (Number.isFinite(n) && n > 0) out[campo] = n;
+  }
+  return out;
 }
