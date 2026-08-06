@@ -1,9 +1,11 @@
-// Lectura de la factura en el navegador, sin importar cómo llegue el archivo:
-//   - PDF con texto (el original que manda la SCPL por mail) → se lee directo.
+// Lectura de un documento en el navegador, sin importar cómo llegue el archivo:
+//   - PDF con texto (el original que manda una empresa por mail) → se lee directo.
 //   - PDF escaneado (sin texto embebido) → se renderiza la 1ª página como
 //     imagen y se lee con el mismo reconocimiento óptico que una foto.
 //   - Foto/captura (JPG, PNG, etc.) → reconocimiento óptico directo.
-// Así el usuario tiene un solo botón: "subí tu factura" y listo.
+// Así el usuario tiene un solo botón: "subí tu documento" y listo.
+// Genérico: lo usan tanto el control de facturas SCPL (tarifas) como la
+// carga de comprobantes del Fondo Fijo.
 
 let pdfjsWorkerConfigurado = false;
 
@@ -105,7 +107,7 @@ export type PasoLectura =
 
 const UMBRAL_TEXTO_UTIL = 40;
 
-export async function leerFactura(
+export async function leerDocumento(
   file: File,
   onPaso: (p: PasoLectura) => void,
 ): Promise<string> {
@@ -121,8 +123,8 @@ export async function leerFactura(
     }
     if (texto.trim().length >= UMBRAL_TEXTO_UTIL) return texto;
 
-    // Sin texto embebido: es una factura escaneada. La convertimos a imagen
-    // y la leemos con reconocimiento óptico, como a una foto.
+    // Sin texto embebido: es un documento escaneado. Lo convertimos a imagen
+    // y lo leemos con reconocimiento óptico, como a una foto.
     onPaso({ paso: "convirtiendo-pdf" });
     const canvas = await renderizarPrimeraPagina(file);
     onPaso({ paso: "ocr", progreso: 0 });
