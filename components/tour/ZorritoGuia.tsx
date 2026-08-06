@@ -124,14 +124,30 @@ type Resultado = {
   lineasCercanas: Array<{ codigo: string; distancia: number }>;
 };
 
-type Modo = "aca" | "destino";
+// Modo "ruta": no busca lo más cercano a UN punto, sino qué líneas pasan
+// cerca de los DOS puntos a la vez (tu ubicación y el destino), para
+// responder "qué colectivo me lleva de acá hasta allá".
+type ResultadoRuta = {
+  paradaOrigen: Parada & { distancia: number };
+  paradaDestino: Parada & { distancia: number };
+  lineasComunes: Array<{ codigo: string; distOrigen: number; distDestino: number }>;
+};
+
+type Modo = "aca" | "destino" | "ruta";
+
+// Si ni la mejor línea candidata pasa razonablemente cerca de los dos
+// puntos, probablemente haga falta combinación — se lo avisamos al usuario
+// en vez de sugerir una línea que en la práctica no le sirve.
+const DISTANCIA_RUTA_RAZONABLE_M = 1200;
 
 export function ZorritoGuia() {
   const [modo, setModo] = useState<Modo>("aca");
   const [estado, setEstado] = useState<"idle" | "buscando" | "ok" | "error">("idle");
   const [errorTexto, setErrorTexto] = useState<string | null>(null);
   const [resultado, setResultado] = useState<Resultado | null>(null);
+  const [resultadoRuta, setResultadoRuta] = useState<ResultadoRuta | null>(null);
   const [destinoTexto, setDestinoTexto] = useState("");
+  const [destinoTextoRuta, setDestinoTextoRuta] = useState("");
 
   function irALinea(codigo: string) {
     const id = `linea-${numeroAncla(codigo)}`;
@@ -146,6 +162,7 @@ export function ZorritoGuia() {
     setModo(nuevo);
     setEstado("idle");
     setResultado(null);
+    setResultadoRuta(null);
     setErrorTexto(null);
   }
 
@@ -212,6 +229,69 @@ export function ZorritoGuia() {
     }
   }
 
+  async function buscarRutaPorCoords(
+    origenLat: number,
+    origenLng: number,
+    destLat: number,
+    destLng: number,
+  ) {
+    const [paradas, ...lineas] = await Promise.all([
+      fetchDataJs<Parada[]>(`${BASE}/paradas_data.js`),
+      ...CODIGOS_LINEA.map((c) => fetchDataJs<LineaGeoJSON>(`${BASE}/linea_${c}_data.js`)),
+    ]);
+
+    const [paradaOrigen] = paradas
+      .map((p) => ({ ...p, distancia: distanciaMetros(origenLat, origenLng, p.lat, p.lng) }))
+      .sort((a, b) => a.distancia - b.distancia);
+    const [paradaDestino] = paradas
+      .map((p) => ({ ...p, distancia: distanciaMetros(destLat, destLng, p.lat, p.lng) }))
+      .sort((a, b) => a.distancia - b.distancia);
+
+    const lineasComunes = CODIGOS_LINEA.map((codigo, i) => ({
+      codigo,
+      distOrigen: distanciaAminea(origenLat, origenLng, lineas[i]),
+      distDestino: distanciaAminea(destLat, destLng, lineas[i]),
+    }))
+      .sort((a, b) => a.distOrigen + a.distDestino - (b.distOrigen + b.distDestino))
+      .slice(0, 5);
+
+    setResultadoRuta({ paradaOrigen, paradaDestino, lineasComunes });
+    setEstado("ok");
+  }
+
+  function buscarRuta(e: FormEvent) {
+    e.preventDefault();
+    if (destinoTextoRuta.trim().length < 3) return;
+    if (!navigator.geolocation) {
+      setErrorTexto("Tu navegador no soporta geolocalización.");
+      setEstado("error");
+      return;
+    }
+    setEstado("buscando");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        (async () => {
+          try {
+            const resp = await fetch(
+              `/api/geocode?direccion=${encodeURIComponent(destinoTextoRuta.trim())}`,
+            );
+            if (!resp.ok) throw new Error("geocode falló");
+            const { lat, lng } = await resp.json();
+            await buscarRutaPorCoords(pos.coords.latitude, pos.coords.longitude, lat, lng);
+          } catch {
+            setErrorTexto("No pudimos ubicar ese destino o tu posición actual.");
+            setEstado("error");
+          }
+        })();
+      },
+      () => {
+        setErrorTexto("No pudimos obtener tu ubicación.");
+        setEstado("error");
+      },
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
+  }
+
   return (
     <div className="rounded-2xl border-2 border-[#7e57c2]/40 bg-paper-2 p-4 flex flex-col gap-3">
       <div className="flex items-center gap-3">
@@ -228,16 +308,18 @@ export function ZorritoGuia() {
           <div className="text-xs text-muted">
             {modo === "aca"
               ? "¿Dónde estoy? ¿Qué paradas y líneas tengo cerca?"
-              : "¿A dónde vas? Te muestro la parada y línea más cercanas al destino."}
+              : modo === "destino"
+                ? "¿A dónde vas? Te muestro la parada y línea más cercanas al destino."
+                : "¿De dónde a dónde vas? Te digo qué línea te conecta los dos puntos."}
           </div>
         </div>
       </div>
 
-      <div className="flex gap-2">
+      <div className="grid grid-cols-3 gap-2">
         <button
           type="button"
           onClick={() => cambiarModo("aca")}
-          className={`flex-1 px-3 py-2 rounded-lg text-xs font-bold transition ${
+          className={`px-2 py-2 rounded-lg text-xs font-bold transition ${
             modo === "aca"
               ? "bg-[#7e57c2] text-white"
               : "bg-paper border border-line text-navy hover:bg-paper-2"
@@ -248,13 +330,24 @@ export function ZorritoGuia() {
         <button
           type="button"
           onClick={() => cambiarModo("destino")}
-          className={`flex-1 px-3 py-2 rounded-lg text-xs font-bold transition ${
+          className={`px-2 py-2 rounded-lg text-xs font-bold transition ${
             modo === "destino"
               ? "bg-[#7e57c2] text-white"
               : "bg-paper border border-line text-navy hover:bg-paper-2"
           }`}
         >
           🎯 ¿A dónde vas?
+        </button>
+        <button
+          type="button"
+          onClick={() => cambiarModo("ruta")}
+          className={`px-2 py-2 rounded-lg text-xs font-bold transition ${
+            modo === "ruta"
+              ? "bg-[#7e57c2] text-white"
+              : "bg-paper border border-line text-navy hover:bg-paper-2"
+          }`}
+        >
+          🧭 De acá a dónde voy
         </button>
       </div>
 
@@ -287,11 +380,37 @@ export function ZorritoGuia() {
         </form>
       )}
 
+      {estado === "idle" && modo === "ruta" && (
+        <form onSubmit={buscarRuta} className="flex flex-col gap-1.5">
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={destinoTextoRuta}
+              onChange={(e) => setDestinoTextoRuta(e.target.value)}
+              placeholder="¿A dónde vas? (ej: Rivadavia 1200)"
+              className="flex-1 min-w-0 px-3 py-2.5 rounded-xl border border-line-strong bg-paper text-navy text-sm focus:outline-none focus:border-[#7e57c2] focus:ring-2 focus:ring-[#7e57c2]/20"
+            />
+            <button
+              type="submit"
+              disabled={destinoTextoRuta.trim().length < 3}
+              className="px-4 py-2.5 rounded-xl bg-[#7e57c2] text-white font-bold text-sm hover:scale-[1.02] transition disabled:opacity-40 disabled:hover:scale-100"
+            >
+              Buscar
+            </button>
+          </div>
+          <span className="text-[11px] text-muted">
+            Uso tu ubicación actual como punto de partida.
+          </span>
+        </form>
+      )}
+
       {estado === "buscando" && (
         <div className="text-sm text-muted text-center py-2">
           {modo === "aca"
             ? "Buscando paradas y líneas cerca tuyo…"
-            : "Ubicando esa dirección y buscando paradas y líneas cerca…"}
+            : modo === "destino"
+              ? "Ubicando esa dirección y buscando paradas y líneas cerca…"
+              : "Ubicando tu posición y el destino, buscando qué línea te conecta…"}
         </div>
       )}
 
@@ -387,6 +506,94 @@ export function ZorritoGuia() {
             className="text-xs text-navy-2 underline underline-offset-4 self-center mt-1"
           >
             {modo === "aca" ? "Volver a buscar mi ubicación" : "Buscar otro destino"}
+          </button>
+        </div>
+      )}
+
+      {estado === "ok" && resultadoRuta && (
+        <div className="flex flex-col gap-3">
+          <div className="grid sm:grid-cols-2 gap-2">
+            <div className="rounded-lg border border-line bg-paper px-3 py-2">
+              <div className="text-[11px] text-muted mb-1">
+                Parada más cercana a vos
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs text-navy min-w-0 truncate">
+                  {resultadoRuta.paradaOrigen.calle} y{" "}
+                  {resultadoRuta.paradaOrigen.esquina}
+                  {resultadoRuta.paradaOrigen.refugio && " 🏠"}
+                </span>
+                <span className="text-xs text-muted font-mono shrink-0">
+                  {Math.round(resultadoRuta.paradaOrigen.distancia)} m
+                </span>
+              </div>
+            </div>
+            <div className="rounded-lg border border-line bg-paper px-3 py-2">
+              <div className="text-[11px] text-muted mb-1">
+                Parada más cercana a tu destino
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs text-navy min-w-0 truncate">
+                  {resultadoRuta.paradaDestino.calle} y{" "}
+                  {resultadoRuta.paradaDestino.esquina}
+                  {resultadoRuta.paradaDestino.refugio && " 🏠"}
+                </span>
+                <span className="text-xs text-muted font-mono shrink-0">
+                  {Math.round(resultadoRuta.paradaDestino.distancia)} m
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div className="text-[11px] font-bold uppercase tracking-wider text-muted mb-1.5">
+              Líneas que te acercan a los dos puntos
+            </div>
+            <div className="flex flex-col gap-2">
+              {resultadoRuta.lineasComunes.map((l) => (
+                <button
+                  key={l.codigo}
+                  type="button"
+                  onClick={() => irALinea(l.codigo)}
+                  className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg border-2 border-[#7e57c2]/60 bg-[#7e57c2]/10 hover:bg-[#7e57c2]/20 transition text-left"
+                  title="Ver el recorrido completo de esta línea"
+                >
+                  <span className="text-[#7e57c2] text-sm font-extrabold">{l.codigo}</span>
+                  <span className="text-[11px] text-navy">
+                    Cerca tuyo: {Math.round(l.distOrigen)} m · Cerca del destino: {Math.round(l.distDestino)} m
+                  </span>
+                </button>
+              ))}
+            </div>
+            {resultadoRuta.lineasComunes[0] &&
+            resultadoRuta.lineasComunes[0].distOrigen + resultadoRuta.lineasComunes[0].distDestino >
+              DISTANCIA_RUTA_RAZONABLE_M ? (
+              <p className="text-[11px] text-muted mt-2">
+                Ninguna línea pasa muy cerca de los dos puntos a la vez —
+                puede que necesites caminar bastante o hacer una combinación.
+                Probá el{" "}
+                <a
+                  href="https://comodoro-mit.github.io/transporte"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline underline-offset-4"
+                >
+                  mapa interactivo completo
+                </a>
+                .
+              </p>
+            ) : null}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              setEstado("idle");
+              setResultadoRuta(null);
+            }}
+            className="text-xs text-navy-2 underline underline-offset-4 self-center mt-1"
+          >
+            Buscar otra ruta
           </button>
         </div>
       )}
