@@ -8,9 +8,14 @@ import { useState, type FormEvent } from "react";
  * Municipalidad para su propio mapa interactivo (comodoro-mit.github.io).
  * No se copian esos datos al repo: se consultan en vivo (CORS abierto), así
  * nunca quedan desactualizados si la Municipalidad corrige un recorrido.
+ *
+ * Un solo formulario: origen (ubicación GPS por defecto, o dirección escrita)
+ * + destino opcional. Sin destino, muestra lo que hay cerca del origen; con
+ * destino, muestra qué línea conecta los dos puntos.
  */
 
 const BASE = "https://comodoro-mit.github.io/transporte/layers_transporte";
+const MAPA_MCR_URL = "https://comodoro-mit.github.io/transporte";
 
 // Códigos reales de archivo publicados por el mapa oficial (23 líneas).
 const CODIGOS_LINEA = [
@@ -119,6 +124,8 @@ function distanciaAminea(lat: number, lng: number, linea: LineaGeoJSON) {
   return min;
 }
 
+type Coords = { lat: number; lng: number };
+
 type Resultado = {
   paradasCercanas: Array<Parada & { distancia: number }>;
   lineasCercanas: Array<{ codigo: string; distancia: number }>;
@@ -130,24 +137,75 @@ type Resultado = {
 type ResultadoRuta = {
   paradaOrigen: Parada & { distancia: number };
   paradaDestino: Parada & { distancia: number };
-  lineasComunes: Array<{ codigo: string; distOrigen: number; distDestino: number }>;
+  lineasOrigen: Array<{ codigo: string; distancia: number }>;
+  lineasDestino: Array<{ codigo: string; distancia: number }>;
+  lineasDirectas: string[];
 };
 
-type Modo = "aca" | "destino" | "ruta";
+type OrigenModo = "gps" | "texto";
 
-// Si ni la mejor línea candidata pasa razonablemente cerca de los dos
-// puntos, probablemente haga falta combinación — se lo avisamos al usuario
-// en vez de sugerir una línea que en la práctica no le sirve.
-const DISTANCIA_RUTA_RAZONABLE_M = 1200;
+// Una línea "sirve directo" solo si pasa razonablemente cerca de los DOS
+// puntos por separado — no alcanza con que pase cerca de uno solo. No
+// verifica sentido/dirección real, así que es una pista, no una garantía.
+const DISTANCIA_DIRECTA_RAZONABLE_M = 600;
+
+function obtenerUbicacionActual(): Promise<Coords> {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error("sin-geolocalizacion"));
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => reject(new Error("geolocalizacion-denegada")),
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
+  });
+}
+
+async function geocodificar(direccion: string): Promise<Coords> {
+  const resp = await fetch(`/api/geocode?direccion=${encodeURIComponent(direccion.trim())}`);
+  if (!resp.ok) throw new Error("geocode falló");
+  return resp.json();
+}
+
+function urlGoogleMaps(destino: Coords) {
+  return `https://www.google.com/maps/dir/?api=1&destination=${destino.lat},${destino.lng}&travelmode=walking`;
+}
+
+function BotonesParada({ parada }: { parada: Coords }) {
+  return (
+    <div className="flex items-center gap-2">
+      <a
+        href={urlGoogleMaps(parada)}
+        target="_blank"
+        rel="noopener noreferrer"
+        title="Ir hasta esta parada con Google Maps"
+        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full border border-[#7e57c2]/40 text-[11px] font-semibold text-[#7e57c2] hover:bg-[#7e57c2]/10 transition"
+      >
+        📍 Ir en Google Maps
+      </a>
+      <a
+        href={MAPA_MCR_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        title="Ver el mapa interactivo completo de Sol Bus (Municipalidad)"
+        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full border border-line text-[11px] font-semibold text-navy hover:bg-paper-2 transition"
+      >
+        🗺️ Mapa Sol Bus
+      </a>
+    </div>
+  );
+}
 
 export function ZorritoGuia() {
-  const [modo, setModo] = useState<Modo>("aca");
+  const [origenModo, setOrigenModo] = useState<OrigenModo>("gps");
+  const [origenTexto, setOrigenTexto] = useState("");
+  const [destinoTexto, setDestinoTexto] = useState("");
   const [estado, setEstado] = useState<"idle" | "buscando" | "ok" | "error">("idle");
   const [errorTexto, setErrorTexto] = useState<string | null>(null);
   const [resultado, setResultado] = useState<Resultado | null>(null);
   const [resultadoRuta, setResultadoRuta] = useState<ResultadoRuta | null>(null);
-  const [destinoTexto, setDestinoTexto] = useState("");
-  const [destinoTextoRuta, setDestinoTextoRuta] = useState("");
 
   function irALinea(codigo: string) {
     const id = `linea-${numeroAncla(codigo)}`;
@@ -158,8 +216,7 @@ export function ZorritoGuia() {
     }
   }
 
-  function cambiarModo(nuevo: Modo) {
-    setModo(nuevo);
+  function reiniciar() {
     setEstado("idle");
     setResultado(null);
     setResultadoRuta(null);
@@ -188,108 +245,76 @@ export function ZorritoGuia() {
     setEstado("ok");
   }
 
-  function buscar() {
-    if (!navigator.geolocation) {
-      setErrorTexto("Tu navegador no soporta geolocalización.");
-      setEstado("error");
-      return;
-    }
-    setEstado("buscando");
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        try {
-          await buscarPorCoords(pos.coords.latitude, pos.coords.longitude);
-        } catch {
-          setErrorTexto("No pudimos calcular paradas y líneas cercanas ahora.");
-          setEstado("error");
-        }
-      },
-      () => {
-        setErrorTexto("No pudimos obtener tu ubicación.");
-        setEstado("error");
-      },
-      { enableHighAccuracy: true, timeout: 10000 },
-    );
-  }
-
-  async function buscarDestino(e: FormEvent) {
-    e.preventDefault();
-    if (destinoTexto.trim().length < 3) return;
-    setEstado("buscando");
-    try {
-      const resp = await fetch(
-        `/api/geocode?direccion=${encodeURIComponent(destinoTexto.trim())}`,
-      );
-      if (!resp.ok) throw new Error("geocode falló");
-      const { lat, lng } = await resp.json();
-      await buscarPorCoords(lat, lng);
-    } catch {
-      setErrorTexto("No pudimos ubicar esa dirección. Probá con calle y altura.");
-      setEstado("error");
-    }
-  }
-
-  async function buscarRutaPorCoords(
-    origenLat: number,
-    origenLng: number,
-    destLat: number,
-    destLng: number,
-  ) {
+  async function buscarRutaPorCoords(origen: Coords, destino: Coords) {
     const [paradas, ...lineas] = await Promise.all([
       fetchDataJs<Parada[]>(`${BASE}/paradas_data.js`),
       ...CODIGOS_LINEA.map((c) => fetchDataJs<LineaGeoJSON>(`${BASE}/linea_${c}_data.js`)),
     ]);
 
     const [paradaOrigen] = paradas
-      .map((p) => ({ ...p, distancia: distanciaMetros(origenLat, origenLng, p.lat, p.lng) }))
+      .map((p) => ({ ...p, distancia: distanciaMetros(origen.lat, origen.lng, p.lat, p.lng) }))
       .sort((a, b) => a.distancia - b.distancia);
     const [paradaDestino] = paradas
-      .map((p) => ({ ...p, distancia: distanciaMetros(destLat, destLng, p.lat, p.lng) }))
+      .map((p) => ({ ...p, distancia: distanciaMetros(destino.lat, destino.lng, p.lat, p.lng) }))
       .sort((a, b) => a.distancia - b.distancia);
 
-    const lineasComunes = CODIGOS_LINEA.map((codigo, i) => ({
+    const distancias = CODIGOS_LINEA.map((codigo, i) => ({
       codigo,
-      distOrigen: distanciaAminea(origenLat, origenLng, lineas[i]),
-      distDestino: distanciaAminea(destLat, destLng, lineas[i]),
-    }))
-      .sort((a, b) => a.distOrigen + a.distDestino - (b.distOrigen + b.distDestino))
-      .slice(0, 5);
+      distOrigen: distanciaAminea(origen.lat, origen.lng, lineas[i]),
+      distDestino: distanciaAminea(destino.lat, destino.lng, lineas[i]),
+    }));
 
-    setResultadoRuta({ paradaOrigen, paradaDestino, lineasComunes });
+    const lineasOrigen = distancias
+      .map((d) => ({ codigo: d.codigo, distancia: d.distOrigen }))
+      .sort((a, b) => a.distancia - b.distancia)
+      .slice(0, 6);
+    const lineasDestino = distancias
+      .map((d) => ({ codigo: d.codigo, distancia: d.distDestino }))
+      .sort((a, b) => a.distancia - b.distancia)
+      .slice(0, 6);
+
+    // Directa = pasa cerca de los dos puntos por separado (no un promedio
+    // combinado, que puede mezclar el tramo de ida con el de vuelta).
+    const lineasDirectas = distancias
+      .filter(
+        (d) =>
+          d.distOrigen <= DISTANCIA_DIRECTA_RAZONABLE_M &&
+          d.distDestino <= DISTANCIA_DIRECTA_RAZONABLE_M,
+      )
+      .map((d) => d.codigo);
+
+    setResultadoRuta({ paradaOrigen, paradaDestino, lineasOrigen, lineasDestino, lineasDirectas });
     setEstado("ok");
   }
 
-  function buscarRuta(e: FormEvent) {
+  const origenInvalido = origenModo === "texto" && origenTexto.trim().length < 3;
+  const destinoEscrito = destinoTexto.trim().length > 0;
+  const destinoInvalido = destinoEscrito && destinoTexto.trim().length < 3;
+
+  async function buscar(e: FormEvent) {
     e.preventDefault();
-    if (destinoTextoRuta.trim().length < 3) return;
-    if (!navigator.geolocation) {
-      setErrorTexto("Tu navegador no soporta geolocalización.");
-      setEstado("error");
-      return;
-    }
+    if (origenInvalido || destinoInvalido) return;
+
     setEstado("buscando");
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        (async () => {
-          try {
-            const resp = await fetch(
-              `/api/geocode?direccion=${encodeURIComponent(destinoTextoRuta.trim())}`,
-            );
-            if (!resp.ok) throw new Error("geocode falló");
-            const { lat, lng } = await resp.json();
-            await buscarRutaPorCoords(pos.coords.latitude, pos.coords.longitude, lat, lng);
-          } catch {
-            setErrorTexto("No pudimos ubicar ese destino o tu posición actual.");
-            setEstado("error");
-          }
-        })();
-      },
-      () => {
-        setErrorTexto("No pudimos obtener tu ubicación.");
-        setEstado("error");
-      },
-      { enableHighAccuracy: true, timeout: 10000 },
-    );
+    setErrorTexto(null);
+    try {
+      const origen =
+        origenModo === "gps" ? await obtenerUbicacionActual() : await geocodificar(origenTexto);
+
+      if (destinoTexto.trim().length >= 3) {
+        const destino = await geocodificar(destinoTexto);
+        await buscarRutaPorCoords(origen, destino);
+      } else {
+        await buscarPorCoords(origen.lat, origen.lng);
+      }
+    } catch {
+      setErrorTexto(
+        origenModo === "gps"
+          ? "No pudimos obtener tu ubicación. Probá escribiendo tu dirección."
+          : "No pudimos ubicar esa dirección. Probá con calle y altura.",
+      );
+      setEstado("error");
+    }
   }
 
   return (
@@ -306,126 +331,103 @@ export function ZorritoGuia() {
         <div>
           <div className="text-sm font-extrabold text-navy">Zorrito Guía</div>
           <div className="text-xs text-muted">
-            {modo === "aca"
-              ? "¿Dónde estoy? ¿Qué paradas y líneas tengo cerca?"
-              : modo === "destino"
-                ? "¿A dónde vas? Te muestro la parada y línea más cercanas al destino."
-                : "¿De dónde a dónde vas? Te digo qué línea te conecta los dos puntos."}
+            ¿De dónde a dónde vas? Te digo qué paradas y líneas tenés cerca.
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
-        <button
-          type="button"
-          onClick={() => cambiarModo("aca")}
-          className={`px-2 py-2 rounded-lg text-xs font-bold transition ${
-            modo === "aca"
-              ? "bg-[#7e57c2] text-white"
-              : "bg-paper border border-line text-navy hover:bg-paper-2"
-          }`}
-        >
-          📍 ¿Dónde estoy?
-        </button>
-        <button
-          type="button"
-          onClick={() => cambiarModo("destino")}
-          className={`px-2 py-2 rounded-lg text-xs font-bold transition ${
-            modo === "destino"
-              ? "bg-[#7e57c2] text-white"
-              : "bg-paper border border-line text-navy hover:bg-paper-2"
-          }`}
-        >
-          🎯 ¿A dónde vas?
-        </button>
-        <button
-          type="button"
-          onClick={() => cambiarModo("ruta")}
-          className={`px-2 py-2 rounded-lg text-xs font-bold transition ${
-            modo === "ruta"
-              ? "bg-[#7e57c2] text-white"
-              : "bg-paper border border-line text-navy hover:bg-paper-2"
-          }`}
-        >
-          🧭 De acá a dónde voy
-        </button>
-      </div>
+      {estado === "idle" && (
+        <form onSubmit={buscar} className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-muted">
+              📍 ¿Dónde estás?
+            </span>
+            {origenModo === "gps" ? (
+              <div className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl border border-line-strong bg-paper text-sm text-navy">
+                <span>Uso tu ubicación actual</span>
+                <button
+                  type="button"
+                  onClick={() => setOrigenModo("texto")}
+                  className="text-[11px] font-semibold text-[#7e57c2] underline underline-offset-4 shrink-0"
+                >
+                  Prefiero escribir la dirección
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-1">
+                <input
+                  type="text"
+                  value={origenTexto}
+                  onChange={(e) => setOrigenTexto(e.target.value)}
+                  placeholder="Tu dirección (ej: Rivadavia 1200)"
+                  className="px-3 py-2.5 rounded-xl border border-line-strong bg-paper text-navy text-sm focus:outline-none focus:border-[#7e57c2] focus:ring-2 focus:ring-[#7e57c2]/20"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOrigenModo("gps");
+                    setOrigenTexto("");
+                  }}
+                  className="text-[11px] font-semibold text-[#7e57c2] underline underline-offset-4 self-start"
+                >
+                  Usar mi ubicación actual
+                </button>
+              </div>
+            )}
+          </div>
 
-      {estado === "idle" && modo === "aca" && (
-        <button
-          type="button"
-          onClick={buscar}
-          className="w-full px-4 py-2.5 rounded-xl bg-[#7e57c2] text-white font-bold text-sm hover:scale-[1.02] transition"
-        >
-          📍 Usar mi ubicación
-        </button>
-      )}
+          <div className="flex flex-col gap-1">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-muted">
+              🎯 ¿A dónde vas? (opcional)
+            </span>
+            <input
+              type="text"
+              value={destinoTexto}
+              onChange={(e) => setDestinoTexto(e.target.value)}
+              placeholder="Calle y altura (ej: Rivadavia 1200)"
+              className="px-3 py-2.5 rounded-xl border border-line-strong bg-paper text-navy text-sm focus:outline-none focus:border-[#7e57c2] focus:ring-2 focus:ring-[#7e57c2]/20"
+            />
+            <span className="text-[11px] text-muted">
+              Si lo dejás vacío, te muestro paradas y líneas cerca de dónde estás.
+            </span>
+          </div>
 
-      {estado === "idle" && modo === "destino" && (
-        <form onSubmit={buscarDestino} className="flex gap-2">
-          <input
-            type="text"
-            value={destinoTexto}
-            onChange={(e) => setDestinoTexto(e.target.value)}
-            placeholder="Calle y altura (ej: Rivadavia 1200)"
-            className="flex-1 min-w-0 px-3 py-2.5 rounded-xl border border-line-strong bg-paper text-navy text-sm focus:outline-none focus:border-[#7e57c2] focus:ring-2 focus:ring-[#7e57c2]/20"
-          />
           <button
             type="submit"
-            disabled={destinoTexto.trim().length < 3}
-            className="px-4 py-2.5 rounded-xl bg-[#7e57c2] text-white font-bold text-sm hover:scale-[1.02] transition disabled:opacity-40 disabled:hover:scale-100"
+            disabled={origenInvalido || destinoInvalido}
+            className="w-full px-4 py-2.5 rounded-xl bg-[#7e57c2] text-white font-bold text-sm hover:scale-[1.02] transition disabled:opacity-40 disabled:hover:scale-100"
           >
             Buscar
           </button>
         </form>
       )}
 
-      {estado === "idle" && modo === "ruta" && (
-        <form onSubmit={buscarRuta} className="flex flex-col gap-1.5">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={destinoTextoRuta}
-              onChange={(e) => setDestinoTextoRuta(e.target.value)}
-              placeholder="¿A dónde vas? (ej: Rivadavia 1200)"
-              className="flex-1 min-w-0 px-3 py-2.5 rounded-xl border border-line-strong bg-paper text-navy text-sm focus:outline-none focus:border-[#7e57c2] focus:ring-2 focus:ring-[#7e57c2]/20"
-            />
-            <button
-              type="submit"
-              disabled={destinoTextoRuta.trim().length < 3}
-              className="px-4 py-2.5 rounded-xl bg-[#7e57c2] text-white font-bold text-sm hover:scale-[1.02] transition disabled:opacity-40 disabled:hover:scale-100"
-            >
-              Buscar
-            </button>
-          </div>
-          <span className="text-[11px] text-muted">
-            Uso tu ubicación actual como punto de partida.
-          </span>
-        </form>
-      )}
-
       {estado === "buscando" && (
         <div className="text-sm text-muted text-center py-2">
-          {modo === "aca"
-            ? "Buscando paradas y líneas cerca tuyo…"
-            : modo === "destino"
-              ? "Ubicando esa dirección y buscando paradas y líneas cerca…"
-              : "Ubicando tu posición y el destino, buscando qué línea te conecta…"}
+          {destinoEscrito
+            ? "Ubicando los dos puntos y buscando qué línea te conecta…"
+            : "Buscando paradas y líneas cerca tuyo…"}
         </div>
       )}
 
       {estado === "error" && (
-        <div className="text-sm text-svc-red text-center py-2">
-          {errorTexto} Probá de nuevo o usá el{" "}
+        <div className="flex flex-col gap-2 items-center py-2">
+          <div className="text-sm text-svc-red text-center">{errorTexto}</div>
+          <button
+            type="button"
+            onClick={reiniciar}
+            className="text-xs text-navy-2 underline underline-offset-4"
+          >
+            Probar de nuevo
+          </button>
           <a
-            href="https://comodoro-mit.github.io/transporte"
+            href={MAPA_MCR_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="underline underline-offset-4"
+            className="text-xs text-[#7e57c2] underline underline-offset-4"
           >
-            mapa interactivo completo
+            O usá el mapa interactivo completo
           </a>
-          .
         </div>
       )}
 
@@ -433,7 +435,7 @@ export function ZorritoGuia() {
         <div className="flex flex-col gap-3">
           <div>
             <div className="text-[11px] font-bold uppercase tracking-wider text-muted mb-1.5">
-              {modo === "aca" ? "Paradas más cercanas" : "Paradas cerca del destino"}
+              Paradas más cercanas
             </div>
             <div className="flex flex-col gap-2">
               {resultado.paradasCercanas.map((p) => (
@@ -450,26 +452,7 @@ export function ZorritoGuia() {
                       {Math.round(p.distancia)} m
                     </span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <a
-                      href={`https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}&travelmode=walking`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      title="Ir hasta esta parada con Google Maps"
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full border border-[#7e57c2]/40 text-[11px] font-semibold text-[#7e57c2] hover:bg-[#7e57c2]/10 transition"
-                    >
-                      📍 Ir en Google Maps
-                    </a>
-                    <a
-                      href="https://comodoro-mit.github.io/transporte"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      title="Ver el mapa interactivo completo de Sol Bus"
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full border border-line text-[11px] font-semibold text-navy hover:bg-paper-2 transition"
-                    >
-                      🗺️ Mapa Sol Bus
-                    </a>
-                  </div>
+                  <BotonesParada parada={p} />
                 </div>
               ))}
             </div>
@@ -499,13 +482,10 @@ export function ZorritoGuia() {
 
           <button
             type="button"
-            onClick={() => {
-              setEstado("idle");
-              setResultado(null);
-            }}
+            onClick={reiniciar}
             className="text-xs text-navy-2 underline underline-offset-4 self-center mt-1"
           >
-            {modo === "aca" ? "Volver a buscar mi ubicación" : "Buscar otro destino"}
+            Buscar de nuevo
           </button>
         </div>
       )}
@@ -513,10 +493,8 @@ export function ZorritoGuia() {
       {estado === "ok" && resultadoRuta && (
         <div className="flex flex-col gap-3">
           <div className="grid sm:grid-cols-2 gap-2">
-            <div className="rounded-lg border border-line bg-paper px-3 py-2">
-              <div className="text-[11px] text-muted mb-1">
-                Parada más cercana a vos
-              </div>
+            <div className="rounded-lg border border-line bg-paper px-3 py-2 flex flex-col gap-1.5">
+              <div className="text-[11px] text-muted">Parada más cercana a vos</div>
               <div className="flex items-center justify-between gap-2">
                 <span className="text-xs text-navy min-w-0 truncate">
                   {resultadoRuta.paradaOrigen.calle} y{" "}
@@ -527,11 +505,10 @@ export function ZorritoGuia() {
                   {Math.round(resultadoRuta.paradaOrigen.distancia)} m
                 </span>
               </div>
+              <BotonesParada parada={resultadoRuta.paradaOrigen} />
             </div>
-            <div className="rounded-lg border border-line bg-paper px-3 py-2">
-              <div className="text-[11px] text-muted mb-1">
-                Parada más cercana a tu destino
-              </div>
+            <div className="rounded-lg border border-line bg-paper px-3 py-2 flex flex-col gap-1.5">
+              <div className="text-[11px] text-muted">Parada más cercana a tu destino</div>
               <div className="flex items-center justify-between gap-2">
                 <span className="text-xs text-navy min-w-0 truncate">
                   {resultadoRuta.paradaDestino.calle} y{" "}
@@ -542,55 +519,93 @@ export function ZorritoGuia() {
                   {Math.round(resultadoRuta.paradaDestino.distancia)} m
                 </span>
               </div>
+              <BotonesParada parada={resultadoRuta.paradaDestino} />
             </div>
           </div>
 
-          <div>
-            <div className="text-[11px] font-bold uppercase tracking-wider text-muted mb-1.5">
-              Líneas que te acercan a los dos puntos
-            </div>
-            <div className="flex flex-col gap-2">
-              {resultadoRuta.lineasComunes.map((l) => (
-                <button
-                  key={l.codigo}
-                  type="button"
-                  onClick={() => irALinea(l.codigo)}
-                  className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg border-2 border-[#7e57c2]/60 bg-[#7e57c2]/10 hover:bg-[#7e57c2]/20 transition text-left"
-                  title="Ver el recorrido completo de esta línea"
-                >
-                  <span className="text-[#7e57c2] text-sm font-extrabold">{l.codigo}</span>
-                  <span className="text-[11px] text-navy">
-                    Cerca tuyo: {Math.round(l.distOrigen)} m · Cerca del destino: {Math.round(l.distDestino)} m
-                  </span>
-                </button>
-              ))}
-            </div>
-            {resultadoRuta.lineasComunes[0] &&
-            resultadoRuta.lineasComunes[0].distOrigen + resultadoRuta.lineasComunes[0].distDestino >
-              DISTANCIA_RUTA_RAZONABLE_M ? (
-              <p className="text-[11px] text-muted mt-2">
-                Ninguna línea pasa muy cerca de los dos puntos a la vez —
-                puede que necesites caminar bastante o hacer una combinación.
-                Probá el{" "}
-                <a
-                  href="https://comodoro-mit.github.io/transporte"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline underline-offset-4"
-                >
-                  mapa interactivo completo
-                </a>
-                .
+          {resultadoRuta.lineasDirectas.length > 0 && (
+            <div>
+              <div className="text-[11px] font-bold uppercase tracking-wider text-muted mb-1.5">
+                🎯 Te sirven directo (pasan cerca de los dos puntos)
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {resultadoRuta.lineasDirectas.map((codigo) => (
+                  <button
+                    key={codigo}
+                    type="button"
+                    onClick={() => irALinea(codigo)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border-2 border-[#7e57c2]/60 bg-[#7e57c2]/10 text-[#7e57c2] text-xs font-extrabold hover:bg-[#7e57c2]/20 transition"
+                    title="Ver el recorrido completo de esta línea"
+                  >
+                    {codigo}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[11px] text-muted mt-1">
+                Es una estimación por cercanía, no confirma el sentido exacto — fijate el recorrido antes de subir.
               </p>
-            ) : null}
+            </div>
+          )}
+
+          <div className="grid sm:grid-cols-2 gap-3">
+            <div>
+              <div className="text-[11px] font-bold uppercase tracking-wider text-muted mb-1.5">
+                Líneas cerca de tu punto de partida
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {resultadoRuta.lineasOrigen.map((l) => (
+                  <button
+                    key={l.codigo}
+                    type="button"
+                    onClick={() => irALinea(l.codigo)}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-line text-[11px] font-semibold text-navy hover:bg-paper-2 transition"
+                    title="Ver el recorrido completo de esta línea"
+                  >
+                    {l.codigo} <span className="text-muted font-normal">· {Math.round(l.distancia)} m</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <div className="text-[11px] font-bold uppercase tracking-wider text-muted mb-1.5">
+                Líneas cerca de tu destino
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {resultadoRuta.lineasDestino.map((l) => (
+                  <button
+                    key={l.codigo}
+                    type="button"
+                    onClick={() => irALinea(l.codigo)}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-line text-[11px] font-semibold text-navy hover:bg-paper-2 transition"
+                    title="Ver el recorrido completo de esta línea"
+                  >
+                    {l.codigo} <span className="text-muted font-normal">· {Math.round(l.distancia)} m</span>
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
+
+          {resultadoRuta.lineasDirectas.length === 0 && (
+            <p className="text-[11px] text-muted">
+              Ninguna línea pasa cerca de los dos puntos a la vez —
+              puede que necesites caminar bastante o hacer una combinación.
+              Probá el{" "}
+              <a
+                href={MAPA_MCR_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline underline-offset-4"
+              >
+                mapa interactivo completo
+              </a>
+              .
+            </p>
+          )}
 
           <button
             type="button"
-            onClick={() => {
-              setEstado("idle");
-              setResultadoRuta(null);
-            }}
+            onClick={reiniciar}
             className="text-xs text-navy-2 underline underline-offset-4 self-center mt-1"
           >
             Buscar otra ruta
