@@ -61,7 +61,7 @@ export default function CompararPage() {
             targetId: "comparar-boton-comparar",
             pose: "agachado",
             texto:
-              "Subí la factura anterior a la izquierda y la actual a la derecha —PDF o foto— y tocá acá para compararlas.",
+              "Subí las dos facturas —PDF o foto—, en cualquier orden: yo detecto solo cuál es la anterior y cuál la actual por el período. Después tocá acá para compararlas.",
           },
           {
             pose: "agachado",

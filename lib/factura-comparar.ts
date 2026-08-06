@@ -48,7 +48,45 @@ export type ComparacionDosFacturas = {
   cuadroActualNombre: string;
   consumoAnteriorKwh: number | null;
   consumoActualKwh: number | null;
+  periodoAnterior: string | null;
+  periodoActual: string | null;
+  // "¿Qué pasaría si hubieras consumido lo mismo?" — solo servicios
+  // (energía + agua + cloacas + alumbrado), con tu consumo anterior pero el
+  // efecto tarifa ya detectado fila por fila. Aísla el efecto tarifa puro.
+  subtotalServiciosAnterior: number | null;
+  subtotalServiciosMismoConsumoTarifaActual: number | null;
 };
+
+/** "MM/AAAA" → AAAAMM numérico para poder ordenar cronológicamente; null si
+ *  no se pudo leer el período. */
+function periodoOrdenable(periodo: string | null): number | null {
+  const m = periodo?.match(/^(\d{1,2})\/(\d{2,4})$/);
+  if (!m) return null;
+  const mes = parseInt(m[1], 10);
+  let anio = m[2];
+  if (anio.length === 2) anio = "20" + anio;
+  return parseInt(anio, 10) * 100 + mes;
+}
+
+/**
+ * Ordena dos facturas ya analizadas en anterior/actual por período de
+ * consumo (no por fecha de emisión: SCPL emite 1-2 meses después de cerrado
+ * el período, así que el período es el dato que realmente importa). Si
+ * algún período no se pudo leer, conserva el orden de carga y avisa.
+ */
+export function ordenarPorPeriodo(
+  x: AnalisisFactura,
+  y: AnalisisFactura,
+): { anterior: AnalisisFactura; actual: AnalisisFactura; detectado: boolean } {
+  const px = periodoOrdenable(x.extraida.periodo);
+  const py = periodoOrdenable(y.extraida.periodo);
+  if (px == null || py == null || px === py) {
+    return { anterior: x, actual: y, detectado: false };
+  }
+  return px < py
+    ? { anterior: x, actual: y, detectado: true }
+    : { anterior: y, actual: x, detectado: true };
+}
 
 const EPS = 0.5; // diferencias menores a 50 centavos se consideran "sin variación"
 
@@ -98,6 +136,10 @@ export function compararAnalisis(
     cuadroActualNombre: b.cuadroMatch?.nombre ?? "—",
     consumoAnteriorKwh: a.extraida.consumoKwh,
     consumoActualKwh: b.extraida.consumoKwh,
+    periodoAnterior: a.extraida.periodo,
+    periodoActual: b.extraida.periodo,
+    subtotalServiciosAnterior: null,
+    subtotalServiciosMismoConsumoTarifaActual: null,
   };
 
   if (!a.ok || !b.ok || !a.cuadroMatch || !b.cuadroMatch) {
@@ -279,6 +321,26 @@ export function compararAnalisis(
   const pctImpuestos = base > 0 ? (Math.abs(montoImpuestos) / base) * 100 : 0;
   const pctOtros = base > 0 ? (Math.abs(montoOtros) / base) * 100 : 0;
 
+  // ── "¿Qué pasaría si hubieras consumido lo mismo?" ──────────────────────
+  // Solo sobre SERVICIOS (energía + agua + cloacas + alumbrado), no sobre el
+  // total con impuestos: `montoTarifa` ya es la suma exacta del efecto
+  // tarifa fila por fila (Laspeyres), con los montos REALES de la factura.
+  // No se recalcula con calcularFactura() acá a propósito: esa función usa
+  // valores DE REFERENCIA para Ley I-26/ENRE/Bomberos (no los reales de cada
+  // factura), y mezclarlos habría "contaminado" el efecto tarifa con la
+  // diferencia entre el valor de referencia y el real, que no es un cambio
+  // de tarifa real.
+  const subtotalServiciosAnterior = a.sinConsumo || a.sinAgua
+    ? null
+    : (ea.conceptos.cargoFijo ?? 0) +
+      (ea.conceptos.cargoVariable ?? 0) +
+      (ea.conceptos.compra ?? 0) +
+      (ea.conceptos.alumbrado ?? 0) +
+      (ea.conceptos.agua ?? 0) +
+      (ea.conceptos.cloacas ?? 0);
+  const subtotalServiciosMismoConsumoTarifaActual =
+    subtotalServiciosAnterior != null ? subtotalServiciosAnterior + montoTarifa : null;
+
   return {
     ok: true,
     filas,
@@ -299,5 +361,9 @@ export function compararAnalisis(
     cuadroActualNombre: cb.nombre,
     consumoAnteriorKwh: ea.consumoKwh,
     consumoActualKwh: eb.consumoKwh,
+    periodoAnterior: ea.periodo,
+    periodoActual: eb.periodo,
+    subtotalServiciosAnterior,
+    subtotalServiciosMismoConsumoTarifaActual,
   };
 }

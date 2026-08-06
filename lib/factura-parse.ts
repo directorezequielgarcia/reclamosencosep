@@ -70,6 +70,28 @@ export type FacturaExtraida = {
   total: number | null;
 };
 
+/** Arma la entrada del motor de cálculo (calcularFactura) a partir de una
+ *  factura ya extraída. Se usa tanto para comparar contra el cuadro que
+ *  facturó como para proyectar la misma factura contra otro cuadro (ej. "si
+ *  hubieras consumido lo mismo pero con la tarifa actual"). */
+export function entradaDeFactura(e: FacturaExtraida): EntradaCalculo {
+  return {
+    tipo: e.tipo,
+    kwh: e.consumoKwh ?? 0,
+    modoAgua: e.modoAgua,
+    m2: e.m2 ?? 0,
+    m3Medido: e.m3Medido ?? 0,
+    tieneCloacas: e.tieneCloacas,
+    conSubsidioEnergia: e.conSubsidio,
+    mes: e.mes,
+    extras: {
+      bomberos: e.conBomberos,
+      sepelios: e.conSepelios,
+      "sepelios-adic": e.conSepelios,
+    },
+  };
+}
+
 const TIPO_TEXTO: [RegExp, TipoUsuario][] = [
   [/RESIDENCIAL/i, "RESIDENCIAL"],
   [/COMERCIAL/i, "COMERCIAL"],
@@ -320,21 +342,7 @@ export function analizarFactura(
     };
   }
 
-  const entrada = (): EntradaCalculo => ({
-    tipo: extraida.tipo,
-    kwh: extraida.consumoKwh ?? 0,
-    modoAgua: extraida.modoAgua,
-    m2: extraida.m2 ?? 0,
-    m3Medido: extraida.m3Medido ?? 0,
-    tieneCloacas: extraida.tieneCloacas,
-    conSubsidioEnergia: extraida.conSubsidio,
-    mes: extraida.mes,
-    extras: {
-      bomberos: extraida.conBomberos,
-      sepelios: extraida.conSepelios,
-      "sepelios-adic": extraida.conSepelios,
-    },
-  });
+  const entrada = () => entradaDeFactura(extraida);
 
   // Calculamos la factura para CADA cuadro con el mismo consumo y, además de
   // detectar con cuál te facturaron (menor error), proyectamos cómo quedaría

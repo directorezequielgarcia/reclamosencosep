@@ -4,7 +4,7 @@ import { useActionState, useState, startTransition } from "react";
 import { compararFacturas, type CompararState } from "./actions";
 import { leerDocumento, type PasoLectura } from "@/lib/leer-documento";
 import { pesos } from "@/lib/tarifas";
-import type { MotivoVariacion } from "@/lib/factura-comparar";
+import type { ComparacionDosFacturas, MotivoVariacion } from "@/lib/factura-comparar";
 
 const inicial: CompararState = { ok: false };
 
@@ -90,15 +90,15 @@ function UploadSlot({
 export function CompararForm() {
   const [state, action, pending] = useActionState(compararFacturas, inicial);
 
-  const [nombreA, setNombreA] = useState("");
-  const [textoA, setTextoA] = useState("");
-  const [estadoA, setEstadoA] = useState<"idle" | "leyendo" | "listo" | "error">("idle");
-  const [pasoA, setPasoA] = useState<PasoLectura | null>(null);
+  const [nombre1, setNombre1] = useState("");
+  const [texto1, setTexto1] = useState("");
+  const [estado1, setEstado1] = useState<"idle" | "leyendo" | "listo" | "error">("idle");
+  const [paso1, setPaso1] = useState<PasoLectura | null>(null);
 
-  const [nombreB, setNombreB] = useState("");
-  const [textoB, setTextoB] = useState("");
-  const [estadoB, setEstadoB] = useState<"idle" | "leyendo" | "listo" | "error">("idle");
-  const [pasoB, setPasoB] = useState<PasoLectura | null>(null);
+  const [nombre2, setNombre2] = useState("");
+  const [texto2, setTexto2] = useState("");
+  const [estado2, setEstado2] = useState<"idle" | "leyendo" | "listo" | "error">("idle");
+  const [paso2, setPaso2] = useState<PasoLectura | null>(null);
 
   async function elegir(
     file: File,
@@ -122,8 +122,8 @@ export function CompararForm() {
 
   function enviar(manual?: Record<string, string>) {
     const fd = new FormData();
-    fd.set("textoOcrA", textoA || state.textoA || "");
-    fd.set("textoOcrB", textoB || state.textoB || "");
+    fd.set("textoOcr1", texto1 || state.texto1 || "");
+    fd.set("textoOcr2", texto2 || state.texto2 || "");
     if (manual) {
       for (const [k, v] of Object.entries(manual)) if (v) fd.set(k, v);
     }
@@ -132,31 +132,33 @@ export function CompararForm() {
     });
   }
 
-  const listoParaComparar = estadoA === "listo" && estadoB === "listo";
+  const listoParaComparar = estado1 === "listo" && estado2 === "listo";
 
   return (
     <div className="flex flex-col gap-6">
       <div className="rounded-2xl border border-line bg-paper p-5 flex flex-col gap-4">
         <div className="grid sm:grid-cols-2 gap-4">
           <UploadSlot
-            label="Factura anterior"
-            nombreArchivo={nombreA}
-            ocrEstado={estadoA}
-            paso={pasoA}
-            onArchivo={(f) => elegir(f, setNombreA, setTextoA, setEstadoA, setPasoA)}
+            label="Factura 1"
+            nombreArchivo={nombre1}
+            ocrEstado={estado1}
+            paso={paso1}
+            onArchivo={(f) => elegir(f, setNombre1, setTexto1, setEstado1, setPaso1)}
           />
           <UploadSlot
-            label="Factura actual"
-            nombreArchivo={nombreB}
-            ocrEstado={estadoB}
-            paso={pasoB}
-            onArchivo={(f) => elegir(f, setNombreB, setTextoB, setEstadoB, setPasoB)}
+            label="Factura 2"
+            nombreArchivo={nombre2}
+            ocrEstado={estado2}
+            paso={paso2}
+            onArchivo={(f) => elegir(f, setNombre2, setTexto2, setEstado2, setPaso2)}
           />
         </div>
         <span className="text-[11px] text-muted">
-          Subí el PDF que te llega por mail (lo más preciso) o una foto bien
-          enfocada y con buena luz de cada factura. La lectura se hace en tu
-          dispositivo (gratis); puede tardar unos segundos por factura.
+          No importa el orden en que las subas: detectamos automáticamente
+          cuál es la anterior y cuál la actual por el período de consumo de
+          cada una. Subí el PDF que te llega por mail (lo más preciso) o una
+          foto bien enfocada y con buena luz; puede tardar unos segundos por
+          factura.
         </span>
         <button
           id="comparar-boton-comparar"
@@ -175,12 +177,12 @@ export function CompararForm() {
         </div>
       ) : null}
 
-      {!state.ok && (state.analisisA?.sinConsumo || state.analisisA?.sinAgua || state.analisisB?.sinConsumo || state.analisisB?.sinAgua) ? (
+      {!state.ok && (state.analisis1?.sinConsumo || state.analisis1?.sinAgua || state.analisis2?.sinConsumo || state.analisis2?.sinAgua) ? (
         <DatosManualesForm state={state} onEnviar={enviar} />
       ) : null}
 
       {state.ok && state.comparacion ? (
-        <Resultado comparacion={state.comparacion} />
+        <Resultado comparacion={state.comparacion} ordenDetectado={!!state.ordenDetectado} />
       ) : null}
     </div>
   );
@@ -193,32 +195,32 @@ function DatosManualesForm({
   state: CompararState;
   onEnviar: (manual: Record<string, string>) => void;
 }) {
-  const [kwhA, setKwhA] = useState("");
-  const [aguaA, setAguaA] = useState("");
-  const [kwhB, setKwhB] = useState("");
-  const [aguaB, setAguaB] = useState("");
+  const [kwh1, setKwh1] = useState("");
+  const [agua1, setAgua1] = useState("");
+  const [kwh2, setKwh2] = useState("");
+  const [agua2, setAgua2] = useState("");
 
-  const faltaA = state.analisisA?.sinConsumo || state.analisisA?.sinAgua;
-  const faltaB = state.analisisB?.sinConsumo || state.analisisB?.sinAgua;
-  const modoMedidaA = state.analisisA?.extraida.modoAgua === "MEDIDA";
-  const modoMedidaB = state.analisisB?.extraida.modoAgua === "MEDIDA";
+  const falta1 = state.analisis1?.sinConsumo || state.analisis1?.sinAgua;
+  const falta2 = state.analisis2?.sinConsumo || state.analisis2?.sinAgua;
+  const modoMedida1 = state.analisis1?.extraida.modoAgua === "MEDIDA";
+  const modoMedida2 = state.analisis2?.extraida.modoAgua === "MEDIDA";
 
   function enviar() {
     onEnviar({
-      consumoManualA: kwhA,
-      m2ManualA: modoMedidaA ? "" : aguaA,
-      m3ManualA: modoMedidaA ? aguaA : "",
-      consumoManualB: kwhB,
-      m2ManualB: modoMedidaB ? "" : aguaB,
-      m3ManualB: modoMedidaB ? aguaB : "",
+      consumoManual1: kwh1,
+      m2Manual1: modoMedida1 ? "" : agua1,
+      m3Manual1: modoMedida1 ? agua1 : "",
+      consumoManual2: kwh2,
+      m2Manual2: modoMedida2 ? "" : agua2,
+      m3Manual2: modoMedida2 ? agua2 : "",
     });
   }
 
   const listo =
-    (!state.analisisA?.sinConsumo || Number(kwhA.replace(",", ".")) > 0) &&
-    (!state.analisisA?.sinAgua || Number(aguaA.replace(",", ".")) > 0) &&
-    (!state.analisisB?.sinConsumo || Number(kwhB.replace(",", ".")) > 0) &&
-    (!state.analisisB?.sinAgua || Number(aguaB.replace(",", ".")) > 0);
+    (!state.analisis1?.sinConsumo || Number(kwh1.replace(",", ".")) > 0) &&
+    (!state.analisis1?.sinAgua || Number(agua1.replace(",", ".")) > 0) &&
+    (!state.analisis2?.sinConsumo || Number(kwh2.replace(",", ".")) > 0) &&
+    (!state.analisis2?.sinAgua || Number(agua2.replace(",", ".")) > 0);
 
   return (
     <div className="rounded-2xl border-2 border-[#7e57c2]/40 bg-paper-2 p-4 flex flex-col gap-3">
@@ -240,40 +242,40 @@ function DatosManualesForm({
       </div>
 
       <div className="grid sm:grid-cols-2 gap-4 pl-14">
-        {faltaA ? (
+        {falta1 ? (
           <div className="flex flex-col gap-2">
             <span className="text-[11px] font-bold uppercase tracking-wider text-muted">
-              Factura anterior
+              Factura 1
             </span>
-            {state.analisisA?.sinConsumo ? (
+            {state.analisis1?.sinConsumo ? (
               <label className="flex flex-col gap-1">
                 <span className="text-[11px] text-muted">kWh del período</span>
-                <input type="number" inputMode="decimal" min={1} placeholder="kWh" value={kwhA} onChange={(e) => setKwhA(e.target.value)} className="w-32 rounded-lg border border-line-strong px-3 py-1.5 text-sm text-navy bg-paper" />
+                <input type="number" inputMode="decimal" min={1} placeholder="kWh" value={kwh1} onChange={(e) => setKwh1(e.target.value)} className="w-32 rounded-lg border border-line-strong px-3 py-1.5 text-sm text-navy bg-paper" />
               </label>
             ) : null}
-            {state.analisisA?.sinAgua ? (
+            {state.analisis1?.sinAgua ? (
               <label className="flex flex-col gap-1">
-                <span className="text-[11px] text-muted">{modoMedidaA ? "m³ del período" : "Superficie cubierta (m²)"}</span>
-                <input type="number" inputMode="decimal" min={1} placeholder={modoMedidaA ? "m³" : "m²"} value={aguaA} onChange={(e) => setAguaA(e.target.value)} className="w-32 rounded-lg border border-line-strong px-3 py-1.5 text-sm text-navy bg-paper" />
+                <span className="text-[11px] text-muted">{modoMedida1 ? "m³ del período" : "Superficie cubierta (m²)"}</span>
+                <input type="number" inputMode="decimal" min={1} placeholder={modoMedida1 ? "m³" : "m²"} value={agua1} onChange={(e) => setAgua1(e.target.value)} className="w-32 rounded-lg border border-line-strong px-3 py-1.5 text-sm text-navy bg-paper" />
               </label>
             ) : null}
           </div>
         ) : null}
-        {faltaB ? (
+        {falta2 ? (
           <div className="flex flex-col gap-2">
             <span className="text-[11px] font-bold uppercase tracking-wider text-muted">
-              Factura actual
+              Factura 2
             </span>
-            {state.analisisB?.sinConsumo ? (
+            {state.analisis2?.sinConsumo ? (
               <label className="flex flex-col gap-1">
                 <span className="text-[11px] text-muted">kWh del período</span>
-                <input type="number" inputMode="decimal" min={1} placeholder="kWh" value={kwhB} onChange={(e) => setKwhB(e.target.value)} className="w-32 rounded-lg border border-line-strong px-3 py-1.5 text-sm text-navy bg-paper" />
+                <input type="number" inputMode="decimal" min={1} placeholder="kWh" value={kwh2} onChange={(e) => setKwh2(e.target.value)} className="w-32 rounded-lg border border-line-strong px-3 py-1.5 text-sm text-navy bg-paper" />
               </label>
             ) : null}
-            {state.analisisB?.sinAgua ? (
+            {state.analisis2?.sinAgua ? (
               <label className="flex flex-col gap-1">
-                <span className="text-[11px] text-muted">{modoMedidaB ? "m³ del período" : "Superficie cubierta (m²)"}</span>
-                <input type="number" inputMode="decimal" min={1} placeholder={modoMedidaB ? "m³" : "m²"} value={aguaB} onChange={(e) => setAguaB(e.target.value)} className="w-32 rounded-lg border border-line-strong px-3 py-1.5 text-sm text-navy bg-paper" />
+                <span className="text-[11px] text-muted">{modoMedida2 ? "m³ del período" : "Superficie cubierta (m²)"}</span>
+                <input type="number" inputMode="decimal" min={1} placeholder={modoMedida2 ? "m³" : "m²"} value={agua2} onChange={(e) => setAgua2(e.target.value)} className="w-32 rounded-lg border border-line-strong px-3 py-1.5 text-sm text-navy bg-paper" />
               </label>
             ) : null}
           </div>
@@ -302,10 +304,118 @@ function Caja({ label, valor }: { label: string; valor: number | null }) {
   );
 }
 
+/** Narración en lenguaje simple de lo que explica el aumento, para la
+ *  burbuja del Zorrito arriba de los resultados. */
+function narrarZorrito(c: ComparacionDosFacturas): string[] {
+  const parrafos: string[] = [];
+
+  if (c.variacionTotal == null || c.totalAnterior == null || c.totalActual == null) {
+    return ["No tengo el total de las dos facturas para explicarte el aumento en números, pero podés ver el detalle en la tabla de abajo."];
+  }
+
+  const subioBajo = c.variacionTotal >= 0 ? "subió" : "bajó";
+  parrafos.push(
+    `Tu factura ${subioBajo} ${pesos(Math.abs(c.variacionTotal))} (${c.variacionPorc != null ? `${c.variacionPorc >= 0 ? "+" : ""}${c.variacionPorc.toFixed(1)}%` : "?"}): de ${pesos(c.totalAnterior)} a ${pesos(c.totalActual)}.`,
+  );
+
+  const partes: string[] = [];
+  if (c.pctConsumo >= 5) {
+    const kwhTxt =
+      c.consumoAnteriorKwh != null && c.consumoActualKwh != null
+        ? ` (de ${c.consumoAnteriorKwh} a ${c.consumoActualKwh} kWh)`
+        : "";
+    partes.push(`${c.pctConsumo.toFixed(0)}% es porque consumiste más${kwhTxt}`);
+  }
+  if (c.pctTarifa >= 5) {
+    partes.push(`${c.pctTarifa.toFixed(0)}% es porque cambió la tarifa`);
+  }
+  if (c.pctImpuestos >= 5) {
+    partes.push(`${c.pctImpuestos.toFixed(0)}% son impuestos y tasas que suben junto con la base`);
+  }
+  if (c.pctOtros >= 5) {
+    partes.push(`${c.pctOtros.toFixed(0)}% no lo pude clasificar (subsidios u otros conceptos)`);
+  }
+  if (partes.length) {
+    parrafos.push(`De eso: ${partes.join(", ")}.`);
+  }
+
+  if (c.mismoCuadro) {
+    parrafos.push(
+      `La tarifa de energía no cambió: las dos facturas están bajo el mismo cuadro tarifario (${c.cuadroAnteriorNombre}).`,
+    );
+  } else {
+    parrafos.push(
+      `Cambió el cuadro tarifario entre las dos facturas: ${c.cuadroAnteriorNombre} → ${c.cuadroActualNombre}.`,
+    );
+  }
+
+  return parrafos;
+}
+
+function ZorritoExplica({ comparacion: c }: { comparacion: ComparacionDosFacturas }) {
+  const parrafos = narrarZorrito(c);
+  return (
+    <div className="rounded-2xl border-2 border-[#7e57c2]/40 bg-paper-2 p-4 flex items-start gap-3">
+      <div className="w-12 h-12 shrink-0 rounded-full overflow-hidden border-2 border-[#7e57c2]/50 bg-white">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/imagenes/zorrito/zorrito-parado.png"
+          alt=""
+          className="w-full h-full object-cover object-top"
+        />
+      </div>
+      <div className="text-sm text-navy leading-relaxed flex flex-col gap-1.5">
+        <span className="font-extrabold">Zorrito te explica:</span>
+        {parrafos.map((p, i) => (
+          <p key={i}>{p}</p>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function EscenarioMismoConsumo({ comparacion: c }: { comparacion: ComparacionDosFacturas }) {
+  if (c.subtotalServiciosMismoConsumoTarifaActual == null || c.subtotalServiciosAnterior == null) return null;
+
+  const dif = c.subtotalServiciosMismoConsumoTarifaActual - c.subtotalServiciosAnterior;
+  const difSignificativa = Math.abs(dif) >= 1;
+
+  return (
+    <div className="rounded-2xl border border-svc-blue/40 bg-svc-blue/10 p-4">
+      <div className="text-sm font-bold text-navy mb-1">
+        ¿Qué hubiera pasado si consumías lo mismo?
+      </div>
+      <div className="text-sm text-navy leading-relaxed">
+        Los servicios de energía y agua de tu factura anterior (sin
+        impuestos), con tu mismo consumo
+        {c.consumoAnteriorKwh != null ? ` (${c.consumoAnteriorKwh} kWh)` : ""}
+        {" "}pero la tarifa de la factura actual, te habrían costado{" "}
+        <b className="tabular-nums">{pesos(c.subtotalServiciosMismoConsumoTarifaActual)}</b>
+        {" "}en vez de{" "}
+        <b className="tabular-nums">{pesos(c.subtotalServiciosAnterior)}</b> que pagaste antes.
+      </div>
+      {difSignificativa ? (
+        <div className="mt-2 text-xs text-muted">
+          Es decir: {dif >= 0 ? "+" : ""}
+          {pesos(dif)} es <b>solo por tarifa</b>, sin contar el consumo extra
+          (no incluye impuestos, que se mueven aparte con la base gravada).
+        </div>
+      ) : (
+        <div className="mt-2 text-xs text-muted">
+          Casi no hay diferencia: la tarifa de energía y agua prácticamente
+          no cambió entre las dos facturas.
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Resultado({
   comparacion: c,
+  ordenDetectado,
 }: {
   comparacion: NonNullable<CompararState["comparacion"]>;
+  ordenDetectado: boolean;
 }) {
   if (!c.ok) {
     return (
@@ -322,6 +432,16 @@ function Resultado({
 
   return (
     <div className="flex flex-col gap-5">
+      {ordenDetectado && c.periodoAnterior && c.periodoActual ? (
+        <div className="text-xs text-muted">
+          Detectamos por el período de consumo que la factura de{" "}
+          <b className="text-navy">{c.periodoAnterior}</b> es la anterior y la
+          de <b className="text-navy">{c.periodoActual}</b> es la actual.
+        </div>
+      ) : null}
+
+      <ZorritoExplica comparacion={c} />
+
       <div className="rounded-2xl border border-line bg-navy text-white p-5">
         <div className="text-xs font-bold uppercase tracking-widest opacity-70">
           Resumen
@@ -348,6 +468,8 @@ function Resultado({
           {c.mismoCuadro ? " · mismo cuadro tarifario en ambas" : " · cambió el cuadro tarifario entre las dos"}
         </div>
       </div>
+
+      <EscenarioMismoConsumo comparacion={c} />
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Caja label="Por consumo" valor={c.montoConsumo} />
@@ -414,8 +536,8 @@ function Resultado({
         mueven junto con la base gravada, por eso se cuentan aparte de
         consumo y tarifa. &ldquo;Otros / no itemizado&rdquo; junta lo que no
         tiene un concepto propio en la factura (subsidios, redondeos). Este
-        control es
-        orientativo y no reemplaza la liquidación oficial de la prestadora.
+        control es orientativo y no reemplaza la liquidación oficial de la
+        prestadora.
       </div>
     </div>
   );
