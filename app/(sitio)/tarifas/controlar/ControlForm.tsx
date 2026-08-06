@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useActionState, useState, startTransition } from "react";
 import { controlarFactura, type ControlState } from "./actions";
-import { leerFactura, type PasoLectura } from "./leerFactura";
+import { leerDocumento, type PasoLectura } from "@/lib/leer-documento";
 import type { Proyeccion } from "@/lib/factura-parse";
 import { ESTADO_TXT, pesos } from "@/lib/tarifas";
 import { GraficoComposicion } from "../GraficoComposicion";
@@ -34,7 +34,7 @@ export function ControlForm() {
     setOcrEstado("leyendo");
     setPaso(null);
     try {
-      const texto = await leerFactura(file, setPaso);
+      const texto = await leerDocumento(file, setPaso);
       setOcrTexto(texto);
       setOcrEstado("listo");
     } catch {
@@ -57,7 +57,10 @@ export function ControlForm() {
           <span className="text-xs font-bold uppercase tracking-wider text-muted">
             Tu factura de la SCPL
           </span>
-          <label className="cursor-pointer flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-line-strong bg-paper-2 px-4 py-7 text-center hover:border-svc-red hover:bg-svc-red/5 transition">
+          <label
+            id="controlar-subir-archivo"
+            className="cursor-pointer flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-line-strong bg-paper-2 px-4 py-7 text-center hover:border-svc-red hover:bg-svc-red/5 transition"
+          >
             <span className="text-3xl" aria-hidden>
               🧾
             </span>
@@ -101,6 +104,7 @@ export function ControlForm() {
         </div>
 
         <button
+          id="controlar-boton-controlar"
           type="button"
           onClick={enviar}
           disabled={pending || ocrEstado !== "listo"}
@@ -455,20 +459,32 @@ function DatosManualesForm({
     (!state.sinConsumo || Number(kwh.replace(",", ".")) > 0) &&
     (!state.sinAgua || Number(agua.replace(",", ".")) > 0);
 
+  const faltante =
+    state.sinConsumo && state.sinAgua
+      ? "tu consumo de luz y tu dato de agua"
+      : state.sinConsumo
+        ? "tu consumo de luz"
+        : "tu dato de agua";
+
   return (
-    <div className="rounded-2xl border border-svc-yellow/50 bg-svc-yellow/10 p-4 flex flex-col gap-3">
-      <div className="text-sm text-navy">
-        <b>Necesitamos confirmar</b>{" "}
-        {state.sinConsumo && state.sinAgua
-          ? "tu consumo de luz y de agua"
-          : state.sinConsumo
-            ? "tu consumo de luz"
-            : "tu consumo de agua"}{" "}
-        —no pudimos leerlo de la factura, es frecuente en fotos o escaneos—,
-        así que no comparamos los conceptos que dependen de ese dato.{" "}
-        <b>¿Lo cargás vos?</b>
+    <div className="rounded-2xl border-2 border-[#7e57c2]/40 bg-paper-2 p-4 flex flex-col gap-3">
+      <div className="flex items-start gap-3">
+        <div className="w-11 h-11 shrink-0 rounded-full overflow-hidden border-2 border-[#7e57c2]/50 bg-white">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/imagenes/zorrito/zorrito-agachado.png"
+            alt=""
+            className="w-full h-full object-cover object-top"
+          />
+        </div>
+        <div className="text-sm text-navy leading-relaxed">
+          <span className="font-extrabold">Zorrito:</span> No pude leer bien{" "}
+          <b>{faltante}</b> en tu factura —pasa seguido con fotos o
+          escaneos—, así que no comparé los conceptos que dependen de ese
+          dato. <b>Cargalo vos acá abajo</b> y sigo con el control.
+        </div>
       </div>
-      <div className="flex flex-wrap items-end gap-3">
+      <div className="flex flex-wrap items-end gap-3 pl-14">
         {state.sinConsumo ? (
           <label className="flex flex-col gap-1">
             <span className="text-[11px] text-muted">

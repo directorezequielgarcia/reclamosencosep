@@ -2,6 +2,7 @@ import Link from "next/link";
 import { SeccionHeader } from "@/components/ui/SeccionHeader";
 import { MigajasSitio, VolverInicio } from "@/components/ui/MigajasSitio";
 import { ControlForm } from "./ControlForm";
+import { ZorritoTour } from "@/components/tour/ZorritoTour";
 
 export const metadata = {
   title: "Controlá tu factura · Calculadora ENCOSEP",
@@ -46,6 +47,34 @@ export default function ControlarPage() {
           volverA={{ label: "Volver a la Calculadora", href: "/tarifas" }}
         />
       </main>
+
+      <ZorritoTour
+        storageKey="zorrito-tour-controlar-v1"
+        pasos={[
+          {
+            pose: "parado",
+            texto:
+              "¡Hola de nuevo! Soy el Zorrito 🦊. Te explico cómo controlar tu factura en tres pasos.",
+          },
+          {
+            targetId: "controlar-subir-archivo",
+            pose: "agachado",
+            texto:
+              "Primero, subí acá el PDF que te llega por mail —es lo más preciso— o una foto bien enfocada y con buena luz de tu factura de la SCPL.",
+          },
+          {
+            targetId: "controlar-boton-controlar",
+            pose: "parado",
+            texto:
+              "Cuando termine de leerla, tocá acá para compararla, concepto por concepto, con el cuadro tarifario vigente.",
+          },
+          {
+            pose: "agachado",
+            texto:
+              "Te voy a marcar con ⚠️ los conceptos que no coinciden con el cuadro. Y si no puedo leer algún dato —pasa seguido con fotos o escaneos—, te aviso cuál falta para que lo cargues vos.",
+          },
+        ]}
+      />
     </>
   );
 }
