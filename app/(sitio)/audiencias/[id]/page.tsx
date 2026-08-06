@@ -11,6 +11,7 @@ import { TONE_CLASS } from "@/lib/admin";
 import { inscribirseAudiencia } from "@/app/admin/audiencias/actions";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { MigajasSitio, VolverInicio } from "@/components/ui/MigajasSitio";
+import { VideoEmbed } from "@/components/ui/VideoEmbed";
 
 export const metadata = { title: "Audiencia · ENCOSEP" };
 
@@ -189,7 +190,9 @@ export default async function AudienciaDetallePublico({
                 Material de la audiencia realizada
               </h2>
               {/* Reproductor embebido del video si es YouTube/Vimeo/archivo */}
-              {a.videoUrl && <VideoEmbed url={a.videoUrl} />}
+              {a.videoUrl && (
+                <VideoEmbed url={a.videoUrl} titulo="Video de la audiencia" />
+              )}
 
               <div className="grid sm:grid-cols-2 gap-3">
                 {a.videoUrl && (
@@ -453,56 +456,6 @@ function DatoClave({
  * un archivo directo y lo embebe responsivo (16:9). Si no reconoce la fuente,
  * no renderiza nada y se queda con el link tradicional de la tarjeta.
  */
-function VideoEmbed({ url }: { url: string }) {
-  // YouTube: youtu.be/<id> o youtube.com/watch?v=<id>
-  const ytMatch =
-    url.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=)([A-Za-z0-9_-]{6,})/) ||
-    url.match(/youtube\.com\/embed\/([A-Za-z0-9_-]{6,})/);
-  if (ytMatch) {
-    const id = ytMatch[1];
-    return (
-      <div className="relative w-full aspect-video rounded-xl overflow-hidden border border-line bg-black mb-3">
-        <iframe
-          src={`https://www.youtube.com/embed/${id}`}
-          title="Video de la audiencia"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-          className="absolute inset-0 w-full h-full"
-        />
-      </div>
-    );
-  }
-  // Vimeo
-  const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
-  if (vimeoMatch) {
-    const id = vimeoMatch[1];
-    return (
-      <div className="relative w-full aspect-video rounded-xl overflow-hidden border border-line bg-black mb-3">
-        <iframe
-          src={`https://player.vimeo.com/video/${id}`}
-          title="Video de la audiencia"
-          allow="autoplay; fullscreen; picture-in-picture"
-          allowFullScreen
-          className="absolute inset-0 w-full h-full"
-        />
-      </div>
-    );
-  }
-  // Archivo directo (mp4/webm/ogg)
-  if (/\.(mp4|webm|ogg)(\?|$)/i.test(url)) {
-    return (
-      <div className="rounded-xl overflow-hidden border border-line bg-black mb-3">
-        {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-        <video controls src={url} className="w-full h-auto block">
-          Tu navegador no puede reproducir este video.
-        </video>
-      </div>
-    );
-  }
-  // Fuente desconocida: no embebemos, dejamos el link tradicional
-  return null;
-}
-
 function Field({
   label,
   full,

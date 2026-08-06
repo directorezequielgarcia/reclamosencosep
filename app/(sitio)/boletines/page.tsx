@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { SeccionHeader } from "@/components/ui/SeccionHeader";
 import { TIPO_BOLETIN_META } from "@/lib/boletines";
 import { MigajasSitio, VolverInicio } from "@/components/ui/MigajasSitio";
+import { VideoEmbed } from "@/components/ui/VideoEmbed";
 
 export const metadata = { title: "Boletines · ENCOSEP" };
 
@@ -63,6 +64,19 @@ export default async function BoletinesPublicoPage() {
                     <h3 className="text-lg font-extrabold text-navy mt-1">{b.titulo}</h3>
                     {b.resumen && (
                       <p className="text-sm text-navy mt-1 leading-relaxed">{b.resumen}</p>
+                    )}
+                    {b.fotoUrl && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={b.fotoUrl}
+                        alt=""
+                        className="mt-3 w-full max-h-96 object-cover rounded-xl border border-line"
+                      />
+                    )}
+                    {b.videoUrl && (
+                      <div className="mt-3">
+                        <VideoEmbed url={b.videoUrl} titulo={b.titulo} />
+                      </div>
                     )}
                     {b.cuerpo && (
                       <details className="text-sm text-navy mt-2">

@@ -4,6 +4,7 @@ import { BotoneraServicios } from "@/components/servicios/BotoneraServicios";
 import { prisma } from "@/lib/prisma";
 import { ZorritoTour } from "@/components/tour/ZorritoTour";
 import { ZorritoNoticias } from "@/components/tour/ZorritoNoticia";
+import { TIPO_BOLETIN_META } from "@/lib/boletines";
 
 export const metadata = {
   title: "EnCoSeP · Ente de Control de Servicios Públicos · Comodoro Rivadavia",
@@ -46,6 +47,7 @@ export default async function HomeInstitucional() {
     reclamosResueltos,
     totalPrestadoras,
     audienciasProximas,
+    ultimosBoletines,
   ] = await Promise.all([
     prisma.encuestaServicios.aggregate({
       _count: { _all: true },
@@ -60,6 +62,11 @@ export default async function HomeInstitucional() {
     prisma.reclamo.count({ where: { estado: "RESUELTO" } }),
     prisma.prestadora.count({ where: { activa: true } }),
     prisma.audienciaPublica.count({ where: { fecha: { gte: ahora } } }),
+    prisma.boletin.findMany({
+      where: { publicado: true },
+      orderBy: { fechaPublicacion: "desc" },
+      take: 3,
+    }),
   ]);
 
   const totalRespuestasEncuesta = encuestaAgg._count._all;
@@ -357,6 +364,87 @@ export default async function HomeInstitucional() {
         </div>
       </section>
 
+      {/* ===================== NOVEDADES ===================== */}
+      {/* Vidriera fija de las últimas publicaciones del Ente (tabla Boletin,
+          cargadas desde /admin/boletines). Si no hay ninguna publicada la
+          sección no se renderiza — evita mostrar una vidriera vacía. */}
+      {ultimosBoletines.length > 0 && (
+        <section id="novedades-home" className="bg-paper py-14 px-6 border-b border-line">
+          <div className="max-w-5xl mx-auto">
+            <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
+              <div className="flex items-center gap-3">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/imagenes/zorrito/zorrito-parado.png"
+                  alt=""
+                  className="w-12 h-12 rounded-full object-cover object-top border-2 border-[#7e57c2]/40 bg-white shrink-0"
+                />
+                <div>
+                  <div className="text-xs font-bold tracking-[0.18em] uppercase text-muted">
+                    Novedades
+                  </div>
+                  <h2 className="text-2xl md:text-3xl font-extrabold text-navy">
+                    Lo último del Ente
+                  </h2>
+                </div>
+              </div>
+              <Link
+                href="/boletines"
+                className="text-sm font-bold text-navy-2 underline underline-offset-4 hover:text-navy"
+              >
+                Ver todas las novedades ›
+              </Link>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-4">
+              {ultimosBoletines.map((b) => {
+                const m = TIPO_BOLETIN_META[b.tipo];
+                return (
+                  <Link
+                    key={b.id}
+                    href="/boletines"
+                    className="rounded-2xl border border-line bg-paper-2 overflow-hidden flex flex-col gap-2 hover:shadow-lg hover:border-line-strong transition"
+                  >
+                    {b.fotoUrl && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={b.fotoUrl}
+                        alt=""
+                        className="w-full h-36 object-cover"
+                      />
+                    )}
+                    <div className="flex items-center gap-2 text-[11px] px-5 pt-5">
+                      <span
+                        className="uppercase tracking-wider font-bold px-2 py-0.5 rounded-full text-white"
+                        style={{ background: m.color }}
+                      >
+                        {m.icon} {m.label}
+                      </span>
+                      <span className="text-muted">
+                        {b.fechaPublicacion.toLocaleDateString("es-AR", {
+                          day: "2-digit",
+                          month: "short",
+                        })}
+                      </span>
+                    </div>
+                    <div className="px-5 pb-5 flex flex-col gap-2">
+                      <h3 className="text-base font-extrabold text-navy leading-snug">
+                        {b.titulo}
+                      </h3>
+                      {b.resumen && (
+                        <p className="text-sm text-muted leading-snug line-clamp-3">
+                          {b.resumen}
+                        </p>
+                      )}
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* ===================== ENCUESTA ===================== */}
       <section className="bg-paper-2 py-12 px-6 border-b border-line">
         <div className="max-w-5xl mx-auto">
@@ -556,23 +644,29 @@ export default async function HomeInstitucional() {
       />
 
       {/* ===================== NOTICIAS TEMPORALES DEL ZORRITO ===================== */}
-      {/* Avisos puntuales, NO forman parte del tour permanente. Se muestran de
-          a uno (cola). Borrar cada aviso de este array cuando deje de ser
-          noticia. */}
+      {/* El primer aviso se arma solo con el último boletín publicado (tabla
+          Boletin, cargado desde /admin/boletines) — así toda novedad nueva
+          dispara al Zorrito apenas se entra, sin tocar este archivo. El id
+          incluye el id del boletín: si se publica uno nuevo, se vuelve a
+          mostrar aunque el vecino ya haya cerrado el anterior.
+          Los avisos siguientes son puntuales y SÍ hay que borrarlos a mano
+          cuando dejen de ser noticia. */}
       <ZorritoNoticias
         avisos={[
-          {
-            id: "reunion-subsecretaria-transporte-2026-08-05",
-            pose: "colectivo",
-            etiqueta: "Hoy · 10:30 hs",
-            titulo: "📣 Reunión con la Subsecretaría de Transporte",
-            texto:
-              "Llevamos tus reclamos al Municipio: presentamos los más de 300 casos recibidos por WhatsApp y en esta plataforma, y planteamos paradas, recorridos y horarios de salida para que Sol Bus te lleve donde tenés que ir.",
-            cta: {
-              texto: "Ver líneas y recorridos de Sol Bus",
-              href: "/areas-fiscalizadas/transporte#lineas",
-            },
-          },
+          ...(ultimosBoletines[0]
+            ? [
+                {
+                  id: `boletin-${ultimosBoletines[0].id}`,
+                  pose: "colectivo" as const,
+                  etiqueta: "Novedad del Ente",
+                  titulo: `📣 ${ultimosBoletines[0].titulo}`,
+                  texto:
+                    ultimosBoletines[0].resumen ??
+                    "Mirá la última novedad publicada por el Ente.",
+                  cta: { texto: "Leer la novedad completa", href: "/boletines" },
+                },
+              ]
+            : []),
           {
             id: "invitacion-reclamos-generales-2026-08-05",
             pose: "agachado",

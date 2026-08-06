@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { guardarFotoBoletin } from "@/lib/uploads";
 import type { TipoBoletin } from "@prisma/client";
 
 const BoletinSchema = z.object({
@@ -13,6 +14,7 @@ const BoletinSchema = z.object({
   titulo: z.string().min(3).max(200),
   resumen: z.string().max(500).optional().nullable(),
   cuerpo: z.string().max(20000).optional().nullable(),
+  videoUrl: z.string().url().optional().or(z.literal("")),
   enlaceExterno: z.string().url().optional().or(z.literal("")),
   fuente: z.string().max(120).optional().nullable(),
   fechaPublicacion: z.string().min(1),
@@ -34,6 +36,7 @@ export async function crearBoletin(formData: FormData) {
     titulo: formData.get("titulo"),
     resumen: formData.get("resumen") || undefined,
     cuerpo: formData.get("cuerpo") || undefined,
+    videoUrl: formData.get("videoUrl") || undefined,
     enlaceExterno: formData.get("enlaceExterno") || undefined,
     fuente: formData.get("fuente") || undefined,
     fechaPublicacion: formData.get("fechaPublicacion"),
@@ -42,18 +45,85 @@ export async function crearBoletin(formData: FormData) {
   if (!parsed.success) throw new Error("Datos inválidos");
   const d = parsed.data;
 
-  await prisma.boletin.create({
+  const boletin = await prisma.boletin.create({
     data: {
       tipo: d.tipo as TipoBoletin,
       numero: d.numero ?? null,
       titulo: d.titulo,
       resumen: d.resumen ?? null,
       cuerpo: d.cuerpo ?? null,
+      videoUrl: d.videoUrl || null,
       enlaceExterno: d.enlaceExterno || null,
       fuente: d.fuente ?? null,
       fechaPublicacion: new Date(d.fechaPublicacion),
       publicado: d.publicado === "on" || d.publicado === "true",
       autorId: session.user.id,
+    },
+  });
+
+  const foto = formData.get("foto");
+  if (foto instanceof File && foto.size > 0) {
+    const subida = await guardarFotoBoletin(boletin.id, foto);
+    await prisma.boletin.update({
+      where: { id: boletin.id },
+      data: { fotoUrl: subida.url },
+    });
+  }
+
+  revalidatePath("/admin/boletines");
+  revalidatePath("/boletines");
+  redirect("/admin/boletines");
+}
+
+export async function actualizarBoletin(formData: FormData) {
+  const session = await auth();
+  if (
+    !session ||
+    (session.user.rol !== "GESTOR_ENTE" && session.user.rol !== "SUPER_ADMIN")
+  ) {
+    throw new Error("Sin permiso");
+  }
+  const id = String(formData.get("id") ?? "");
+  if (!id) throw new Error("Falta id");
+  const existente = await prisma.boletin.findUnique({ where: { id } });
+  if (!existente) throw new Error("No existe");
+
+  const parsed = BoletinSchema.safeParse({
+    tipo: formData.get("tipo"),
+    numero: formData.get("numero") || undefined,
+    titulo: formData.get("titulo"),
+    resumen: formData.get("resumen") || undefined,
+    cuerpo: formData.get("cuerpo") || undefined,
+    videoUrl: formData.get("videoUrl") || undefined,
+    enlaceExterno: formData.get("enlaceExterno") || undefined,
+    fuente: formData.get("fuente") || undefined,
+    fechaPublicacion: formData.get("fechaPublicacion"),
+    publicado: formData.get("publicado") || undefined,
+  });
+  if (!parsed.success) throw new Error("Datos inválidos");
+  const d = parsed.data;
+
+  let fotoUrl = existente.fotoUrl;
+  const foto = formData.get("foto");
+  if (foto instanceof File && foto.size > 0) {
+    const subida = await guardarFotoBoletin(id, foto);
+    fotoUrl = subida.url;
+  }
+
+  await prisma.boletin.update({
+    where: { id },
+    data: {
+      tipo: d.tipo as TipoBoletin,
+      numero: d.numero ?? null,
+      titulo: d.titulo,
+      resumen: d.resumen ?? null,
+      cuerpo: d.cuerpo ?? null,
+      videoUrl: d.videoUrl || null,
+      fotoUrl,
+      enlaceExterno: d.enlaceExterno || null,
+      fuente: d.fuente ?? null,
+      fechaPublicacion: new Date(d.fechaPublicacion),
+      publicado: d.publicado === "on" || d.publicado === "true",
     },
   });
 

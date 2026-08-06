@@ -537,7 +537,9 @@ model Boletin {
   titulo          String
   resumen         String?
   cuerpo          String?     // texto largo opcional
-  archivoUrl      String?     // PDF / imagen adjunta opcional
+  fotoUrl         String?     // foto subida, se muestra embebida en la tarjeta
+  videoUrl        String?     // link a video (YouTube/Vimeo/archivo directo), se embebe
+  archivoUrl      String?     // PDF / imagen adjunta opcional (para descargar)
   enlaceExterno   String?     // link a medio externo (para CLIPPING)
   fuente          String?     // p.ej. "Diario Crónica", "Twitter / X"
   fechaPublicacion DateTime

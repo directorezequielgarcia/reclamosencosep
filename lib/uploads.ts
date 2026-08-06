@@ -325,6 +325,46 @@ function extAudioFromMime(mime: string): string {
   }
 }
 
+/**
+ * Guarda la foto de un boletín/comunicado del Ente.
+ * Misma estrategia que guardarFotoReclamo: Blob si hay token, fs local sino.
+ */
+export async function guardarFotoBoletin(
+  boletinId: string,
+  file: File,
+): Promise<UploadedFile> {
+  if (file.size === 0) throw new Error("Archivo vacío");
+  if (file.size > MAX_BYTES) {
+    throw new Error("Imagen demasiado grande (máx 8 MB)");
+  }
+  if (!ALLOWED_IMAGE.has(file.type)) {
+    throw new Error(`Tipo de imagen no soportado: ${file.type}`);
+  }
+
+  const ext = extFromMime(file.type);
+  const nombre = `${randomUUID()}${ext}`;
+
+  if (process.env.BLOB_READ_WRITE_TOKEN) {
+    const key = `boletines/${boletinId}/${nombre}`;
+    const blob = await put(key, file, {
+      access: "public",
+      contentType: file.type,
+    });
+    return { url: blob.url, mimeType: file.type, bytes: file.size };
+  }
+
+  const dir = path.join(UPLOAD_ROOT, "boletines", boletinId);
+  await fs.mkdir(dir, { recursive: true });
+  const dest = path.join(dir, nombre);
+  const buf = Buffer.from(await file.arrayBuffer());
+  await fs.writeFile(dest, buf);
+  return {
+    url: `/uploads/boletines/${boletinId}/${nombre}`,
+    mimeType: file.type,
+    bytes: file.size,
+  };
+}
+
 const MAX_VIDEO_BYTES = 50 * 1024 * 1024; // 50 MB
 const ALLOWED_VIDEO = new Set([
   "video/mp4",
