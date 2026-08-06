@@ -34,96 +34,54 @@ const MOTIVO_CLASE: Record<MotivoVariacion, string> = {
   no_comparable: "bg-paper-2 text-muted italic",
 };
 
-function UploadSlot({
-  label,
-  nombreArchivo,
-  ocrEstado,
-  paso,
-  onArchivo,
-}: {
-  label: string;
-  nombreArchivo: string;
-  ocrEstado: "idle" | "leyendo" | "listo" | "error";
+type EstadoLectura = "leyendo" | "listo" | "error";
+
+type ArchivoLeido = {
+  nombre: string;
+  texto: string;
+  estado: EstadoLectura;
   paso: PasoLectura | null;
-  onArchivo: (file: File) => void;
-}) {
-  return (
-    <div className="flex flex-col gap-2">
-      <span className="text-xs font-bold uppercase tracking-wider text-muted">
-        {label}
-      </span>
-      <label className="cursor-pointer flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-line-strong bg-paper-2 px-4 py-6 text-center hover:border-svc-red hover:bg-svc-red/5 transition">
-        <span className="text-2xl" aria-hidden>
-          🧾
-        </span>
-        <span className="text-sm font-bold text-navy">
-          {nombreArchivo ? `✓ ${nombreArchivo}` : "Tocá acá para subir"}
-        </span>
-        <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-navy text-white text-xs font-bold">
-          {nombreArchivo ? "Cambiar archivo" : "PDF, foto o captura"}
-        </span>
-        <input
-          type="file"
-          accept="application/pdf,image/*"
-          className="hidden"
-          onChange={(ev) => {
-            const f = ev.target.files?.[0];
-            if (f) onArchivo(f);
-          }}
-        />
-      </label>
-      {ocrEstado === "leyendo" ? (
-        <div className="text-xs text-navy">{mensajePaso(paso)}</div>
-      ) : null}
-      {ocrEstado === "listo" ? (
-        <div className="text-xs text-svc-green font-semibold">✓ Leída</div>
-      ) : null}
-      {ocrEstado === "error" ? (
-        <div className="text-xs text-svc-red">
-          No se pudo leer. Probá con otra foto o con el PDF original.
-        </div>
-      ) : null}
-    </div>
-  );
-}
+};
 
 export function CompararForm() {
   const [state, action, pending] = useActionState(compararFacturas, inicial);
+  const [archivos, setArchivos] = useState<ArchivoLeido[]>([]);
 
-  const [nombre1, setNombre1] = useState("");
-  const [texto1, setTexto1] = useState("");
-  const [estado1, setEstado1] = useState<"idle" | "leyendo" | "listo" | "error">("idle");
-  const [paso1, setPaso1] = useState<PasoLectura | null>(null);
+  async function elegirArchivos(files: FileList) {
+    const cupo = 2 - archivos.length;
+    if (cupo <= 0) return;
+    const nuevos = Array.from(files).slice(0, cupo);
+    if (!nuevos.length) return;
 
-  const [nombre2, setNombre2] = useState("");
-  const [texto2, setTexto2] = useState("");
-  const [estado2, setEstado2] = useState<"idle" | "leyendo" | "listo" | "error">("idle");
-  const [paso2, setPaso2] = useState<PasoLectura | null>(null);
+    const base = archivos.length;
+    setArchivos((prev) => [
+      ...prev,
+      ...nuevos.map((f) => ({ nombre: f.name, texto: "", estado: "leyendo" as const, paso: null })),
+    ]);
 
-  async function elegir(
-    file: File,
-    setNombre: (s: string) => void,
-    setTexto: (s: string) => void,
-    setEstado: (s: "idle" | "leyendo" | "listo" | "error") => void,
-    setPaso: (p: PasoLectura | null) => void,
-  ) {
-    setNombre(file.name);
-    setTexto("");
-    setEstado("leyendo");
-    setPaso(null);
-    try {
-      const texto = await leerDocumento(file, setPaso);
-      setTexto(texto);
-      setEstado("listo");
-    } catch {
-      setEstado("error");
-    }
+    await Promise.all(
+      nuevos.map(async (file, i) => {
+        const idx = base + i;
+        try {
+          const texto = await leerDocumento(file, (p) =>
+            setArchivos((prev) => prev.map((a, j) => (j === idx ? { ...a, paso: p } : a))),
+          );
+          setArchivos((prev) => prev.map((a, j) => (j === idx ? { ...a, texto, estado: "listo" } : a)));
+        } catch {
+          setArchivos((prev) => prev.map((a, j) => (j === idx ? { ...a, estado: "error" } : a)));
+        }
+      }),
+    );
+  }
+
+  function quitarArchivo(idx: number) {
+    setArchivos((prev) => prev.filter((_, i) => i !== idx));
   }
 
   function enviar(manual?: Record<string, string>) {
     const fd = new FormData();
-    fd.set("textoOcr1", texto1 || state.texto1 || "");
-    fd.set("textoOcr2", texto2 || state.texto2 || "");
+    fd.set("textoOcr1", archivos[0]?.texto || state.texto1 || "");
+    fd.set("textoOcr2", archivos[1]?.texto || state.texto2 || "");
     if (manual) {
       for (const [k, v] of Object.entries(manual)) if (v) fd.set(k, v);
     }
@@ -132,27 +90,72 @@ export function CompararForm() {
     });
   }
 
-  const listoParaComparar = estado1 === "listo" && estado2 === "listo";
+  const listoParaComparar = archivos.length === 2 && archivos.every((a) => a.estado === "listo");
+  const hayEspacio = archivos.length < 2;
 
   return (
     <div className="flex flex-col gap-6">
       <div className="rounded-2xl border border-line bg-paper p-5 flex flex-col gap-4">
-        <div className="grid sm:grid-cols-2 gap-4">
-          <UploadSlot
-            label="Factura 1"
-            nombreArchivo={nombre1}
-            ocrEstado={estado1}
-            paso={paso1}
-            onArchivo={(f) => elegir(f, setNombre1, setTexto1, setEstado1, setPaso1)}
-          />
-          <UploadSlot
-            label="Factura 2"
-            nombreArchivo={nombre2}
-            ocrEstado={estado2}
-            paso={paso2}
-            onArchivo={(f) => elegir(f, setNombre2, setTexto2, setEstado2, setPaso2)}
-          />
-        </div>
+        {hayEspacio ? (
+          <label className="cursor-pointer flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-line-strong bg-paper-2 px-4 py-7 text-center hover:border-svc-red hover:bg-svc-red/5 transition">
+            <span className="text-3xl" aria-hidden>
+              🧾🧾
+            </span>
+            <span className="text-sm font-bold text-navy">
+              {archivos.length === 0
+                ? "Tocá acá para subir tus dos facturas"
+                : "Tocá acá para agregar la segunda factura"}
+            </span>
+            <span className="inline-flex items-center gap-1 px-4 py-2 rounded-lg bg-navy text-white text-xs font-bold">
+              PDF, foto o captura — podés elegir las dos juntas
+            </span>
+            <input
+              type="file"
+              accept="application/pdf,image/*"
+              multiple
+              className="hidden"
+              onChange={(ev) => {
+                if (ev.target.files?.length) elegirArchivos(ev.target.files);
+                ev.target.value = "";
+              }}
+            />
+          </label>
+        ) : null}
+
+        {archivos.length > 0 ? (
+          <div className="flex flex-col gap-2">
+            {archivos.map((a, i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between gap-3 rounded-lg border border-line bg-paper-2 px-3 py-2"
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-bold text-navy truncate">
+                    Factura {i + 1} · {a.nombre}
+                  </div>
+                  {a.estado === "leyendo" ? (
+                    <div className="text-xs text-navy">{mensajePaso(a.paso)}</div>
+                  ) : a.estado === "listo" ? (
+                    <div className="text-xs text-svc-green font-semibold">✓ Leída</div>
+                  ) : (
+                    <div className="text-xs text-svc-red">
+                      No se pudo leer. Probá con otra foto o con el PDF original.
+                    </div>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => quitarArchivo(i)}
+                  aria-label="Quitar archivo"
+                  className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-muted hover:bg-paper hover:text-svc-red transition"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : null}
+
         <span className="text-[11px] text-muted">
           No importa el orden en que las subas: detectamos automáticamente
           cuál es la anterior y cuál la actual por el período de consumo de
