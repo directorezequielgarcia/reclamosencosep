@@ -41,6 +41,9 @@ function sumaONull(valores: (number | null)[]): number | null {
 
 export type FacturaExtraida = {
   tipo: TipoUsuario;
+  // false = no matcheó ningún patrón conocido y `tipo` quedó en el default
+  // "RESIDENCIAL" sin confirmar — no asumir que es correcto.
+  tipoDetectado: boolean;
   // Categoría del servicio de agua/cloacas, si SCPL la clasificó distinto de
   // la de energía en esta factura (ver comentario donde se detecta). Casi
   // siempre igual a `tipo`.
@@ -73,6 +76,13 @@ export type FacturaExtraida = {
     bomberos: number | null;
   };
   total: number | null;
+  // Subtotales reales impresos en la factura (no calculados), para poder
+  // armar un "total según cuadro" que solo compare lo que el motor puede
+  // verificar con confianza (servicios) sin arrastrar el desvío conocido de
+  // los impuestos de referencia. Ver `analizarFactura`.
+  subtotalServiciosFacturado: number | null;
+  subtotalImpuestos: number | null;
+  subtotalVarios: number | null;
 };
 
 /** Arma la entrada del motor de cálculo (calcularFactura) a partir de una
@@ -97,16 +107,24 @@ export function entradaDeFactura(e: FacturaExtraida): EntradaCalculo {
   };
 }
 
+// Orden = prioridad de match. Los patrones más específicos van antes que sus
+// versiones abreviadas para no perder precisión cuando el texto SÍ trae la
+// palabra completa. Confirmado contra facturas reales: "RESIDENCIAL" y
+// "PEQUEÑAS INDUS" (abreviado). Las demás categorías no se pudieron
+// confirmar todavía contra una factura real propia — por eso además de
+// ensanchar el match razonablemente, `parseFacturaTexto` expone
+// `tipoDetectado` para que la UI pida confirmación manual si no hubo match.
 const TIPO_TEXTO: [RegExp, TipoUsuario][] = [
   [/RESIDENCIAL/i, "RESIDENCIAL"],
-  [/COMERCIAL/i, "COMERCIAL"],
-  [/OBRADOR/i, "OBRADOR"],
-  [/ENTIDAD/i, "ENTIDAD_SIN_FINES"],
-  [/OFICIAL/i, "ENTES_OFICIALES"],
+  [/GRAN\s+USUARIO/i, "GRAN_USUARIO"],
   // SCPL abrevia "Pequeñas Indus(trias)" en la factura real — "INDUSTRIA"
   // completo no matchea y la categoría caía por defecto en RESIDENCIAL,
   // aplicando mal el cuadro tarifario a comercios/industrias.
   [/PEQUE[ÑN]AS?\s+INDUS/i, "PEQUENA_INDUSTRIA"],
+  [/OBRADOR/i, "OBRADOR"],
+  [/ENTIDAD|ENTID\.?\b/i, "ENTIDAD_SIN_FINES"],
+  [/OFICIAL/i, "ENTES_OFICIALES"],
+  [/COMERCIAL/i, "COMERCIAL"],
   [/INDUS/i, "PEQUENA_INDUSTRIA"],
 ];
 
@@ -123,7 +141,17 @@ export function parseFacturaTexto(text: string): FacturaExtraida {
       ? text.slice(Math.max(0, idxServicio - 60), idxServicio + 60)
       : text;
   let tipo: TipoUsuario = "RESIDENCIAL";
-  for (const [re, t] of TIPO_TEXTO) if (re.test(ventanaServicio)) { tipo = t; break; }
+  // Si ningún patrón matchea, `tipo` queda en el default "RESIDENCIAL" pero
+  // `tipoDetectado` en false — la UI debe pedir confirmación en vez de dar
+  // por buena una categoría que en realidad no pudo leer.
+  let tipoDetectado = false;
+  for (const [re, t] of TIPO_TEXTO) {
+    if (re.test(ventanaServicio)) {
+      tipo = t;
+      tipoDetectado = true;
+      break;
+    }
+  }
 
   // Modo de agua.
   const modoAgua: ModoAgua = /AGUA\s+MEDIDA/i.test(text) ? "MEDIDA" : "ESTIMADA";
@@ -238,16 +266,23 @@ export function parseFacturaTexto(text: string): FacturaExtraida {
   // vencimiento aproximado lo sigue de inmediato y calza con el patrón.
   const FILA_TOTAL =
     /\d{2}\/\d{2}\/\d{2}\s+\d{1,2}\s*\/\s*\d{4}\s+\d{2}\/\d{2}\/\d{2}\s+([\d.,]+)/;
+  // Subtotales reales de la factura (no calculados): se usan para armar un
+  // "total según cuadro" que compare peras con peras. `calcularFactura` usa
+  // montos DE REFERENCIA fijos para Ley I-26/ENRE/Bomberos, que no escalan
+  // con el consumo ni cubren impuestos nuevos (ej. Percepción RG 3337 en
+  // facturas no residenciales) — comparar esos placeholders contra el
+  // impuesto real infla la "diferencia" con algo que no es un problema de
+  // tarifa. Los impuestos/varios reales, en cambio, se toman tal cual.
+  const subtotalServiciosFacturado = buscar(text, /SUBTOTAL SERVICIOS\s+([\d.,]+)/i);
+  const subtotalImpuestos = buscar(text, /SUBTOTAL IMPUESTOS\s+([\d.,]+)/i);
+  const subtotalVarios = buscar(text, /SUBTOTAL VARIOS\s+([\d.,]+)/i);
   const total =
     buscar(text, FILA_TOTAL) ??
-    sumaONull([
-      buscar(text, /SUBTOTAL SERVICIOS\s+([\d.,]+)/i),
-      buscar(text, /SUBTOTAL IMPUESTOS\s+([\d.,]+)/i),
-      buscar(text, /SUBTOTAL VARIOS\s+([\d.,]+)/i),
-    ]);
+    sumaONull([subtotalServiciosFacturado, subtotalImpuestos, subtotalVarios]);
 
   return {
     tipo,
+    tipoDetectado,
     tipoAgua,
     modoAgua,
     consumoKwh,
@@ -261,6 +296,9 @@ export function parseFacturaTexto(text: string): FacturaExtraida {
     conSepelios: /SEPELIO/i.test(text),
     conceptos,
     total,
+    subtotalServiciosFacturado,
+    subtotalImpuestos,
+    subtotalVarios,
   };
 }
 
@@ -306,6 +344,10 @@ export type AnalisisFactura = {
   // completar la comparación (frecuente en fotos/escaneos).
   sinConsumo: boolean;
   sinAgua: boolean;
+  // No se pudo confirmar la categoría de usuario (RESIDENCIAL es el default
+  // cuando no matchea ningún patrón conocido) — la UI debe pedir que la
+  // confirmen a mano en vez de dar por buena una categoría adivinada.
+  sinCategoria: boolean;
 };
 
 const UMBRAL = 0.03; // 3% de tolerancia para marcar alerta
@@ -326,6 +368,11 @@ export function analizarFactura(
   // Montos de conceptos corregidos a mano (el OCR a veces lee mal un número,
   // ej. pega dos montos juntos). Pisan lo extraído para ese concepto puntual.
   conceptosManual?: Partial<Record<keyof FacturaExtraida["conceptos"], number>>,
+  // Categoría elegida a mano cuando no se pudo confirmar automáticamente
+  // (`extraida.tipoDetectado === false`). Se aplica a energía Y agua: si
+  // tampoco pudimos leer una categoría de agua distinta, es la mejor
+  // categoría disponible para las dos.
+  tipoManual?: TipoUsuario | null,
 ): AnalisisFactura {
   const extraida = parseFacturaTexto(text);
   if (consumoManualKwh != null && consumoManualKwh > 0) {
@@ -344,12 +391,18 @@ export function analizarFactura(
       }
     }
   }
+  if (tipoManual) {
+    extraida.tipo = tipoManual;
+    extraida.tipoAgua = tipoManual;
+    extraida.tipoDetectado = true;
+  }
 
   const sinConsumo = extraida.consumoKwh == null;
   const sinAgua =
     extraida.modoAgua === "MEDIDA"
       ? extraida.m3Medido == null || extraida.m3Medido <= 0
       : extraida.m2 == null || extraida.m2 <= 0;
+  const sinCategoria = !extraida.tipoDetectado;
 
   if (!cuadros.length) {
     return {
@@ -365,6 +418,7 @@ export function analizarFactura(
       composicion: null,
       sinConsumo,
       sinAgua,
+      sinCategoria,
     };
   }
   if (extraida.consumoKwh == null && extraida.conceptos.cargoFijo == null) {
@@ -382,6 +436,7 @@ export function analizarFactura(
       composicion: null,
       sinConsumo,
       sinAgua,
+      sinCategoria,
     };
   }
 
@@ -429,6 +484,7 @@ export function analizarFactura(
       composicion: null,
       sinConsumo,
       sinAgua,
+      sinCategoria,
     };
   }
 
@@ -550,6 +606,21 @@ export function analizarFactura(
     esMatch: x.cuadro === mejor!.cuadro,
   }));
 
+  // `res.total` usa los montos DE REFERENCIA fijos de `calcularFactura` para
+  // Ley I-26/ENRE/Bomberos (no escalan con el consumo) y no modela impuestos
+  // por categoría que no están en el cuadro (ej. Percepción RG 3337 en
+  // facturas no residenciales). Comparar ESO contra el impuesto real infla
+  // la "diferencia" con algo que no es un problema de tarifa — en una
+  // factura grande la brecha entre el placeholder y el real puede ser de
+  // varios puntos porcentuales sin que haya ningún error real de
+  // facturación. Si pudimos leer los subtotales reales de impuestos/varios,
+  // los usamos tal cual: así el total "según cuadro" solo difiere del
+  // facturado por lo que el motor sí puede verificar (los servicios).
+  const totalCuadroAjustado =
+    extraida.subtotalImpuestos != null && extraida.subtotalVarios != null
+      ? res.subtotalServicios + extraida.subtotalImpuestos + extraida.subtotalVarios
+      : res.total;
+
   return {
     ok: true,
     extraida,
@@ -558,10 +629,11 @@ export function analizarFactura(
     checks,
     proyecciones,
     totalFacturado: extraida.total,
-    totalCuadro: res.total,
+    totalCuadro: totalCuadroAjustado,
     composicion: res.composicion,
     sinConsumo,
     sinAgua,
+    sinCategoria,
   };
 }
 

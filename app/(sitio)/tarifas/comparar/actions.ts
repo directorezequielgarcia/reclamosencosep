@@ -2,6 +2,7 @@
 
 import { cuadrosPublicados } from "@/lib/tarifas-db";
 import { analizarFactura, type AnalisisFactura } from "@/lib/factura-parse";
+import type { TipoUsuario } from "@/lib/tarifas";
 import {
   compararAnalisis,
   ordenarPorPeriodo,
@@ -46,9 +47,30 @@ export async function compararFacturas(
   const m2Manual2 = numOrNull(formData.get("m2Manual2"));
   const m3Manual2 = numOrNull(formData.get("m3Manual2"));
 
+  const tipoManual1Txt = String(formData.get("tipoManual1") ?? "").trim();
+  const tipoManual1 = tipoManual1Txt ? (tipoManual1Txt as TipoUsuario) : null;
+  const tipoManual2Txt = String(formData.get("tipoManual2") ?? "").trim();
+  const tipoManual2 = tipoManual2Txt ? (tipoManual2Txt as TipoUsuario) : null;
+
   const cuadros = await cuadrosPublicados();
-  const analisis1 = analizarFactura(texto1, cuadros, consumoManual1, m2Manual1, m3Manual1);
-  const analisis2 = analizarFactura(texto2, cuadros, consumoManual2, m2Manual2, m3Manual2);
+  const analisis1 = analizarFactura(
+    texto1,
+    cuadros,
+    consumoManual1,
+    m2Manual1,
+    m3Manual1,
+    undefined,
+    tipoManual1,
+  );
+  const analisis2 = analizarFactura(
+    texto2,
+    cuadros,
+    consumoManual2,
+    m2Manual2,
+    m3Manual2,
+    undefined,
+    tipoManual2,
+  );
 
   if (!analisis1.ok || !analisis2.ok) {
     return {

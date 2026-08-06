@@ -5,7 +5,7 @@ import { useActionState, useState, startTransition } from "react";
 import { controlarFactura, type ControlState } from "./actions";
 import { leerDocumento, type PasoLectura } from "@/lib/leer-documento";
 import type { FacturaExtraida, Proyeccion } from "@/lib/factura-parse";
-import { ESTADO_TXT, pesos } from "@/lib/tarifas";
+import { ESTADO_TXT, TIPO_LABEL, pesos, type TipoUsuario } from "@/lib/tarifas";
 import { GraficoComposicion } from "../GraficoComposicion";
 import { abrirComprobante, donutComprobanteHTML } from "@/lib/comprobante";
 
@@ -399,7 +399,7 @@ function Resultado({
         </table>
       </div>
 
-      {state.sinConsumo || state.sinAgua ? (
+      {state.sinConsumo || state.sinAgua || state.sinCategoria ? (
         <DatosManualesForm state={state} onEnviar={onRecalcular} />
       ) : null}
 
@@ -454,29 +454,39 @@ function DatosManualesForm({
 }) {
   const [kwh, setKwh] = useState("");
   const [agua, setAgua] = useState("");
+  const [tipo, setTipo] = useState<TipoUsuario | "">("");
   const modoMedida = state.extraida?.modoAgua === "MEDIDA";
 
   function enviar() {
     const kwhNum = Number(kwh.replace(",", "."));
     const aguaNum = Number(agua.replace(",", "."));
-    if ((state.sinConsumo && !(kwhNum > 0)) || (state.sinAgua && !(aguaNum > 0)))
+    if (
+      (state.sinConsumo && !(kwhNum > 0)) ||
+      (state.sinAgua && !(aguaNum > 0)) ||
+      (state.sinCategoria && !tipo)
+    )
       return;
     const nuevos: Record<string, string> = {};
     if (kwhNum > 0) nuevos.consumoManual = String(kwhNum);
     if (aguaNum > 0) nuevos[modoMedida ? "m3Manual" : "m2Manual"] = String(aguaNum);
+    if (tipo) nuevos.tipoManual = tipo;
     onEnviar(nuevos);
   }
 
   const listo =
     (!state.sinConsumo || Number(kwh.replace(",", ".")) > 0) &&
-    (!state.sinAgua || Number(agua.replace(",", ".")) > 0);
+    (!state.sinAgua || Number(agua.replace(",", ".")) > 0) &&
+    (!state.sinCategoria || !!tipo);
 
+  const partesFaltantes = [
+    state.sinCategoria ? "tu categoría" : null,
+    state.sinConsumo ? "tu consumo de luz" : null,
+    state.sinAgua ? "tu dato de agua" : null,
+  ].filter((s): s is string => s != null);
   const faltante =
-    state.sinConsumo && state.sinAgua
-      ? "tu consumo de luz y tu dato de agua"
-      : state.sinConsumo
-        ? "tu consumo de luz"
-        : "tu dato de agua";
+    partesFaltantes.length > 1
+      ? partesFaltantes.slice(0, -1).join(", ") + " y " + partesFaltantes[partesFaltantes.length - 1]
+      : partesFaltantes[0];
 
   return (
     <div className="rounded-2xl border-2 border-[#7e57c2]/40 bg-paper-2 p-4 flex flex-col gap-3">
@@ -497,6 +507,23 @@ function DatosManualesForm({
         </div>
       </div>
       <div className="flex flex-wrap items-end gap-3 pl-14">
+        {state.sinCategoria ? (
+          <label className="flex flex-col gap-1">
+            <span className="text-[11px] text-muted">Categoría de usuario</span>
+            <select
+              value={tipo}
+              onChange={(ev) => setTipo(ev.target.value as TipoUsuario)}
+              className="w-48 rounded-lg border border-line-strong px-3 py-1.5 text-sm text-navy bg-paper"
+            >
+              <option value="">Elegí una…</option>
+              {(Object.keys(TIPO_LABEL) as TipoUsuario[]).map((t) => (
+                <option key={t} value={t}>
+                  {TIPO_LABEL[t]}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
         {state.sinConsumo ? (
           <label className="flex flex-col gap-1">
             <span className="text-[11px] text-muted">

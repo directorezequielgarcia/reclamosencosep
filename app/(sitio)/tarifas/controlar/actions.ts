@@ -7,7 +7,7 @@ import {
   type FilaControl,
   type Proyeccion,
 } from "@/lib/factura-parse";
-import type { ComposicionCat } from "@/lib/tarifas";
+import type { ComposicionCat, TipoUsuario } from "@/lib/tarifas";
 
 export type ControlState = {
   ok: boolean;
@@ -21,6 +21,9 @@ export type ControlState = {
   // con `consumoManual` / `m2Manual` / `m3Manual`.
   sinConsumo?: boolean;
   sinAgua?: boolean;
+  // No se pudo confirmar la categoría de usuario — reintentar con
+  // `tipoManual` en el FormData.
+  sinCategoria?: boolean;
   extraida?: FacturaExtraida;
   cuadroMatchNombre?: string | null;
   cuadroMatchEstado?: string | null;
@@ -57,8 +60,20 @@ export async function controlarFactura(
   // (ej. pegó dos montos juntos) — "concepto_<campo>" en el FormData.
   const conceptosManual = conceptosManualDeFormData(formData);
 
+  // Categoría elegida a mano cuando no se pudo confirmar automáticamente.
+  const tipoManualTxt = String(formData.get("tipoManual") ?? "").trim();
+  const tipoManual = tipoManualTxt ? (tipoManualTxt as TipoUsuario) : null;
+
   const cuadros = await cuadrosPublicados();
-  const a = analizarFactura(texto, cuadros, consumoManual, m2Manual, m3Manual, conceptosManual);
+  const a = analizarFactura(
+    texto,
+    cuadros,
+    consumoManual,
+    m2Manual,
+    m3Manual,
+    conceptosManual,
+    tipoManual,
+  );
 
   return {
     ok: a.ok,
@@ -66,6 +81,7 @@ export async function controlarFactura(
     texto,
     sinConsumo: a.sinConsumo,
     sinAgua: a.sinAgua,
+    sinCategoria: a.sinCategoria,
     extraida: a.extraida,
     cuadroMatchNombre: a.cuadroMatch?.nombre ?? null,
     cuadroMatchEstado: a.cuadroMatch?.estado ?? null,

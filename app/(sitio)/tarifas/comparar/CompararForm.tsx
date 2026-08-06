@@ -3,7 +3,7 @@
 import { useActionState, useState, startTransition } from "react";
 import { compararFacturas, type CompararState } from "./actions";
 import { leerDocumento, type PasoLectura } from "@/lib/leer-documento";
-import { pesos } from "@/lib/tarifas";
+import { pesos, TIPO_LABEL, type TipoUsuario } from "@/lib/tarifas";
 import type { ComparacionDosFacturas, MotivoVariacion } from "@/lib/factura-comparar";
 
 const inicial: CompararState = { ok: false };
@@ -180,7 +180,13 @@ export function CompararForm() {
         </div>
       ) : null}
 
-      {!state.ok && (state.analisis1?.sinConsumo || state.analisis1?.sinAgua || state.analisis2?.sinConsumo || state.analisis2?.sinAgua) ? (
+      {!state.ok &&
+      (state.analisis1?.sinConsumo ||
+        state.analisis1?.sinAgua ||
+        state.analisis1?.sinCategoria ||
+        state.analisis2?.sinConsumo ||
+        state.analisis2?.sinAgua ||
+        state.analisis2?.sinCategoria) ? (
         <DatosManualesForm state={state} onEnviar={enviar} />
       ) : null}
 
@@ -200,11 +206,15 @@ function DatosManualesForm({
 }) {
   const [kwh1, setKwh1] = useState("");
   const [agua1, setAgua1] = useState("");
+  const [tipo1, setTipo1] = useState<TipoUsuario | "">("");
   const [kwh2, setKwh2] = useState("");
   const [agua2, setAgua2] = useState("");
+  const [tipo2, setTipo2] = useState<TipoUsuario | "">("");
 
-  const falta1 = state.analisis1?.sinConsumo || state.analisis1?.sinAgua;
-  const falta2 = state.analisis2?.sinConsumo || state.analisis2?.sinAgua;
+  const falta1 =
+    state.analisis1?.sinConsumo || state.analisis1?.sinAgua || state.analisis1?.sinCategoria;
+  const falta2 =
+    state.analisis2?.sinConsumo || state.analisis2?.sinAgua || state.analisis2?.sinCategoria;
   const modoMedida1 = state.analisis1?.extraida.modoAgua === "MEDIDA";
   const modoMedida2 = state.analisis2?.extraida.modoAgua === "MEDIDA";
 
@@ -213,17 +223,21 @@ function DatosManualesForm({
       consumoManual1: kwh1,
       m2Manual1: modoMedida1 ? "" : agua1,
       m3Manual1: modoMedida1 ? agua1 : "",
+      tipoManual1: tipo1,
       consumoManual2: kwh2,
       m2Manual2: modoMedida2 ? "" : agua2,
       m3Manual2: modoMedida2 ? agua2 : "",
+      tipoManual2: tipo2,
     });
   }
 
   const listo =
     (!state.analisis1?.sinConsumo || Number(kwh1.replace(",", ".")) > 0) &&
     (!state.analisis1?.sinAgua || Number(agua1.replace(",", ".")) > 0) &&
+    (!state.analisis1?.sinCategoria || !!tipo1) &&
     (!state.analisis2?.sinConsumo || Number(kwh2.replace(",", ".")) > 0) &&
-    (!state.analisis2?.sinAgua || Number(agua2.replace(",", ".")) > 0);
+    (!state.analisis2?.sinAgua || Number(agua2.replace(",", ".")) > 0) &&
+    (!state.analisis2?.sinCategoria || !!tipo2);
 
   return (
     <div className="rounded-2xl border-2 border-[#7e57c2]/40 bg-paper-2 p-4 flex flex-col gap-3">
@@ -250,6 +264,17 @@ function DatosManualesForm({
             <span className="text-[11px] font-bold uppercase tracking-wider text-muted">
               Factura 1
             </span>
+            {state.analisis1?.sinCategoria ? (
+              <label className="flex flex-col gap-1">
+                <span className="text-[11px] text-muted">Categoría de usuario</span>
+                <select value={tipo1} onChange={(e) => setTipo1(e.target.value as TipoUsuario)} className="w-40 rounded-lg border border-line-strong px-3 py-1.5 text-sm text-navy bg-paper">
+                  <option value="">Elegí una…</option>
+                  {(Object.keys(TIPO_LABEL) as TipoUsuario[]).map((t) => (
+                    <option key={t} value={t}>{TIPO_LABEL[t]}</option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
             {state.analisis1?.sinConsumo ? (
               <label className="flex flex-col gap-1">
                 <span className="text-[11px] text-muted">kWh del período</span>
@@ -269,6 +294,17 @@ function DatosManualesForm({
             <span className="text-[11px] font-bold uppercase tracking-wider text-muted">
               Factura 2
             </span>
+            {state.analisis2?.sinCategoria ? (
+              <label className="flex flex-col gap-1">
+                <span className="text-[11px] text-muted">Categoría de usuario</span>
+                <select value={tipo2} onChange={(e) => setTipo2(e.target.value as TipoUsuario)} className="w-40 rounded-lg border border-line-strong px-3 py-1.5 text-sm text-navy bg-paper">
+                  <option value="">Elegí una…</option>
+                  {(Object.keys(TIPO_LABEL) as TipoUsuario[]).map((t) => (
+                    <option key={t} value={t}>{TIPO_LABEL[t]}</option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
             {state.analisis2?.sinConsumo ? (
               <label className="flex flex-col gap-1">
                 <span className="text-[11px] text-muted">kWh del período</span>
