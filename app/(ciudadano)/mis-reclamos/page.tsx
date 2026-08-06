@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { SvcIcon } from "@/components/servicios/SvcIcon";
 import { svcFromKind } from "@/lib/servicios";
+import { ZorritoTour } from "@/components/tour/ZorritoTour";
 
 export const metadata = { title: "Mis reclamos · ENCOSEP" };
 
@@ -56,7 +57,7 @@ export default async function MisReclamosPage() {
 
   return (
     <main className="flex flex-1 flex-col gap-4 py-4">
-      <header>
+      <header id="mis-reclamos-header">
         <h1 className="text-2xl font-extrabold text-navy leading-tight">
           Mis reclamos
         </h1>
@@ -83,7 +84,7 @@ export default async function MisReclamosPage() {
           + Registrar el primero
         </Link>
       ) : (
-        <ul className="flex flex-col gap-2">
+        <ul id="mis-reclamos-lista" className="flex flex-col gap-2">
           {reclamos.map((r) => {
             const svc = svcFromKind(r.servicio.kind);
             const fecha = r.createdAt.toLocaleDateString("es-AR", {
@@ -153,6 +154,33 @@ export default async function MisReclamosPage() {
           + Nuevo reclamo
         </Link>
       )}
+
+      <ZorritoTour
+        storageKey="zorrito-tour-mis-reclamos-v1"
+        pasos={[
+          {
+            pose: "parado",
+            texto:
+              "¡Hola de nuevo! Soy el Zorrito 🦊. Acá vas a ver el estado de todos tus reclamos.",
+          },
+          {
+            targetId: "mis-reclamos-header",
+            pose: "parado",
+            texto:
+              "Cuando haya novedades en algún reclamo te lo voy a marcar con este aviso naranja.",
+          },
+          ...(reclamos.length > 0
+            ? [
+                {
+                  targetId: "mis-reclamos-lista",
+                  pose: "agachado" as const,
+                  texto:
+                    "Tocá cualquier reclamo para ver el detalle: en qué estado está y qué pasos siguen.",
+                },
+              ]
+            : []),
+        ]}
+      />
     </main>
   );
 }

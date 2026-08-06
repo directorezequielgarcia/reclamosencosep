@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { BrandStripe } from "@/components/ui/BrandStripe";
 import { LogoEncosep } from "@/components/ui/LogoEncosep";
 import { FormCrearCuenta } from "./form";
+import { ZorritoTour } from "@/components/tour/ZorritoTour";
 
 export const metadata = { title: "Crear cuenta · ENCOSEP" };
 
@@ -74,7 +75,9 @@ export default async function CrearCuentaPage() {
               </p>
             </div>
 
-            <FormCrearCuenta />
+            <div id="form-crear-cuenta">
+              <FormCrearCuenta />
+            </div>
 
             <div className="text-xs text-muted text-center pt-3 border-t border-line">
               ¿Ya tenés cuenta?{" "}
@@ -95,6 +98,28 @@ export default async function CrearCuentaPage() {
           </div>
         </div>
       </div>
+
+      <ZorritoTour
+        storageKey="zorrito-tour-crear-cuenta-v1"
+        pasos={[
+          {
+            pose: "parado",
+            texto:
+              "¡Hola! Soy el Zorrito de ENCOSEP 🦊. Te ayudo a crear tu cuenta para que puedas reclamar.",
+          },
+          {
+            targetId: "form-crear-cuenta",
+            pose: "parado",
+            texto:
+              "Completá tus datos acá. Con DNI y una clave alcanza, te toma menos de un minuto.",
+          },
+          {
+            pose: "agachado",
+            texto:
+              "Cuando termines vas a poder cargar tu primer reclamo con fotos y ubicación. ¡Vamos!",
+          },
+        ]}
+      />
     </main>
   );
 }

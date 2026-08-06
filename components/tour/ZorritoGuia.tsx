@@ -257,14 +257,41 @@ type Resultado = {
   lineasCercanas: Array<{ codigo: string; distancia: number }>;
 };
 
+// La parada de subida/bajada de CADA línea sugerida: no la parada más
+// cercana en general, sino la más cercana que esa línea puntual efectivamente
+// sirve (a ≤20 m de su trazado) — así el botón de Google Maps lleva al poste
+// correcto para esa línea, no a cualquier poste cercano que quizás no pare ahí.
+function paradaMasCercanaEnLinea(
+  coords: Coords,
+  paradas: Parada[],
+  linea: LineaProcesada,
+  radio = RADIO_PARADA_LINEA_M,
+): (Parada & { distancia: number }) | null {
+  let mejor: (Parada & { distancia: number }) | null = null;
+  let mejorDist = Infinity;
+  for (const p of paradas) {
+    if (distanciaALinea(p.lat, p.lng, linea) > radio) continue;
+    const d = distanciaMetros(coords.lat, coords.lng, p.lat, p.lng);
+    if (d < mejorDist) {
+      mejorDist = d;
+      mejor = { ...p, distancia: d };
+    }
+  }
+  return mejor;
+}
+
+type LineaSugerida = {
+  codigo: string;
+  paradaSubida: (Parada & { distancia: number }) | null;
+  paradaBajada: (Parada & { distancia: number }) | null;
+};
+
 // Modo "ruta": no busca lo más cercano a UN punto, sino qué línea te lleva
 // realmente de un punto al otro EN ESE SENTIDO.
 type ResultadoRuta = {
-  paradaOrigen: Parada & { distancia: number; lineas: string[] };
-  paradaDestino: Parada & { distancia: number; lineas: string[] };
+  lineasDirectas: LineaSugerida[];
   lineasOrigen: Array<{ codigo: string; distancia: number }>;
   lineasDestino: Array<{ codigo: string; distancia: number }>;
-  lineasDirectas: string[];
 };
 
 type OrigenModo = "gps" | "texto";
@@ -482,22 +509,40 @@ export function ZorritoGuia() {
 
     setEstado("buscando");
     setErrorTexto(null);
-    try {
-      const origen =
-        origenModo === "gps" ? await obtenerUbicacionActual() : await geocodificar(origenTexto);
 
-      if (destinoTexto.trim().length >= 3) {
-        const destino = await geocodificar(destinoTexto);
+    let origen: Coords;
+    try {
+      origen = origenModo === "gps" ? await obtenerUbicacionActual() : await geocodificar(origenTexto);
+    } catch {
+      setErrorTexto(
+        origenModo === "gps"
+          ? "No pudimos obtener tu ubicación. Probá escribiendo tu dirección."
+          : "No pudimos ubicar tu dirección de partida. Probá con calle y altura.",
+      );
+      setEstado("error");
+      return;
+    }
+
+    const hayDestino = destinoTexto.trim().length >= 3;
+    let destino: Coords | null = null;
+    if (hayDestino) {
+      try {
+        destino = await geocodificar(destinoTexto);
+      } catch {
+        setErrorTexto("No pudimos ubicar ese destino. Probá con calle y altura.");
+        setEstado("error");
+        return;
+      }
+    }
+
+    try {
+      if (destino) {
         await buscarRutaPorCoords(origen, destino);
       } else {
         await buscarPorCoords(origen.lat, origen.lng);
       }
     } catch {
-      setErrorTexto(
-        origenModo === "gps"
-          ? "No pudimos obtener tu ubicación. Probá escribiendo tu dirección."
-          : "No pudimos ubicar esa dirección. Probá con calle y altura.",
-      );
+      setErrorTexto("No pudimos calcular las paradas y líneas ahora. Probá de nuevo.");
       setEstado("error");
     }
   }
