@@ -263,23 +263,6 @@ export default async function IngresarPage({
               </div>
             </form>
 
-            {esVecino ? (
-              <div className="text-xs text-muted text-center pt-3 border-t border-line">
-                <div className="font-semibold text-navy mb-1">
-                  Usuarios de prueba
-                </div>
-                <div>
-                  Vecino: DNI <span className="font-mono">40555666</span> · clave{" "}
-                  <span className="font-mono">demo1234</span>
-                </div>
-                <div className="mt-0.5">
-                  Operador SCPL: CUIT{" "}
-                  <span className="font-mono">30528775409</span> · clave{" "}
-                  <span className="font-mono">scpl-2026</span>
-                </div>
-              </div>
-            ) : null}
-
             <Link
               href="/"
               className="text-center text-xs text-muted underline underline-offset-4"
