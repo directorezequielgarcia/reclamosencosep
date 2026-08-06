@@ -182,8 +182,12 @@ export type CuadroTarifario = {
   // Fórmula de consumo estimado: base + (m3Por10m2) por cada 10 m² cubiertos.
   aguaFormula: { baseM3: number; m3Por10m2: number };
 
-  // Servicio de cloacas (Anexo V/VI): % sobre el costo del agua.
+  // Servicio de cloacas — % sobre el costo del agua. Anexo VI (agua
+  // ESTIMADA) usa 50% parejo para todas las categorías, pero el Anexo V
+  // (agua MEDIDA) varía por categoría (ej. Industriales 60%). Si no hay
+  // entrada en `cloacasPorcMedida` para la categoría, se usa `cloacasPorc`.
   cloacasPorc: Partial<Record<TipoUsuario, number>>;
+  cloacasPorcMedida?: Partial<Record<TipoUsuario, number>>;
 
   // Impuestos
   iva: number; // ej 0.21
@@ -457,6 +461,16 @@ export const CUADRO_FEB_2026: CuadroTarifario = {
     ELECTROINTENSIVO: 0.5,
     GRAN_USUARIO: 0.5,
     INDUSTRIAL: 0.5,
+  },
+  // Anexo V (agua MEDIDA): Industriales pagan 60% en vez del 50% general.
+  // Se aplica también a las categorías que se facturan como "Industrial"
+  // en agua vía `aguaAlias` (Pequeña Industria, Electrointensivo, Gran
+  // Usuario), para ser consistentes con que su agua ya se cobra como tal.
+  cloacasPorcMedida: {
+    INDUSTRIAL: 0.6,
+    PEQUENA_INDUSTRIA: 0.6,
+    ELECTROINTENSIVO: 0.6,
+    GRAN_USUARIO: 0.6,
   },
   iva: 0.21,
   conceptosExtra: [
@@ -1026,7 +1040,9 @@ export function calcularFactura(
 
   // ── Cloacas ──────────────────────────────────────────────────────────
   if (e.tieneCloacas && costoAgua > 0) {
-    const porc = cuadro.cloacasPorc[e.tipo] ?? 0.5;
+    const tablaCloacas =
+      e.modoAgua === "MEDIDA" ? (cuadro.cloacasPorcMedida ?? cuadro.cloacasPorc) : cuadro.cloacasPorc;
+    const porc = tablaCloacas[e.tipo] ?? cuadro.cloacasPorc[e.tipo] ?? 0.5;
     const cloacas = costoAgua * porc;
     lineas.push({
       grupo: "CLOACAS",
@@ -1188,6 +1204,7 @@ export type DatosCuadro = Pick<
   | "aguaAlias"
   | "aguaFormula"
   | "cloacasPorc"
+  | "cloacasPorcMedida"
   | "iva"
   | "conceptosExtra"
 >;
@@ -1233,6 +1250,7 @@ export function datosDeCuadro(c: CuadroTarifario): DatosCuadro {
     aguaAlias: c.aguaAlias,
     aguaFormula: c.aguaFormula,
     cloacasPorc: c.cloacasPorc,
+    cloacasPorcMedida: c.cloacasPorcMedida,
     iva: c.iva,
     conceptosExtra: c.conceptosExtra,
   };
@@ -1316,6 +1334,7 @@ export function aplicarAumento(datos: DatosCuadro, pct: number): DatosCuadro {
     aguaAlias: datos.aguaAlias,
     aguaFormula: datos.aguaFormula,
     cloacasPorc: datos.cloacasPorc,
+    cloacasPorcMedida: datos.cloacasPorcMedida,
     iva: datos.iva,
     conceptosExtra: datos.conceptosExtra.map((c) => ({
       ...c,
