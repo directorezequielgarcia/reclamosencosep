@@ -134,6 +134,29 @@ export default async function InicioPage() {
         )}
       </section>
 
+      <Link
+        href="/"
+        className="flex items-center gap-3 rounded-2xl border border-[#7e57c2]/40 bg-[#7e57c2]/5 p-3 hover:bg-[#7e57c2]/10 transition"
+      >
+        <div className="w-14 h-14 shrink-0 rounded-full overflow-hidden border-2 border-[#7e57c2]/50 bg-white">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/imagenes/zorrito/zorrito-parado.png"
+            alt=""
+            className="w-full h-full object-cover object-top"
+          />
+        </div>
+        <span className="flex-1 min-w-0">
+          <span className="block text-sm font-bold text-navy">
+            Volvé a la app principal
+          </span>
+          <span className="block text-xs text-muted leading-snug mt-0.5">
+            Noticias, tarifas y todo lo del ENCOSEP.
+          </span>
+        </span>
+        <span className="text-[#7e57c2] text-lg shrink-0">›</span>
+      </Link>
+
       <div className="flex-1" />
 
       <Link
