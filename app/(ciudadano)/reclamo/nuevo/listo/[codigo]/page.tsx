@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { SvcIcon } from "@/components/servicios/SvcIcon";
 import { svcFromKind } from "@/lib/servicios";
+import { RedesSociales } from "@/components/ui/RedesSociales";
 
 export const metadata = { title: "Reclamo registrado · ENCOSEP" };
 
@@ -142,6 +143,11 @@ export default async function ListoPage({
         >
           Ver todo lo que podés hacer →
         </Link>
+      </div>
+
+      <div className="w-full flex items-center justify-center gap-2 text-sm text-navy">
+        <span className="font-semibold">Seguinos en nuestras redes:</span>
+        <RedesSociales />
       </div>
 
       <div className="flex-1" />

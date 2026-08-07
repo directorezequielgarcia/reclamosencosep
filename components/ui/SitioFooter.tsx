@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { LogoEncosep } from "./LogoEncosep";
+import { RedesSociales } from "./RedesSociales";
 
 export function SitioFooter() {
   return (
@@ -31,6 +32,10 @@ export function SitioFooter() {
             <li>0800 333 1175</li>
             <li>info@encosepcomodoro.gob.ar</li>
           </ul>
+          <div className="text-xs font-bold uppercase tracking-widest opacity-70 mt-4 mb-2">
+            Seguinos en redes
+          </div>
+          <RedesSociales className="text-white" />
         </div>
 
         <div>
