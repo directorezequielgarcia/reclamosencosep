@@ -27,9 +27,14 @@ type AreaConfig = {
     tramos: Array<{ etiqueta: string; texto: string }>;
   }>;
   lineasNota?: string;
-  // Link al mapa interactivo oficial de la Municipalidad (líneas, paradas,
-  // búsqueda de rutas por origen/destino) — no se reconstruye acá, se deriva.
+  // Link al mapa interactivo oficial de geolocalización del transporte
+  // (líneas, paradas, búsqueda de rutas por origen/destino) — no se
+  // reconstruye acá, se deriva.
   mapaInteractivoUrl?: string;
+  // Páginas oficiales de referencia de la/s prestadora/s de esta área
+  // (sitio institucional, autogestión, facturas online, etc.) — no se
+  // reconstruyen acá, se deriva directo al sitio de cada prestadora.
+  linksOficiales?: Array<{ label: string; url: string }>;
 };
 
 const AREAS: Record<string, AreaConfig> = {
@@ -63,6 +68,10 @@ const AREAS: Record<string, AreaConfig> = {
       },
     ],
     acento: "blue",
+    linksOficiales: [
+      { label: "Página oficial de la SCPL", url: "https://scpl.coop/" },
+      { label: "Facturas de la SCPL (autogestión)", url: "https://mi.scpl.coop/login" },
+    ],
   },
   energia: {
     titulo: "Energía Eléctrica y Alumbrado Público",
@@ -95,6 +104,10 @@ const AREAS: Record<string, AreaConfig> = {
       },
     ],
     acento: "yellow",
+    linksOficiales: [
+      { label: "Página oficial de la SCPL", url: "https://scpl.coop/" },
+      { label: "Facturas de la SCPL (autogestión)", url: "https://mi.scpl.coop/login" },
+    ],
   },
   residuos: {
     titulo: "Gestión de Residuos",
@@ -135,6 +148,9 @@ const AREAS: Record<string, AreaConfig> = {
       },
     ],
     acento: "green",
+    linksOficiales: [
+      { label: "Página oficial de Urbana CR", url: "https://www.urbanacr.com.ar/" },
+    ],
   },
   transporte: {
     titulo: "Transporte Público Urbano y Suburbano",
@@ -175,7 +191,10 @@ const AREAS: Record<string, AreaConfig> = {
     acento: "purple",
     lineasNota:
       "Detalle calle por calle transcripto del Anexo I de la Resolución 1.399/26 — tocá cada línea para desplegarlo. Nota: la Etapa Inicial no incluye líneas 10 ni 11.",
-    mapaInteractivoUrl: "https://comodoro-mit.github.io/transporte",
+    mapaInteractivoUrl: "https://micronauta.dnsalias.net/web/urbano/?conf=comodoro",
+    linksOficiales: [
+      { label: "Página oficial de Sol Bus", url: "https://www.solbus.com.ar/" },
+    ],
     lineas: [
       {
         numero: "1",
@@ -425,6 +444,21 @@ export default async function AreaFiscalizadaPage({
                 {area.prestadoraDetalle}
               </p>
             )}
+            {area.linksOficiales && area.linksOficiales.length > 0 && (
+              <div className="flex flex-wrap justify-center md:justify-start gap-2 mt-3">
+                {area.linksOficiales.map((l) => (
+                  <a
+                    key={l.url}
+                    href={l.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-navy-2/30 bg-paper text-navy-2 text-xs font-bold hover:bg-paper-2 transition"
+                  >
+                    🔗 {l.label} →
+                  </a>
+                ))}
+              </div>
+            )}
           </div>
           <Link
             href={`/ingresar?callbackUrl=/reclamo/nuevo?svc=${svc}`}
@@ -454,7 +488,7 @@ export default async function AreaFiscalizadaPage({
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 mt-4 px-5 py-3 rounded-xl bg-[#7e57c2] text-white font-bold text-sm shadow-lg shadow-[#7e57c2]/30 hover:scale-105 transition"
               >
-                🗺️ Mapa interactivo: buscá tu línea por origen y destino →
+                🗺️ Página oficial de geolocalización del transporte →
               </a>
             )}
 

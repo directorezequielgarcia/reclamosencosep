@@ -88,6 +88,35 @@ export default async function ListoPage({
         </div>
       </div>
 
+      <div className="w-full rounded-2xl border border-line bg-paper-2 p-4 text-left">
+        <div className="text-xs font-bold uppercase tracking-wider text-navy">
+          ¿Qué más podés hacer?
+        </div>
+        <ul className="mt-2 flex flex-col gap-1.5 text-sm">
+          <li>
+            <Link href="/tarifas" className="text-navy-2 font-semibold underline underline-offset-2">
+              🧮 Controlar tu factura
+            </Link>
+          </li>
+          <li>
+            <Link href="/audiencias" className="text-navy-2 font-semibold underline underline-offset-2">
+              🏛️ Participar en audiencias públicas
+            </Link>
+          </li>
+          <li>
+            <Link href="/encuesta" className="text-navy-2 font-semibold underline underline-offset-2">
+              ⭐ Calificar los servicios públicos
+            </Link>
+          </li>
+        </ul>
+        <Link
+          href="/atencion-usuarios"
+          className="inline-block mt-3 text-xs text-muted underline underline-offset-2"
+        >
+          Ver todo lo que podés hacer →
+        </Link>
+      </div>
+
       <div className="flex-1" />
 
       <div className="w-full flex flex-col gap-2">

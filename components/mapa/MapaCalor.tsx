@@ -35,6 +35,21 @@ export function MapaCalor({
     let cancelled = false;
     (async () => {
       const leaflet = await import("leaflet");
+      // leaflet.heat es un plugin viejo que se engancha mutando un global
+      // `L` (asume que Leaflet se cargó como <script>, no como módulo ESM).
+      // El objeto que devuelve `import("leaflet")` es un module namespace
+      // congelado (no extensible), así que el plugin no puede colgarle la
+      // propiedad `heatLayer` directamente — queda undefined en silencio.
+      // Usamos una copia extensible como `window.L` (mismas clases por
+      // referencia) para que el plugin pueda escribirle su método, y leemos
+      // heatLayer desde ahí en vez de desde el namespace original.
+      const globalL = Object.assign({}, leaflet) as typeof leaflet & {
+        heatLayer?: (
+          points: Array<[number, number, number]>,
+          options: Record<string, unknown>,
+        ) => import("leaflet").Layer;
+      };
+      (window as unknown as { L: typeof globalL }).L = globalL;
       await import("leaflet.heat");
 
       if (cancelled || !containerRef.current) return;
@@ -73,15 +88,8 @@ export function MapaCalor({
       const heatPoints = puntos.map(
         (p) => [p.lat, p.lng, 1] as [number, number, number],
       );
-      const heatLayer = (
-        leaflet as unknown as {
-          heatLayer: (
-            points: Array<[number, number, number]>,
-            options: Record<string, unknown>,
-          ) => L.Layer;
-        }
-      ).heatLayer;
-      heatLayer(heatPoints, {
+      if (!globalL.heatLayer) return;
+      globalL.heatLayer(heatPoints, {
         radius: 28,
         blur: 22,
         maxZoom: 17,
