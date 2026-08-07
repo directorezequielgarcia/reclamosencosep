@@ -4,7 +4,13 @@ import { BotoneraServicios } from "@/components/servicios/BotoneraServicios";
 import { prisma } from "@/lib/prisma";
 import { ZorritoTour } from "@/components/tour/ZorritoTour";
 import { ZorritoNoticias } from "@/components/tour/ZorritoNoticia";
-import { POSE_POR_SERVICIO_KIND } from "@/components/tour/zorrito-poses";
+import { POSE_POR_SERVICIO_KIND, POSES } from "@/components/tour/zorrito-poses";
+import {
+  IconoInstagram,
+  IconoFacebook,
+  INSTAGRAM_URL,
+  FACEBOOK_URL,
+} from "@/components/ui/RedesSociales";
 import { TIPO_BOLETIN_META } from "@/lib/boletines";
 import { youtubeThumbnail } from "@/components/ui/VideoEmbed";
 import type { ReclamoEstado } from "@prisma/client";
@@ -626,6 +632,60 @@ export default async function HomeInstitucional() {
               <source src="/videos/hace-tu-reclamo.mp4" type="video/mp4" />
               Tu navegador no puede reproducir este video.
             </video>
+          </div>
+        </div>
+      </section>
+
+      {/* ===================== SEGUINOS EN REDES ===================== */}
+      <section
+        id="redes-sociales-home"
+        className="bg-navy py-12 px-6 overflow-hidden"
+      >
+        <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-10">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={POSES.parado}
+            alt=""
+            aria-hidden
+            className="w-32 h-32 sm:w-40 sm:h-40 shrink-0 drop-shadow-xl"
+          />
+          <div className="text-center sm:text-left">
+            <div className="text-xs font-bold tracking-[0.18em] uppercase text-white/60">
+              El Zorrito te invita
+            </div>
+            <h2 className="text-2xl md:text-3xl font-extrabold text-white mt-1">
+              ¡Seguinos en las redes!
+            </h2>
+            <p className="text-sm text-white/80 mt-2 max-w-sm">
+              Novedades, avisos y todo lo que hacemos por los servicios
+              públicos de Comodoro Rivadavia.
+            </p>
+            <div className="flex items-center justify-center sm:justify-start gap-5 mt-5">
+              <a
+                href={INSTAGRAM_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Instagram de ENCOSEP"
+                title="Instagram de ENCOSEP"
+                className="animate-bounce [animation-duration:2s] flex items-center justify-center w-16 h-16 rounded-2xl text-white shadow-lg hover:scale-110 transition"
+                style={{
+                  background:
+                    "radial-gradient(circle at 30% 110%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%)",
+                }}
+              >
+                <IconoInstagram size={32} />
+              </a>
+              <a
+                href={FACEBOOK_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Facebook de ENCOSEP"
+                title="Facebook de ENCOSEP"
+                className="animate-bounce [animation-duration:2s] [animation-delay:.3s] flex items-center justify-center w-16 h-16 rounded-2xl bg-[#1877F2] text-white shadow-lg hover:scale-110 transition"
+              >
+                <IconoFacebook size={32} />
+              </a>
+            </div>
           </div>
         </div>
       </section>
