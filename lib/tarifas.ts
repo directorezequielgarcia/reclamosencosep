@@ -789,7 +789,7 @@ export type ResultadoCalculo = {
   composicion: Record<ComposicionCat, number>;
 };
 
-function tramoEnergiaPara(tramos: TramoEnergia[], kwh: number): TramoEnergia {
+export function tramoEnergiaPara(tramos: TramoEnergia[], kwh: number): TramoEnergia {
   return tramos.find((t) => kwh <= t.hasta) ?? tramos[tramos.length - 1];
 }
 

@@ -84,6 +84,18 @@ export default async function TarifasPage() {
                 </div>
               </div>
             </div>
+            <div className="flex gap-3">
+              <div className="text-2xl" aria-hidden>🔌</div>
+              <div>
+                <div className="text-sm font-bold text-navy">
+                  Consumo por electrodoméstico
+                </div>
+                <div className="text-xs text-muted leading-relaxed">
+                  Cuántos kWh y cuántos pesos gasta cada artefacto de tu casa
+                  por mes.
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -129,6 +141,29 @@ export default async function TarifasPage() {
           </div>
           <div className="text-[#7e57c2] font-bold text-sm whitespace-nowrap">
             Comparar facturas →
+          </div>
+        </Link>
+
+        <Link
+          id="calculadora-electrodomesticos"
+          href="/tarifas/electrodomesticos"
+          className="mb-6 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5 rounded-2xl border border-svc-green/40 bg-svc-green/10 p-5 hover:bg-svc-green/15 transition"
+        >
+          <div className="text-3xl" aria-hidden>
+            🔌
+          </div>
+          <div className="flex-1">
+            <div className="text-sm font-bold text-navy">
+              ¿Cuánto consume cada electrodoméstico?
+            </div>
+            <div className="text-xs text-muted leading-relaxed mt-0.5">
+              Elegí los artefactos de tu casa y cuánto los usás: te mostramos
+              cuántos kWh por mes gastan y cuánto te sale en pesos con la
+              tarifa vigente.
+            </div>
+          </div>
+          <div className="text-svc-green font-bold text-sm whitespace-nowrap">
+            Calcular consumo →
           </div>
         </Link>
 
