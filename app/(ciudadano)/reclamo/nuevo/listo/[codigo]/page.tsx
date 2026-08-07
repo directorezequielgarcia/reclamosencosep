@@ -16,7 +16,12 @@ export default async function ListoPage({
   const session = await auth();
   const reclamo = await prisma.reclamo.findUnique({
     where: { codigo },
-    include: { servicio: true, prestadora: true, adjuntos: true },
+    include: {
+      servicio: true,
+      prestadora: true,
+      adjuntos: true,
+      ciudadano: { select: { email: true, telefono: true } },
+    },
   });
 
   if (!reclamo || reclamo.ciudadanoId !== session!.user.id) notFound();
@@ -87,6 +92,28 @@ export default async function ListoPage({
           </div>
         </div>
       </div>
+
+      <div className="w-full rounded-2xl border border-svc-blue/40 bg-svc-blue/10 p-4 text-left text-sm text-navy leading-relaxed">
+        💬 Se abrió un chat para que puedas conversar con nosotros sobre este
+        reclamo puntual: entrá a{" "}
+        <Link
+          href={`/mis-reclamos/${reclamo.codigo}`}
+          className="font-bold underline underline-offset-2"
+        >
+          tu reclamo
+        </Link>{" "}
+        y vas a encontrarlo más abajo, en «Conversación con el ENCOSEP».
+      </div>
+
+      {(!reclamo.ciudadano.email || !reclamo.ciudadano.telefono) && (
+        <div className="w-full rounded-2xl border border-svc-yellow/50 bg-svc-yellow/10 p-4 text-left text-sm text-navy leading-relaxed">
+          📧 Recordá que podés agregar tu email y teléfono en{" "}
+          <Link href="/mi-cuenta" className="font-bold underline underline-offset-2">
+            Mi cuenta
+          </Link>{" "}
+          para que también te mantengamos informado.
+        </div>
+      )}
 
       <div className="w-full rounded-2xl border border-line bg-paper-2 p-4 text-left">
         <div className="text-xs font-bold uppercase tracking-wider text-navy">

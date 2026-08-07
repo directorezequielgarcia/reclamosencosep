@@ -22,14 +22,27 @@ export function BrandHeader({ right, back, title }: Props) {
         {title ? (
           <div className="text-sm font-bold text-navy truncate">{title}</div>
         ) : (
-          <>
-            <div className="text-[10px] font-bold tracking-widest text-muted uppercase leading-tight">
-              ENCOSEP
+          <Link
+            href="/"
+            aria-label="EnCoSeP — Ir a la página principal"
+            className="flex items-center gap-2 w-fit"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/imagenes/logo-encosep-transparente.png"
+              alt=""
+              aria-hidden
+              className="h-8 w-auto shrink-0"
+            />
+            <div className="min-w-0">
+              <div className="text-[10px] font-bold tracking-widest text-muted uppercase leading-tight">
+                ENCOSEP
+              </div>
+              <div className="text-xs text-navy font-semibold leading-tight">
+                Portal de Reclamos
+              </div>
             </div>
-            <div className="text-xs text-navy font-semibold leading-tight">
-              Portal de Reclamos
-            </div>
-          </>
+          </Link>
         )}
       </div>
       {right}
