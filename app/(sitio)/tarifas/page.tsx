@@ -88,7 +88,7 @@ export default async function TarifasPage() {
               <div className="text-2xl" aria-hidden>🔌</div>
               <div>
                 <div className="text-sm font-bold text-navy">
-                  Consumo por electrodoméstico
+                  Estimador Consumos ENCOSEP
                 </div>
                 <div className="text-xs text-muted leading-relaxed">
                   Cuántos kWh y cuántos pesos gasta cada artefacto de tu casa
@@ -154,7 +154,7 @@ export default async function TarifasPage() {
           </div>
           <div className="flex-1">
             <div className="text-sm font-bold text-navy">
-              ¿Cuánto consume cada electrodoméstico?
+              Estimador Consumos ENCOSEP
             </div>
             <div className="text-xs text-muted leading-relaxed mt-0.5">
               Elegí los artefactos de tu casa y cuánto los usás: te mostramos

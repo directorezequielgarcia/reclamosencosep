@@ -6,6 +6,7 @@ import {
   kwhMensual,
   type Electrodomestico,
 } from "@/lib/electrodomesticos";
+import { categoriaDe, categoriasOrdenadas, emojiDe } from "@/lib/electrodomesticos-meta";
 import {
   TIPO_LABEL,
   pesos,
@@ -13,6 +14,7 @@ import {
   type CuadroTarifario,
   type TipoUsuario,
 } from "@/lib/tarifas";
+import { ZorritoTour } from "@/components/tour/ZorritoTour";
 
 type Item = {
   key: string;
@@ -29,27 +31,58 @@ export function ElectrodomesticosForm({
 }) {
   const vigente = cuadros.find((c) => c.estado === "VIGENTE") ?? cuadros[0];
 
-  const [seleccionId, setSeleccionId] = useState(ELECTRODOMESTICOS[0].id);
   const [items, setItems] = useState<Item[]>([]);
   const [tipo, setTipo] = useState<TipoUsuario>("RESIDENCIAL");
+  const [busqueda, setBusqueda] = useState("");
 
   const tiposDisponibles = (Object.keys(TIPO_LABEL) as TipoUsuario[]).filter(
     (t) => vigente.energia[t]?.length,
   );
 
-  function agregar() {
-    const artefacto = ELECTRODOMESTICOS.find((a) => a.id === seleccionId);
-    if (!artefacto) return;
-    setItems((prev) => [
-      ...prev,
-      {
-        key: `${artefacto.id}-${Date.now()}-${Math.random()}`,
-        artefacto,
-        cantidad: 1,
-        horasPorDia: 1,
-        diasPorSemana: 7,
-      },
-    ]);
+  const cantidadPorId = useMemo(() => {
+    const mapa = new Map<string, number>();
+    for (const it of items) mapa.set(it.artefacto.id, (mapa.get(it.artefacto.id) ?? 0) + it.cantidad);
+    return mapa;
+  }, [items]);
+
+  const artefactosFiltrados = useMemo(() => {
+    const q = busqueda.trim().toLowerCase();
+    const lista = q
+      ? ELECTRODOMESTICOS.filter((a) => a.nombre.toLowerCase().includes(q))
+      : ELECTRODOMESTICOS;
+    const grupos = new Map<string, { nombre: string; emoji: string; artefactos: Electrodomestico[] }>();
+    for (const cat of categoriasOrdenadas()) {
+      grupos.set(cat.id, { nombre: cat.nombre, emoji: cat.emoji, artefactos: [] });
+    }
+    for (const a of lista) {
+      const cat = categoriaDe(a.nombre);
+      grupos.get(cat.id)!.artefactos.push(a);
+    }
+    return [...grupos.values()].filter((g) => g.artefactos.length > 0);
+  }, [busqueda]);
+
+  // Tocar una tarjeta suma 1 unidad: si el artefacto ya está en la lista le
+  // suma cantidad, si no lo agrega. Así se arma la lista "picando" en vez de
+  // tener que abrir un select con 76 opciones.
+  function sumarUno(artefacto: Electrodomestico) {
+    setItems((prev) => {
+      const existente = prev.find((it) => it.artefacto.id === artefacto.id);
+      if (existente) {
+        return prev.map((it) =>
+          it.artefacto.id === artefacto.id ? { ...it, cantidad: it.cantidad + 1 } : it,
+        );
+      }
+      return [
+        ...prev,
+        {
+          key: `${artefacto.id}-${Date.now()}-${Math.random()}`,
+          artefacto,
+          cantidad: 1,
+          horasPorDia: 1,
+          diasPorSemana: 7,
+        },
+      ];
+    });
   }
 
   function actualizar(key: string, cambios: Partial<Item>) {
@@ -81,26 +114,61 @@ export function ElectrodomesticosForm({
   return (
     <div className="flex flex-col gap-6">
       <div className="rounded-2xl border border-line bg-paper p-5 flex flex-col gap-4">
-        <div className="text-sm font-bold text-navy">Agregar artefacto</div>
-        <div className="flex flex-col sm:flex-row gap-2">
-          <select
-            value={seleccionId}
-            onChange={(ev) => setSeleccionId(ev.target.value)}
-            className="flex-1 rounded-lg border border-line-strong px-3 py-2 text-sm bg-paper"
-          >
-            {ELECTRODOMESTICOS.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.nombre}
-              </option>
-            ))}
-          </select>
-          <button
-            type="button"
-            onClick={agregar}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-navy text-white font-bold text-sm hover:opacity-90"
-          >
-            + Agregar
-          </button>
+        <div>
+          <div className="text-sm font-bold text-navy">Tocá los artefactos que tenés</div>
+          <div className="text-xs text-muted mt-0.5">
+            Cada toque suma una unidad. Después ajustás horas y días de uso en la tabla de abajo.
+          </div>
+        </div>
+
+        <input
+          type="search"
+          value={busqueda}
+          onChange={(ev) => setBusqueda(ev.target.value)}
+          placeholder="Buscar artefacto…"
+          className="rounded-lg border border-line-strong px-3 py-2 text-sm bg-paper"
+        />
+
+        <div id="electrodomesticos-tablero" className="flex flex-col gap-4 max-h-[28rem] overflow-y-auto pr-1">
+          {artefactosFiltrados.map((grupo) => (
+            <div key={grupo.nombre}>
+              <div className="text-[11px] font-bold uppercase tracking-wider text-muted mb-2">
+                {grupo.emoji} {grupo.nombre}
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                {grupo.artefactos.map((a) => {
+                  const cant = cantidadPorId.get(a.id) ?? 0;
+                  return (
+                    <button
+                      key={a.id}
+                      type="button"
+                      onClick={() => sumarUno(a)}
+                      className={`relative flex flex-col items-center gap-1 p-2.5 rounded-xl border text-center shadow-sm hover:shadow-md transition active:scale-[0.97] ${
+                        cant > 0
+                          ? "border-svc-green bg-svc-green/10"
+                          : "border-line bg-paper-2"
+                      }`}
+                    >
+                      {cant > 0 && (
+                        <span className="absolute -top-2 -right-2 min-w-[1.25rem] h-5 px-1 rounded-full bg-svc-green text-white text-[11px] font-bold flex items-center justify-center">
+                          {cant}
+                        </span>
+                      )}
+                      <div className="text-2xl leading-none" aria-hidden>
+                        {emojiDe(a.nombre)}
+                      </div>
+                      <div className="text-[11px] text-navy leading-tight">{a.nombre}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+          {artefactosFiltrados.length === 0 && (
+            <div className="text-sm text-muted py-4 text-center">
+              No encontramos ningún artefacto con ese nombre.
+            </div>
+          )}
         </div>
 
         <label className="flex flex-col gap-1 max-w-xs">
@@ -232,10 +300,27 @@ export function ElectrodomesticosForm({
 
       {filas.length === 0 && (
         <div className="rounded-2xl border border-line bg-paper-2 p-5 text-sm text-muted">
-          Todavía no agregaste ningún artefacto. Elegí uno de la lista de
-          arriba y tocá «Agregar».
+          Todavía no agregaste ningún artefacto. Tocá alguno del tablero de
+          arriba para sumarlo.
         </div>
       )}
+
+      <ZorritoTour
+        storageKey="zorrito-tour-electrodomesticos-v1"
+        pasos={[
+          {
+            pose: "energia",
+            texto:
+              "¡Hola! Soy el Zorrito de ENCOSEP 🦊. Te ayudo a estimar cuánto consume tu casa.",
+          },
+          {
+            targetId: "electrodomesticos-tablero",
+            pose: "energia",
+            texto:
+              "Tocá cada artefacto que tenés en casa: cada toque suma una unidad. Si tenés 3 lámparas iguales, tocás 3 veces.",
+          },
+        ]}
+      />
     </div>
   );
 }

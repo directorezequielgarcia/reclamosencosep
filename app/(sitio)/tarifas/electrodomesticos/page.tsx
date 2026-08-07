@@ -4,7 +4,7 @@ import { cuadrosPublicados } from "@/lib/tarifas-db";
 import { ElectrodomesticosForm } from "./ElectrodomesticosForm";
 
 export const metadata = {
-  title: "Calculadora ENCOSEP · Consumo por electrodoméstico",
+  title: "Estimador Consumos ENCOSEP",
   description:
     "Estimá cuántos kWh por mes consume cada electrodoméstico de tu casa y cuánto te sale en pesos con la tarifa vigente en Comodoro Rivadavia.",
 };
@@ -18,7 +18,7 @@ export default async function ElectrodomesticosPage() {
     <>
       <SeccionHeader
         kicker="Transparencia tarifaria"
-        titulo="¿Cuánto consume cada electrodoméstico?"
+        titulo="Estimador Consumos ENCOSEP"
         descripcion="Elegí los artefactos de tu casa, cuántos tenés y cuánto los usás: te mostramos cuántos kWh por mes consumen y una estimación en pesos con la tarifa vigente."
         variante="naranja"
       />
@@ -26,7 +26,7 @@ export default async function ElectrodomesticosPage() {
         <MigajasSitio
           items={[
             { label: "Calculadora", href: "/tarifas" },
-            { label: "Consumo por electrodoméstico" },
+            { label: "Estimador Consumos ENCOSEP" },
           ]}
         />
         <div className="mb-6 rounded-xl border border-line bg-paper-2 px-4 py-3 text-xs text-muted">
