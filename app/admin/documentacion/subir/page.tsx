@@ -148,15 +148,21 @@ export default async function SubirDocumentoPage() {
 
         <label className="flex flex-col gap-1">
           <span className="text-xs font-bold text-navy uppercase tracking-wider">
-            Archivo (PDF, Word, Excel, JPG/PNG) * — máx 4 MB
+            Archivos (PDF, Word, Excel, JPG/PNG) * — máx 4 MB c/u
           </span>
           <input
             type="file"
-            name="archivo"
+            name="archivos"
             required
+            multiple
             accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
             className="px-3 py-2.5 rounded-lg border border-dashed border-line-strong text-sm bg-paper-2 cursor-pointer"
           />
+          <span className="text-xs text-muted">
+            Podés seleccionar varios archivos juntos — por ejemplo, todas las
+            piezas de un expediente tarifario o de una audiencia. Cada uno
+            queda como un documento propio, con el mismo tipo y período.
+          </span>
         </label>
 
         <div className="flex gap-2 mt-2">

@@ -7,6 +7,8 @@ export const TIPO_DOC_META: Record<
   ANUAL: { label: "Anual", icon: "📅", periodicidad: "anual" },
   MENSUAL: { label: "Mensual", icon: "🗓️", periodicidad: "mensual" },
   CERTIFICACION: { label: "Certificación técnica", icon: "🛡️", periodicidad: "puntual" },
+  EXPEDIENTE_TARIFARIO: { label: "Expediente tarifario", icon: "💲", periodicidad: "puntual" },
+  DICTAMEN: { label: "Dictamen", icon: "⚖️", periodicidad: "puntual" },
   CONTRATO: { label: "Contrato / Addenda", icon: "📜", periodicidad: "puntual" },
   OTRO: { label: "Otro", icon: "📄", periodicidad: "puntual" },
 };

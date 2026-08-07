@@ -106,11 +106,13 @@ model Prestadora {
 // ─────────────────────────────────────────────
 
 enum TipoDocumento {
-  ANUAL              // balance anual, plan anual, memoria
-  MENSUAL            // certificación mensual, informe operativo mensual
-  CERTIFICACION      // certificación técnica puntual
-  CONTRATO           // contrato, addenda, pliego firmado
-  OTRO               // otros (notas, descargos formales no en expediente)
+  ANUAL                 // balance anual, plan anual, memoria
+  MENSUAL               // certificación mensual, informe operativo mensual
+  CERTIFICACION         // certificación técnica puntual
+  EXPEDIENTE_TARIFARIO  // expediente de readecuación tarifaria (incluye material de audiencias)
+  DICTAMEN              // dictamen técnico/jurídico del Ente
+  CONTRATO              // contrato, addenda, pliego firmado
+  OTRO                  // otros (notas, descargos formales no en expediente)
 }
 
 enum EstadoDocumento {

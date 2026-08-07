@@ -36,7 +36,21 @@ export default async function DocumentacionPage({
     where.prestadoraId = sp.prestadora;
   }
 
-  const [docs, prestadoras, totales] = await Promise.all([
+  // Base para las tarjetas por prestadora: mismo filtro de rol, pero sin el
+  // filtro de prestadora activo (así las tarjetas muestran el total real de
+  // cada una, no solo la que está seleccionada).
+  const whereBase: Prisma.DocumentoWhereInput = {};
+  if (session!.user.rol === "OPERADOR_PRESTADORA") {
+    whereBase.prestadoraId = session!.user.prestadoraId ?? "__none__";
+  }
+  if (sp.estado && sp.estado in ESTADO_DOC_META) {
+    whereBase.estado = sp.estado as EstadoDocumento;
+  }
+  if (sp.tipo && sp.tipo in TIPO_DOC_META) {
+    whereBase.tipo = sp.tipo as TipoDocumento;
+  }
+
+  const [docs, prestadoras, totales, porPrestadora] = await Promise.all([
     prisma.documento.findMany({
       where,
       orderBy: { createdAt: "desc" },
@@ -49,11 +63,19 @@ export default async function DocumentacionPage({
       where,
       _count: { _all: true },
     }),
+    prisma.documento.groupBy({
+      by: ["prestadoraId"],
+      where: whereBase,
+      _count: { _all: true },
+    }),
   ]);
 
   const pendientes = totales.find((t) => t.estado === "PENDIENTE")?._count._all ?? 0;
   const observados = totales.find((t) => t.estado === "OBSERVADO")?._count._all ?? 0;
   const aprobados = totales.find((t) => t.estado === "APROBADO")?._count._all ?? 0;
+  const countPorPrestadora = new Map(
+    porPrestadora.map((p) => [p.prestadoraId, p._count._all]),
+  );
 
   const puedeSubir =
     session!.user.rol === "OPERADOR_PRESTADORA" ||
@@ -79,6 +101,45 @@ export default async function DocumentacionPage({
           </Link>
         )}
       </header>
+
+      {session!.user.rol !== "OPERADOR_PRESTADORA" && prestadoras.length > 0 && (
+        <section className="flex flex-col gap-2">
+          <h2 className="text-xs font-bold text-muted uppercase tracking-wider">
+            Carpetas por prestadora
+          </h2>
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {prestadoras.map((p) => {
+              const n = countPorPrestadora.get(p.id) ?? 0;
+              const activa = sp.prestadora === p.id;
+              return (
+                <Link
+                  key={p.id}
+                  href={
+                    activa
+                      ? "/admin/documentacion"
+                      : `/admin/documentacion?prestadora=${p.id}`
+                  }
+                  className={`shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl border text-sm ${
+                    activa
+                      ? "border-navy-2 bg-navy-2 text-white font-semibold"
+                      : "border-line bg-paper text-navy hover:bg-paper-2"
+                  }`}
+                >
+                  <span aria-hidden>📁</span>
+                  <span className="truncate max-w-[180px]">{p.razonSocial}</span>
+                  <span
+                    className={`text-xs font-mono rounded-full px-1.5 ${
+                      activa ? "bg-white/20" : "bg-paper-3 text-muted"
+                    }`}
+                  >
+                    {n}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       <section className="grid grid-cols-3 gap-3">
         <Kpi label="Pendientes" value={pendientes} tone="warning" />

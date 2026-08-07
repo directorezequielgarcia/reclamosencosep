@@ -14,6 +14,8 @@ const TipoEnum = z.enum([
   "ANUAL",
   "MENSUAL",
   "CERTIFICACION",
+  "EXPEDIENTE_TARIFARIO",
+  "DICTAMEN",
   "CONTRATO",
   "OTRO",
 ]);
@@ -36,8 +38,10 @@ export async function subirDocumento(formData: FormData) {
   const session = await auth();
   if (!session) throw new Error("Sin sesión");
 
-  const file = formData.get("archivo");
-  if (!(file instanceof File)) throw new Error("Falta archivo");
+  const archivos = formData
+    .getAll("archivos")
+    .filter((f): f is File => f instanceof File && f.size > 0);
+  if (archivos.length === 0) throw new Error("Falta archivo");
 
   const raw = {
     tipo: formData.get("tipo"),
@@ -72,54 +76,68 @@ export async function subirDocumento(formData: FormData) {
     throw new Error("Sin permiso");
   }
 
-  // Crear primero el registro (sin url) para tener el id que usaremos en el path
-  const doc = await prisma.documento.create({
-    data: {
-      prestadoraId,
-      tipo: datos.tipo as TipoDocumento,
-      periodo: datos.periodo,
-      titulo: datos.titulo,
-      descripcion: datos.descripcion ?? null,
-      archivoUrl: "",
-      subidoPorId: session.user.id,
-      estado: "PENDIENTE",
-    },
-  });
+  // Varios archivos → un Documento por archivo, todos con el mismo tipo/
+  // período/prestadora (ej: subir de una vez todas las piezas de un
+  // expediente tarifario o de una audiencia). El título se distingue con
+  // el nombre del archivo cuando hay más de uno.
+  let primerDocId: string | null = null;
+  for (const file of archivos) {
+    const titulo =
+      archivos.length > 1 ? `${datos.titulo} — ${file.name}` : datos.titulo;
 
-  // Subir archivo: Vercel Blob si hay token, Neon DB si no
-  try {
-    let archivoUrl: string;
-    let mimeType = file.type;
-    const bytes = file.size;
-
-    if (process.env.BLOB_READ_WRITE_TOKEN) {
-      const saved = await guardarDocumentoPrestadora(prestadoraId, doc.id, file);
-      archivoUrl = saved.url;
-      mimeType = saved.mimeType;
-    } else {
-      const buf = Buffer.from(await file.arrayBuffer());
-      await prisma.archivoBlob.create({
-        data: {
-          documentoId: doc.id,
-          tipo: "archivo",
-          contenido: buf as unknown as Uint8Array<ArrayBuffer>,
-          mimeType: file.type,
-        },
-      });
-      archivoUrl = `/api/documentos/${doc.id}/archivo`;
-    }
-
-    await prisma.documento.update({
-      where: { id: doc.id },
-      data: { archivoUrl, mimeType, bytes },
+    const doc = await prisma.documento.create({
+      data: {
+        prestadoraId,
+        tipo: datos.tipo as TipoDocumento,
+        periodo: datos.periodo,
+        titulo,
+        descripcion: datos.descripcion ?? null,
+        archivoUrl: "",
+        subidoPorId: session.user.id,
+        estado: "PENDIENTE",
+      },
     });
-  } catch (e) {
-    await prisma.documento.delete({ where: { id: doc.id } });
-    throw e;
+    primerDocId ??= doc.id;
+
+    // Subir archivo: Vercel Blob si hay token, Neon DB si no
+    try {
+      let archivoUrl: string;
+      let mimeType = file.type;
+      const bytes = file.size;
+
+      if (process.env.BLOB_READ_WRITE_TOKEN) {
+        const saved = await guardarDocumentoPrestadora(prestadoraId, doc.id, file);
+        archivoUrl = saved.url;
+        mimeType = saved.mimeType;
+      } else {
+        const buf = Buffer.from(await file.arrayBuffer());
+        await prisma.archivoBlob.create({
+          data: {
+            documentoId: doc.id,
+            tipo: "archivo",
+            contenido: buf as unknown as Uint8Array<ArrayBuffer>,
+            mimeType: file.type,
+          },
+        });
+        archivoUrl = `/api/documentos/${doc.id}/archivo`;
+      }
+
+      await prisma.documento.update({
+        where: { id: doc.id },
+        data: { archivoUrl, mimeType, bytes },
+      });
+    } catch (e) {
+      await prisma.documento.delete({ where: { id: doc.id } });
+      throw e;
+    }
   }
 
   revalidatePath("/admin/documentacion");
-  redirect(`/admin/documentacion/${doc.id}`);
+  if (archivos.length === 1 && primerDocId) {
+    redirect(`/admin/documentacion/${primerDocId}`);
+  } else {
+    redirect(`/admin/documentacion?prestadora=${prestadoraId}`);
+  }
 }
 
 const RevisarSchema = z.object({
