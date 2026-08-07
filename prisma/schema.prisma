@@ -685,6 +685,10 @@ model EncuestaServicios {
   puntajeEnergia   Int?
   puntajeResiduos  Int?
   puntajeTransporte Int?
+  // A quién le atribuye el vecino la responsabilidad de los problemas que
+  // calificó: "COMPARTIDA" (Municipio/MCR + prestadora), "MCR" (exclusiva
+  // del Municipio) o "PRESTADORA" (exclusiva de la empresa prestadora).
+  responsabilidad  String?
   comentario       String?
   barrio           String?
   // Identificación opcional para evitar spam — no se muestra públicamente

@@ -131,7 +131,7 @@ export default async function ListoPage({
             </Link>
           </li>
           <li>
-            <Link href="/encuesta" className="text-navy-2 font-semibold underline underline-offset-2">
+            <Link href="/encuesta?desde=reclamo" className="text-navy-2 font-semibold underline underline-offset-2">
               ⭐ Calificar los servicios públicos
             </Link>
           </li>
