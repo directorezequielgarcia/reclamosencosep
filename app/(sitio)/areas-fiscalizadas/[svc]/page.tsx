@@ -27,10 +27,11 @@ type AreaConfig = {
     tramos: Array<{ etiqueta: string; texto: string }>;
   }>;
   lineasNota?: string;
-  // Link al mapa interactivo oficial de geolocalización del transporte
-  // (líneas, paradas, búsqueda de rutas por origen/destino) — no se
-  // reconstruye acá, se deriva.
-  mapaInteractivoUrl?: string;
+  // Dos mapas oficiales distintos, NO intercambiables: el de Sol Bus
+  // (operador, geolocalización en vivo de las unidades) y el de la MCR
+  // (Municipalidad, recorridos/paradas — mismo dataset que usa ZorritoGuia).
+  mapaSolBusUrl?: string;
+  mapaMcrUrl?: string;
   // Páginas oficiales de referencia de la/s prestadora/s de esta área
   // (sitio institucional, autogestión, facturas online, etc.) — no se
   // reconstruyen acá, se deriva directo al sitio de cada prestadora.
@@ -191,7 +192,8 @@ const AREAS: Record<string, AreaConfig> = {
     acento: "purple",
     lineasNota:
       "Detalle calle por calle transcripto del Anexo I de la Resolución 1.399/26 — tocá cada línea para desplegarlo. Nota: la Etapa Inicial no incluye líneas 10 ni 11.",
-    mapaInteractivoUrl: "https://micronauta.dnsalias.net/web/urbano/?conf=comodoro",
+    mapaSolBusUrl: "https://micronauta.dnsalias.net/web/urbano/?conf=comodoro",
+    mapaMcrUrl: "https://comodoro-mit.github.io/transporte",
     linksOficiales: [
       { label: "Página oficial de Sol Bus", url: "https://www.solbus.com.ar/" },
     ],
@@ -481,15 +483,32 @@ export default async function AreaFiscalizadaPage({
               <p className="text-sm text-muted mt-2 max-w-2xl">{area.lineasNota}</p>
             )}
 
-            {area.mapaInteractivoUrl && (
-              <a
-                href={area.mapaInteractivoUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 mt-4 px-5 py-3 rounded-xl bg-[#7e57c2] text-white font-bold text-sm shadow-lg shadow-[#7e57c2]/30 hover:scale-105 transition"
-              >
-                🗺️ Página oficial de geolocalización del transporte →
-              </a>
+            <div className="flex flex-wrap gap-3 mt-4">
+              {area.mapaSolBusUrl && (
+                <a
+                  href={area.mapaSolBusUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[#7e57c2] text-white font-bold text-sm shadow-lg shadow-[#7e57c2]/30 hover:scale-105 transition"
+                >
+                  🚌 Mapa en vivo según Sol Bus →
+                </a>
+              )}
+              {area.mapaMcrUrl && (
+                <a
+                  href={area.mapaMcrUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-navy text-white font-bold text-sm shadow-lg shadow-navy/30 hover:scale-105 transition"
+                >
+                  🗺️ Mapa de recorridos según la MCR →
+                </a>
+              )}
+            </div>
+            {area.mapaSolBusUrl && area.mapaMcrUrl && (
+              <p className="text-xs text-muted mt-2 max-w-2xl">
+                Sol Bus muestra la ubicación en vivo de las unidades; la Municipalidad (MCR) publica el detalle oficial de recorridos y paradas.
+              </p>
             )}
 
             <div id="zorrito-guia-widget" className="mt-4">
