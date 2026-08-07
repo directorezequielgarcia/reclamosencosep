@@ -65,6 +65,19 @@ export default async function ReclamoDetallePage({
   });
   if (!reclamo) notFound();
 
+  // Marcar como leídas por el Ente las novedades del vecino (chat, adjuntos,
+  // "se solucionó", etc.) apenas alguien del Ente abre el detalle. La
+  // prestadora no cuenta como "lectura del Ente" — sigue viéndose pendiente.
+  if (
+    session!.user.rol !== "OPERADOR_PRESTADORA" &&
+    reclamo.eventos.some((e) => !e.leidoEnte)
+  ) {
+    await prisma.reclamoEvento.updateMany({
+      where: { reclamoId: reclamo.id, leidoEnte: false },
+      data: { leidoEnte: true },
+    });
+  }
+
   const svc = svcFromKind(reclamo.servicio.kind);
   const transiciones = TRANSICIONES[reclamo.estado];
   const puedeEditar = ROLES_EDIT.includes(session!.user.rol);

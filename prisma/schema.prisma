@@ -494,9 +494,15 @@ model ReclamoEvento {
   // Comentario visible para el vecino (respuesta del Ente al reclamante) vs.
   // nota interna del equipo. Por defecto false = interno (no rompe lo existente).
   visibleVecino Boolean   @default(false)
+  // Seguimiento de la Bandeja: false = acción del vecino todavía sin ver por
+  // el Ente (chat, documental sumada, "se solucionó", etc.). Default true
+  // porque los eventos que genera el propio Ente ya los conoce; solo las
+  // acciones del vecino (mis-reclamos/[codigo]/actions.ts) lo ponen en false.
+  leidoEnte  Boolean      @default(true)
   createdAt  DateTime     @default(now())
 
   @@index([reclamoId, createdAt])
+  @@index([reclamoId, leidoEnte])
 }
 
 enum AdjuntoTipo {

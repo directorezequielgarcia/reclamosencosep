@@ -13,6 +13,7 @@ type SP = {
   estado?: string;
   svc?: string;
   q?: string;
+  pendiente?: string;
 };
 
 export default async function BandejaPage({
@@ -44,12 +45,24 @@ export default async function BandejaPage({
       { ciudadano: { apellido: { contains: q } } },
     ];
   }
+  const soloPendientes = sp.pendiente === "1";
+  if (soloPendientes) {
+    where.eventos = { some: { leidoEnte: false } };
+  }
 
   const reclamos = await prisma.reclamo.findMany({
     where,
     orderBy: [{ createdAt: "desc" }],
     take: 100,
-    include: { servicio: true, prestadora: true, ciudadano: true },
+    include: {
+      servicio: true,
+      prestadora: true,
+      ciudadano: true,
+      eventos: {
+        where: { leidoEnte: false },
+        select: { tipo: true },
+      },
+    },
   });
 
   return (
@@ -104,13 +117,23 @@ export default async function BandejaPage({
             ))}
           </select>
         </Field>
+        <label className="flex items-center gap-2 px-3 py-2 rounded-lg border border-line-strong bg-paper-2 text-sm text-navy cursor-pointer">
+          <input
+            type="checkbox"
+            name="pendiente"
+            value="1"
+            defaultChecked={soloPendientes}
+            className="w-4 h-4"
+          />
+          🔔 Solo con novedades del vecino
+        </label>
         <button
           type="submit"
           className="px-4 py-2 rounded-lg bg-navy-2 text-white font-semibold text-sm"
         >
           Aplicar
         </button>
-        {(sp.estado || sp.svc || sp.q) && (
+        {(sp.estado || sp.svc || sp.q || soloPendientes) && (
           <Link
             href="/admin/bandeja"
             className="px-4 py-2 rounded-lg border border-line-strong text-sm text-navy"
@@ -136,6 +159,7 @@ export default async function BandejaPage({
                 <th className="text-left font-semibold py-3 px-2">Vecino</th>
                 <th className="text-left font-semibold py-3 px-2">Prestadora</th>
                 <th className="text-left font-semibold py-3 px-2">Estado</th>
+                <th className="text-left font-semibold py-3 px-2">Novedades</th>
                 <th className="text-left font-semibold py-3 px-4">Fecha</th>
               </tr>
             </thead>
@@ -183,6 +207,9 @@ export default async function BandejaPage({
                     <td className="py-2.5 px-2">
                       <EstadoBadge estado={r.estado} size="sm" />
                     </td>
+                    <td className="py-2.5 px-2">
+                      <NovedadesBadge tipos={r.eventos.map((e) => e.tipo)} />
+                    </td>
                     <td className="py-2.5 px-4 text-muted whitespace-nowrap">
                       {fecha}
                     </td>
@@ -193,6 +220,45 @@ export default async function BandejaPage({
           </table>
         )}
       </div>
+    </div>
+  );
+}
+
+// Íconos de las novedades del vecino sin leer por el Ente, agrupados por
+// tipo de evento (ver `leidoEnte` en ReclamoEvento).
+function NovedadesBadge({ tipos }: { tipos: string[] }) {
+  if (tipos.length === 0) return <span className="text-muted text-xs">—</span>;
+  const tieneChat = tipos.includes("COMENTARIO");
+  const tieneAdjunto = tipos.includes("ADJUNTO");
+  const tieneOtro = tipos.some(
+    (t) => t !== "COMENTARIO" && t !== "ADJUNTO",
+  );
+  return (
+    <div className="flex items-center gap-1">
+      {tieneChat && (
+        <span
+          title="Chat sin leer del vecino"
+          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-svc-red/15 text-svc-red text-[11px] font-bold"
+        >
+          💬
+        </span>
+      )}
+      {tieneAdjunto && (
+        <span
+          title="Documentación agregada sin ver"
+          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-svc-orange/15 text-svc-orange text-[11px] font-bold"
+        >
+          📎
+        </span>
+      )}
+      {tieneOtro && (
+        <span
+          title="Otra novedad del vecino (avisó que se solucionó, pidió algo, etc.)"
+          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-svc-blue/15 text-svc-blue text-[11px] font-bold"
+        >
+          🔔
+        </span>
+      )}
     </div>
   );
 }

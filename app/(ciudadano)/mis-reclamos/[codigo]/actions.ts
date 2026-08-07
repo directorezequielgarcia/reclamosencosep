@@ -30,11 +30,13 @@ export async function habilitarRecursoDirecto(formData: FormData) {
         autorId: session.user.id,
         mensaje:
           "El vecino habilitó el recurso directo a la prestadora. La prestadora tiene 5 días hábiles para responder por escrito.",
+        leidoEnte: false,
       },
     }),
   ]);
   revalidatePath(`/mis-reclamos/${codigo}`);
   revalidatePath(`/admin/reclamo/${r.id}`);
+  revalidatePath(`/admin/bandeja`);
 }
 
 export async function solicitarCopiaExpediente(formData: FormData) {
@@ -62,11 +64,13 @@ export async function solicitarCopiaExpediente(formData: FormData) {
         autorId: session.user.id,
         mensaje:
           "El vecino solicitó copia digital del expediente administrativo agotado.",
+        leidoEnte: false,
       },
     }),
   ]);
   revalidatePath(`/mis-reclamos/${codigo}`);
   revalidatePath(`/admin/reclamo/${r.id}`);
+  revalidatePath(`/admin/bandeja`);
 }
 
 const EncuestaSchema = z.object({
@@ -129,10 +133,12 @@ export async function responderReclamo(formData: FormData) {
       autorId: session.user.id,
       mensaje: parsed.data.mensaje,
       visibleVecino: true,
+      leidoEnte: false,
     },
   });
   revalidatePath(`/mis-reclamos/${parsed.data.codigo}`);
   revalidatePath(`/admin/reclamo/${r.id}`);
+  revalidatePath(`/admin/bandeja`);
 }
 
 // El vecino agrega documentación (fotos / imágenes de facturas) en cualquier
@@ -175,11 +181,13 @@ export async function agregarDocumental(formData: FormData) {
         autorId: session.user.id,
         mensaje: `Agregaste ${guardados} archivo${guardados === 1 ? "" : "s"} de documentación.`,
         visibleVecino: true,
+        leidoEnte: false,
       },
     });
   }
   revalidatePath(`/mis-reclamos/${codigo}`);
   revalidatePath(`/admin/reclamo/${r.id}`);
+  revalidatePath(`/admin/bandeja`);
 }
 
 // El vecino puede borrar su reclamo SOLO mientras no fue revisado por el Ente.
@@ -221,9 +229,11 @@ export async function marcarSolucionado(formData: FormData) {
         autorId: session.user.id,
         mensaje: "El vecino informó que su reclamo se solucionó.",
         visibleVecino: true,
+        leidoEnte: false,
       },
     }),
   ]);
   revalidatePath(`/mis-reclamos/${codigo}`);
   revalidatePath(`/admin/reclamo/${r.id}`);
+  revalidatePath(`/admin/bandeja`);
 }
