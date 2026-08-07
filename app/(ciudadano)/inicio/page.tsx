@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { SvcIcon } from "@/components/servicios/SvcIcon";
 import { SVC_META, SVC_ORDER } from "@/lib/servicios";
 import { ZorritoTour } from "@/components/tour/ZorritoTour";
+import { RedesSociales } from "@/components/ui/RedesSociales";
 
 export const metadata = { title: "Inicio · Portal de Reclamos" };
 
@@ -135,6 +136,24 @@ export default async function InicioPage() {
       </section>
 
       <Link
+        href="/encuesta"
+        className="flex items-start gap-3 rounded-2xl border border-svc-yellow/50 bg-svc-yellow/10 p-3 hover:bg-svc-yellow/20 transition"
+      >
+        <span className="text-xl leading-none" aria-hidden>
+          ⭐
+        </span>
+        <span className="flex-1 min-w-0">
+          <span className="block text-sm font-bold text-navy">
+            Completá la encuesta de satisfacción
+          </span>
+          <span className="block text-xs text-muted leading-snug mt-0.5">
+            Calificá cómo te parece que están los servicios públicos.
+          </span>
+        </span>
+        <span className="text-svc-yellow text-lg shrink-0">›</span>
+      </Link>
+
+      <Link
         href="/"
         className="flex items-center gap-3 rounded-2xl border border-[#7e57c2]/40 bg-[#7e57c2]/5 p-3 hover:bg-[#7e57c2]/10 transition"
       >
@@ -156,6 +175,11 @@ export default async function InicioPage() {
         </span>
         <span className="text-[#7e57c2] text-lg shrink-0">›</span>
       </Link>
+
+      <div className="w-full flex items-center justify-center gap-2 text-sm text-navy">
+        <span className="font-semibold">Seguinos en nuestras redes:</span>
+        <RedesSociales />
+      </div>
 
       <div className="flex-1" />
 
