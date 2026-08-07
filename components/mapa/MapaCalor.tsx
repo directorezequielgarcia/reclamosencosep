@@ -10,7 +10,18 @@ export type PuntoCalor = {
   servicio: "AGUA" | "ENERGIA" | "RESIDUOS" | "TRANSPORTE";
   estado: string;
   codigo: string;
+  titulo: string;
 };
+
+// El título lo escribe el vecino: nunca insertarlo crudo en el HTML del popup.
+function escapeHtml(s: string) {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
 
 type Props = {
   puntos: PuntoCalor[];
@@ -136,9 +147,10 @@ export function MapaCalor({
           .marker([p.lat, p.lng], { icon })
           .addTo(map)
           .bindPopup(
-            `<div style="font-family: Inter, system-ui, sans-serif; font-size: 12px;">
+            `<div style="font-family: Inter, system-ui, sans-serif; font-size: 12px; max-width: 200px;">
               <strong>#${p.codigo}</strong><br/>
               ${SVC_LABEL[p.servicio] ?? p.servicio}<br/>
+              <span style="color:#1d3550">${escapeHtml(p.titulo)}</span><br/>
               <span style="color:#6c7a8c">${p.estado.toLowerCase().replace(/_/g, " ")}</span>
             </div>`,
           );

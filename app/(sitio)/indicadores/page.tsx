@@ -1,10 +1,11 @@
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { SeccionHeader } from "@/components/ui/SeccionHeader";
 import { SVC_META, SVC_ORDER, svcFromKind } from "@/lib/servicios";
 import { ESTADO_META, TONE_CLASS } from "@/lib/admin";
 import { MapaCalor, type PuntoCalor } from "@/components/mapa/MapaCalor";
 import { MigajasSitio, VolverInicio } from "@/components/ui/MigajasSitio";
-import type { ReclamoEstado } from "@prisma/client";
+import type { Prisma, ReclamoEstado } from "@prisma/client";
 
 export const metadata = { title: "Indicadores · ENCOSEP" };
 export const revalidate = 60; // se rearma cada minuto en prod (datos casi en vivo)
@@ -16,14 +17,37 @@ const SVC_COLORS_HEX: Record<string, string> = {
   transporte: "#7e57c2",
 };
 
-export default async function IndicadoresPage() {
+const fechaISO = (d: Date) => d.toISOString().slice(0, 10);
+
+type SP = {
+  desde?: string;
+  hasta?: string;
+  svc?: string;
+};
+
+export default async function IndicadoresPage({
+  searchParams,
+}: {
+  searchParams: Promise<SP>;
+}) {
+  const sp = await searchParams;
   const ahora = new Date();
   const anoActual = ahora.getFullYear();
-  const desdeAno = new Date(anoActual, 0, 1);
+
+  // Filtros: por defecto, año en curso y todos los servicios.
+  const desde = sp.desde ? new Date(`${sp.desde}T00:00:00`) : new Date(anoActual, 0, 1);
+  const hasta = sp.hasta ? new Date(`${sp.hasta}T23:59:59`) : ahora;
+  const svcFiltro = sp.svc && sp.svc in SVC_META ? SVC_META[sp.svc as keyof typeof SVC_META].kind : null;
+  const hayFiltros = Boolean(sp.desde || sp.hasta || sp.svc);
+
+  const whereFiltro: Prisma.ReclamoWhereInput = {
+    createdAt: { gte: desde, lte: hasta },
+    ...(svcFiltro ? { servicio: { kind: svcFiltro } } : {}),
+  };
 
   const [
     total,
-    totalAno,
+    totalPeriodo,
     porEstado,
     porServicio,
     porPrestadora,
@@ -34,19 +58,20 @@ export default async function IndicadoresPage() {
     encuestaReclamos,
   ] = await Promise.all([
     prisma.reclamo.count(),
-    prisma.reclamo.count({ where: { createdAt: { gte: desdeAno } } }),
-    prisma.reclamo.groupBy({ by: ["estado"], _count: { _all: true } }),
+    prisma.reclamo.count({ where: whereFiltro }),
+    prisma.reclamo.groupBy({ by: ["estado"], where: whereFiltro, _count: { _all: true } }),
     prisma.reclamo.groupBy({
       by: ["servicioId"],
-      where: { createdAt: { gte: desdeAno } },
+      where: whereFiltro,
       _count: { _all: true },
     }),
     prisma.reclamo.groupBy({
       by: ["prestadoraId", "estado"],
       _count: { _all: true },
-      where: { prestadoraId: { not: null } },
+      where: { ...whereFiltro, prestadoraId: { not: null } },
     }),
     prisma.encuestaServicios.aggregate({
+      where: { createdAt: { gte: desde, lte: hasta } },
       _avg: {
         puntajeAgua: true,
         puntajeEnergia: true,
@@ -56,13 +81,14 @@ export default async function IndicadoresPage() {
       _count: { _all: true },
     }),
     prisma.reclamo.findMany({
-      where: { cerradoEn: { not: null } },
+      where: { ...whereFiltro, cerradoEn: { not: null } },
       select: { createdAt: true, cerradoEn: true },
     }),
     prisma.reclamo.findMany({
-      where: { lat: { not: null }, lng: { not: null } },
+      where: { ...whereFiltro, lat: { not: null }, lng: { not: null } },
       select: {
         codigo: true,
+        titulo: true,
         lat: true,
         lng: true,
         estado: true,
@@ -71,6 +97,7 @@ export default async function IndicadoresPage() {
       take: 5000,
     }),
     prisma.reclamo.findMany({
+      where: whereFiltro,
       select: {
         barrio: true,
         titulo: true,
@@ -82,7 +109,7 @@ export default async function IndicadoresPage() {
       },
     }),
     prisma.reclamo.aggregate({
-      where: { encuestaEn: { not: null } },
+      where: { ...whereFiltro, encuestaEn: { not: null } },
       _avg: { puntajeEnte: true, puntajePrestadora: true },
       _count: { _all: true },
     }),
@@ -95,6 +122,7 @@ export default async function IndicadoresPage() {
       lng: r.lng as number,
       estado: r.estado,
       codigo: r.codigo,
+      titulo: r.titulo,
       servicio: r.servicio.kind as PuntoCalor["servicio"],
     }));
 
@@ -185,7 +213,7 @@ export default async function IndicadoresPage() {
   const servicios = await prisma.servicio.findMany();
   const prestadoras = await prisma.prestadora.findMany();
 
-  const totalAnoNonZero = Math.max(totalAno, 1);
+  const totalPeriodoNonZero = Math.max(totalPeriodo, 1);
   const distribServicios = SVC_ORDER.map((k) => {
     const meta = SVC_META[k];
     const svc = servicios.find((s) => s.kind === meta.kind);
@@ -195,7 +223,7 @@ export default async function IndicadoresPage() {
       key: k,
       label: meta.short,
       total: n,
-      pct: Math.round((n / totalAnoNonZero) * 100),
+      pct: Math.round((n / totalPeriodoNonZero) * 100),
       color: SVC_COLORS_HEX[k],
     };
   }).sort((a, b) => b.total - a.total);
@@ -243,18 +271,73 @@ export default async function IndicadoresPage() {
 
       <main className="max-w-6xl mx-auto px-6 py-10 flex flex-col gap-8">
         <MigajasSitio items={[{ label: "Indicadores" }]} />
+
+        {/* FILTROS — por rango de fechas y servicio, para armar capturas de informes */}
+        <form
+          method="GET"
+          className="flex flex-wrap gap-2 items-end p-3 rounded-xl border border-line bg-paper"
+        >
+          <Field label="Desde">
+            <input
+              type="date"
+              name="desde"
+              defaultValue={sp.desde ?? fechaISO(desde)}
+              className="px-3 py-2 rounded-lg border border-line-strong bg-paper text-sm text-navy focus:outline-none focus:border-navy-2"
+            />
+          </Field>
+          <Field label="Hasta">
+            <input
+              type="date"
+              name="hasta"
+              defaultValue={sp.hasta ?? fechaISO(hasta)}
+              className="px-3 py-2 rounded-lg border border-line-strong bg-paper text-sm text-navy focus:outline-none focus:border-navy-2"
+            />
+          </Field>
+          <Field label="Servicio">
+            <select
+              name="svc"
+              defaultValue={sp.svc ?? ""}
+              className="px-3 py-2 rounded-lg border border-line-strong bg-paper text-sm text-navy focus:outline-none focus:border-navy-2"
+            >
+              <option value="">Todos</option>
+              {SVC_ORDER.map((k) => (
+                <option key={k} value={k}>
+                  {SVC_META[k].short}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <button
+            type="submit"
+            className="px-4 py-2 rounded-lg bg-navy-2 text-white font-semibold text-sm"
+          >
+            Filtrar
+          </button>
+          {hayFiltros && (
+            <Link
+              href="/indicadores"
+              className="px-4 py-2 rounded-lg border border-line-strong text-sm text-navy"
+            >
+              Limpiar filtros
+            </Link>
+          )}
+        </form>
+
         {/* CIFRAS DE INTERÉS — estilo de la referencia */}
         <section className="rounded-3xl overflow-hidden shadow-xl">
           <div className="bg-gradient-to-br from-svc-red via-[#9b2b2e] to-navy text-white p-8 md:p-10">
             <div className="text-[11px] font-bold tracking-[0.2em] uppercase opacity-80">
-              Reclamos año {anoActual}
+              {fechaISO(desde) === fechaISO(new Date(anoActual, 0, 1)) && !sp.hasta
+                ? `Reclamos año ${anoActual}`
+                : `Reclamos del ${desde.toLocaleDateString("es-AR")} al ${hasta.toLocaleDateString("es-AR")}`}
+              {svcFiltro ? ` · ${SVC_META[sp.svc as keyof typeof SVC_META].short}` : ""}
             </div>
             <h2 className="text-3xl md:text-4xl font-extrabold mt-1">
               Cifras de interés
             </h2>
             <div className="text-sm opacity-80 mt-1">
-              {totalAno} reclamo{totalAno === 1 ? "" : "s"} registrado
-              {totalAno === 1 ? "" : "s"} en lo que va del año.
+              {totalPeriodo} reclamo{totalPeriodo === 1 ? "" : "s"} registrado
+              {totalPeriodo === 1 ? "" : "s"} en el período seleccionado.
             </div>
 
             <div className="mt-8 flex flex-col gap-5">
@@ -284,7 +367,7 @@ export default async function IndicadoresPage() {
         {/* KPIs GENERALES */}
         <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <Kpi label="Total histórico" value={total} />
-          <Kpi label={`Año ${anoActual}`} value={totalAno} tone="info" />
+          <Kpi label="En el período" value={totalPeriodo} tone="info" />
           <Kpi label="Resueltos" value={resueltos} tone="success" />
           <Kpi
             label="Tiempo medio"
@@ -356,7 +439,7 @@ export default async function IndicadoresPage() {
           <div className="flex flex-col gap-2">
             {(Object.keys(ESTADO_META) as ReclamoEstado[]).map((e) => {
               const n = estadoMap.get(e) ?? 0;
-              const pct = total === 0 ? 0 : Math.round((n / total) * 100);
+              const pct = totalPeriodo === 0 ? 0 : Math.round((n / totalPeriodo) * 100);
               const m = ESTADO_META[e];
               return (
                 <div key={e} className="grid grid-cols-[180px_1fr_60px] items-center gap-3">
@@ -805,6 +888,23 @@ function CalidadCard({ label, pct }: { label: string; pct: number }) {
         />
       </div>
     </div>
+  );
+}
+
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="flex flex-col gap-1">
+      <span className="text-[10px] uppercase tracking-wider text-muted font-semibold">
+        {label}
+      </span>
+      {children}
+    </label>
   );
 }
 
