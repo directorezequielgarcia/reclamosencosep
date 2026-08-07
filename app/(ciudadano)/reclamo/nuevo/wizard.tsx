@@ -687,13 +687,23 @@ function PasoDetalle({
             targetId: "reclamo-campo-situacion",
             pose: POSE_POR_SVC[svc],
             texto:
-              "Elegí la opción que más se parece a lo que te pasó. Si no encaja ninguna, escribila corta con tus palabras (hasta 120 caracteres).",
+              "Elegí la opción que más se parece a lo que te pasó, o escribila corta con tus palabras (hasta 120 caracteres). Es el título del reclamo — el relato completo va más abajo, en \"Contanos más detalles\".",
           },
+          ...(svc === "transporte"
+            ? [
+                {
+                  targetId: "reclamo-campo-situacion",
+                  pose: POSE_POR_SVC[svc],
+                  texto:
+                    "¿Es por el cambio de Patagonia a Sol Bus (te movieron la parada, no hay cartel, etc.)? Elegí \"Cambio de parada o lugar de levantamiento (Sol Bus)\": ahí te armo un formulario con los campos ya sugeridos, más fácil de completar.",
+                },
+              ]
+            : []),
           {
             targetId: "reclamo-campo-detalles",
             pose: POSE_POR_SVC[svc],
             texto:
-              "Acá contá todo con más detalle: hace cuánto pasa, en qué horario, si afecta a más vecinos. El relato largo va acá, no en Situación.",
+              "Acá contá todo con más detalle: hace cuánto pasa, en qué horario, si afecta a más vecinos. Escribí con tus palabras, sin apuro — tu voz cuenta.",
           },
           {
             targetId: "reclamo-campo-fotos",
