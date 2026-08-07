@@ -6,6 +6,7 @@ import { ZorritoTour } from "@/components/tour/ZorritoTour";
 import { ZorritoNoticias } from "@/components/tour/ZorritoNoticia";
 import { POSE_POR_SERVICIO_KIND } from "@/components/tour/zorrito-poses";
 import { TIPO_BOLETIN_META } from "@/lib/boletines";
+import type { ReclamoEstado } from "@prisma/client";
 
 export const metadata = {
   title: "EnCoSeP · Ente de Control de Servicios Públicos · Comodoro Rivadavia",
@@ -45,7 +46,7 @@ export default async function HomeInstitucional() {
   const [
     encuestaAgg,
     totalReclamos,
-    reclamosResueltos,
+    reclamosPorEstado,
     totalPrestadoras,
     audienciasProximas,
     ultimosBoletines,
@@ -60,21 +61,28 @@ export default async function HomeInstitucional() {
       },
     }),
     prisma.reclamo.count(),
-    prisma.reclamo.count({ where: { estado: "RESUELTO" } }),
+    prisma.reclamo.groupBy({ by: ["estado"], _count: { _all: true } }),
     prisma.prestadora.count({ where: { activa: true } }),
     prisma.audienciaPublica.count({ where: { fecha: { gte: ahora } } }),
     prisma.boletin.findMany({
       where: { publicado: true },
       orderBy: { fechaPublicacion: "desc" },
-      take: 3,
+      take: 4,
     }),
   ]);
 
   const totalRespuestasEncuesta = encuestaAgg._count._all;
-  const pctResueltos =
+  const estadoCount = new Map(
+    reclamosPorEstado.map((g) => [g.estado, g._count._all]),
+  );
+  const pctPorEstado = (estado: ReclamoEstado) =>
     totalReclamos > 0
-      ? Math.round((reclamosResueltos / totalReclamos) * 100)
+      ? Math.round(((estadoCount.get(estado) ?? 0) / totalReclamos) * 100)
       : 0;
+  const pctResueltos = pctPorEstado("RESUELTO");
+  const pctEnRevision = pctPorEstado("EN_REVISION");
+  const pctDerivados = pctPorEstado("DERIVADO");
+  const pctRechazados = pctPorEstado("RECHAZADO");
   const promedioServicio = (n: number | null) =>
     n === null ? null : Math.round(n * 10) / 10;
   const puntajes = {
@@ -196,6 +204,25 @@ export default async function HomeInstitucional() {
           >
             Conocé nuestras acciones ›
           </Link>
+        </div>
+      </section>
+
+      {/* ===================== ÁREAS FISCALIZADAS ===================== */}
+      <section id="areas-fiscalizadas-home" className="bg-paper py-12 px-6 border-b border-line">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-8">
+            <div className="text-xs font-bold tracking-[0.18em] uppercase text-muted">
+              Áreas bajo control del Ente
+            </div>
+            <h2 className="text-2xl md:text-3xl font-extrabold text-navy mt-2">
+              Entrá al área y conocé qué fiscalizamos
+            </h2>
+            <p className="text-sm text-muted mt-2 max-w-xl mx-auto">
+              Cada área tiene su normativa, su prestadora controlada y la lista
+              de situaciones que podés reclamar.
+            </p>
+          </div>
+          <BotoneraServicios />
         </div>
       </section>
 
@@ -346,25 +373,6 @@ export default async function HomeInstitucional() {
         </div>
       </section>
 
-      {/* ===================== ÁREAS FISCALIZADAS ===================== */}
-      <section id="areas-fiscalizadas-home" className="bg-paper py-12 px-6 border-b border-line">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-8">
-            <div className="text-xs font-bold tracking-[0.18em] uppercase text-muted">
-              Áreas bajo control del Ente
-            </div>
-            <h2 className="text-2xl md:text-3xl font-extrabold text-navy mt-2">
-              Entrá al área y conocé qué fiscalizamos
-            </h2>
-            <p className="text-sm text-muted mt-2 max-w-xl mx-auto">
-              Cada área tiene su normativa, su prestadora controlada y la lista
-              de situaciones que podés reclamar.
-            </p>
-          </div>
-          <BotoneraServicios />
-        </div>
-      </section>
-
       {/* ===================== NOVEDADES ===================== */}
       {/* Vidriera fija de las últimas publicaciones del Ente (tabla Boletin,
           cargadas desde /admin/boletines). Si no hay ninguna publicada la
@@ -397,7 +405,7 @@ export default async function HomeInstitucional() {
               </Link>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-4">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {ultimosBoletines.map((b) => {
                 const m = TIPO_BOLETIN_META[b.tipo];
                 return (
@@ -518,10 +526,18 @@ export default async function HomeInstitucional() {
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-4xl mx-auto">
             <Kpi label="Reclamos registrados" valor={totalReclamos} />
+            <Kpi label="En revisión" valor={`${pctEnRevision}%`} />
+            <Kpi label="Derivados a prestadora" valor={`${pctDerivados}%`} />
             <Kpi label="Reclamos resueltos" valor={`${pctResueltos}%`} />
+            <Kpi label="Reclamos rechazados" valor={`${pctRechazados}%`} />
             <Kpi label="Prestadoras controladas" valor={totalPrestadoras} />
             <Kpi label="Audiencias programadas" valor={audienciasProximas} />
           </div>
+          <p className="text-[11px] text-muted text-center mt-3 max-w-md mx-auto leading-relaxed">
+            El resto de los reclamos está recién recibido o en proceso de
+            resolución con la prestadora. Ver el detalle completo por estado
+            en el tablero de indicadores.
+          </p>
 
           <div className="text-center mt-7">
             <Link
@@ -625,16 +641,16 @@ export default async function HomeInstitucional() {
               "Si tenés un problema con un servicio público, tocá acá para hacer tu reclamo.",
           },
           {
-            targetId: "quien-sos-hoy",
-            pose: "parado",
-            texto:
-              "Elegí tu perfil: vecino, prestadora, o si sos parte del Ente, entrá con tu usuario.",
-          },
-          {
             targetId: "areas-fiscalizadas-home",
             pose: "colectivo",
             texto:
               "Acá entrás a cada área que controlamos: Residuos, Electricidad, Agua o Transporte.",
+          },
+          {
+            targetId: "quien-sos-hoy",
+            pose: "parado",
+            texto:
+              "Elegí tu perfil: vecino, prestadora, o si sos parte del Ente, entrá con tu usuario.",
           },
           {
             pose: "agachado",
