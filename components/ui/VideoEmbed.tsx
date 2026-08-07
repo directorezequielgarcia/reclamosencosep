@@ -1,10 +1,23 @@
-/** Reproductor embebido de un video (YouTube, Vimeo o archivo directo mp4/webm/ogg). */
-export function VideoEmbed({ url, titulo = "Video" }: { url: string; titulo?: string }) {
-  const ytMatch =
+/** Extrae el ID de un link de YouTube (youtu.be, watch?v=, embed/), o null. */
+export function youtubeId(url: string): string | null {
+  const m =
     url.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=)([A-Za-z0-9_-]{6,})/) ||
     url.match(/youtube\.com\/embed\/([A-Za-z0-9_-]{6,})/);
+  return m ? m[1] : null;
+}
+
+/** Miniatura pública de YouTube para usar como "foto" cuando no hay una
+ *  subida a mano — no requiere API key, hqdefault existe siempre. */
+export function youtubeThumbnail(url: string): string | null {
+  const id = youtubeId(url);
+  return id ? `https://img.youtube.com/vi/${id}/hqdefault.jpg` : null;
+}
+
+/** Reproductor embebido de un video (YouTube, Vimeo o archivo directo mp4/webm/ogg). */
+export function VideoEmbed({ url, titulo = "Video" }: { url: string; titulo?: string }) {
+  const ytMatch = youtubeId(url);
   if (ytMatch) {
-    const id = ytMatch[1];
+    const id = ytMatch;
     return (
       <div className="relative w-full aspect-video rounded-xl overflow-hidden border border-line bg-black mb-3">
         <iframe

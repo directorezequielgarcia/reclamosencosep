@@ -6,6 +6,7 @@ import { ZorritoTour } from "@/components/tour/ZorritoTour";
 import { ZorritoNoticias } from "@/components/tour/ZorritoNoticia";
 import { POSE_POR_SERVICIO_KIND } from "@/components/tour/zorrito-poses";
 import { TIPO_BOLETIN_META } from "@/lib/boletines";
+import { youtubeThumbnail } from "@/components/ui/VideoEmbed";
 import type { ReclamoEstado } from "@prisma/client";
 
 export const metadata = {
@@ -414,14 +415,23 @@ export default async function HomeInstitucional() {
                     href="/boletines"
                     className="rounded-2xl border border-line bg-paper-2 overflow-hidden flex flex-col gap-2 hover:shadow-lg hover:border-line-strong transition"
                   >
-                    {b.fotoUrl && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={b.fotoUrl}
-                        alt=""
-                        className="w-full h-36 object-cover"
-                      />
-                    )}
+                    {(() => {
+                      const imagen = b.fotoUrl || (b.videoUrl && youtubeThumbnail(b.videoUrl));
+                      if (!imagen) return null;
+                      return (
+                        <div className="relative w-full h-36">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={imagen} alt="" className="w-full h-full object-cover" />
+                          {!b.fotoUrl && b.videoUrl && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                              <span className="w-9 h-9 rounded-full bg-white/90 flex items-center justify-center text-navy text-sm shadow">
+                                ▶
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                     <div className="flex items-center gap-2 text-[11px] px-5 pt-5">
                       <span
                         className="uppercase tracking-wider font-bold px-2 py-0.5 rounded-full text-white"
