@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { SvcIcon } from "@/components/servicios/SvcIcon";
 import { ZorritoTour } from "@/components/tour/ZorritoTour";
 import { POSE_POR_SVC } from "@/components/tour/zorrito-poses";
+import { BuscadorBarrio } from "@/components/ui/BuscadorBarrio";
 import {
   SVC_META,
   SVC_ORDER,
@@ -381,12 +382,9 @@ function PasoUbicacion({
         <span className="text-xs font-semibold text-navy">
           Barrio <span className="text-muted font-normal">(opcional)</span>
         </span>
-        <input
-          type="text"
+        <BuscadorBarrio
           value={state.barrio}
-          onChange={(e) => setField("barrio", e.target.value)}
-          placeholder="Pueyrredón"
-          className="w-full px-3 py-3 rounded-xl border border-line-strong bg-paper text-navy text-base focus:outline-none focus:border-navy-2 focus:ring-2 focus:ring-navy-2/20"
+          onChange={(v) => setField("barrio", v)}
         />
       </label>
 
