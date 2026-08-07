@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { SvcIcon } from "@/components/servicios/SvcIcon";
 import { ZorritoTour } from "@/components/tour/ZorritoTour";
@@ -16,6 +16,22 @@ import {
 } from "@/lib/servicios";
 
 type Paso = "servicio" | "ubicacion" | "detalle" | "revision";
+
+// Misma clave que usa ControlForm (Calculadora → Controlá tu factura) para
+// dejar la factura ya leída + el resumen del control antes de mandar a
+// hacer un reclamo/consulta (sobrevive el paso por /ingresar si hacía
+// falta iniciar sesión).
+const CLAVE_CONSULTA_CONTROL = "encosep_consulta_control";
+
+async function dataUrlAArchivo(
+  dataUrl: string,
+  nombre: string,
+  tipo: string,
+): Promise<File> {
+  const res = await fetch(dataUrl);
+  const blob = await res.blob();
+  return new File([blob], nombre || "factura", { type: tipo || blob.type });
+}
 
 type State = {
   svc?: SvcKey;
@@ -99,6 +115,57 @@ export function WizardReclamo({ svcInicial }: { svcInicial?: SvcKey }) {
   function setField<K extends keyof State>(k: K, v: State[K]) {
     setState((s) => ({ ...s, [k]: v }));
   }
+
+  // Si venimos de "Controlá tu factura" con "Quiero consultar sobre el
+  // control", precargamos el título, el resumen del análisis y la factura
+  // ya leída — así la persona no tiene que volver a subir nada.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("consulta") !== "control") return;
+
+    const guardado = sessionStorage.getItem(CLAVE_CONSULTA_CONTROL);
+    sessionStorage.removeItem(CLAVE_CONSULTA_CONTROL);
+    if (!guardado) return;
+
+    (async () => {
+      try {
+        const datos = JSON.parse(guardado) as {
+          resumen?: string;
+          svc?: string;
+          fotoDataUrl?: string;
+          fotoNombre?: string;
+          fotoTipo?: string;
+        };
+        const fotos: File[] = [];
+        if (datos.fotoDataUrl) {
+          fotos.push(
+            await dataUrlAArchivo(
+              datos.fotoDataUrl,
+              datos.fotoNombre ?? "factura",
+              datos.fotoTipo ?? "",
+            ),
+          );
+        }
+        const svc: SvcKey | undefined =
+          datos.svc === "agua" || datos.svc === "energia" ? datos.svc : undefined;
+        setState((s) => ({
+          ...s,
+          svc: svc ?? s.svc,
+          titulo: "Consulta sobre el control de mi factura",
+          descripcion: datos.resumen ?? s.descripcion,
+          fotos: fotos.length ? fotos : s.fotos,
+        }));
+        // Ya tenemos servicio + título + descripción + foto: saltamos
+        // directo a confirmar la ubicación en vez de pedirle a la persona
+        // que vuelva a elegir servicio o repita el detalle.
+        if (svc) setPaso("ubicacion");
+      } catch {
+        // Si algo falla al reconstruir la factura, seguimos con el
+        // formulario vacío — no bloqueamos la carga del reclamo por esto.
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function elegirServicio(svc: SvcKey) {
     setField("svc", svc);

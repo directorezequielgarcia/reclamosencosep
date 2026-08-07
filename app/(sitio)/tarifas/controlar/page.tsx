@@ -3,6 +3,7 @@ import { SeccionHeader } from "@/components/ui/SeccionHeader";
 import { MigajasSitio, VolverInicio } from "@/components/ui/MigajasSitio";
 import { ControlForm } from "./ControlForm";
 import { ZorritoTour } from "@/components/tour/ZorritoTour";
+import { auth } from "@/lib/auth";
 
 export const metadata = {
   title: "Controlá tu factura · Calculadora ENCOSEP",
@@ -12,7 +13,9 @@ export const metadata = {
 
 export const dynamic = "force-dynamic";
 
-export default function ControlarPage() {
+export default async function ControlarPage() {
+  const session = await auth();
+  const estaLogueado = !!session && session.user.rol === "CIUDADANO";
   return (
     <>
       <SeccionHeader
@@ -49,7 +52,7 @@ export default function ControlarPage() {
             .
           </div>
         </div>
-        <ControlForm />
+        <ControlForm estaLogueado={estaLogueado} />
 
         <VolverInicio
           volverA={{ label: "Volver a la Calculadora", href: "/tarifas" }}

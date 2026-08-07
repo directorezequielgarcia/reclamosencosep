@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useActionState, useState, startTransition } from "react";
 import { controlarFactura, type ControlState } from "./actions";
 import { leerDocumento, type PasoLectura } from "@/lib/leer-documento";
@@ -11,6 +11,68 @@ import { abrirComprobante, donutComprobanteHTML } from "@/lib/comprobante";
 
 const inicial: ControlState = { ok: false };
 
+// Clave de sessionStorage donde se deja la factura + el análisis para que
+// el wizard de "nuevo reclamo" los recupere sin pedirle a la persona que
+// vuelva a subir el archivo, incluso si de por medio tiene que iniciar
+// sesión (sessionStorage sobrevive la navegación por /ingresar).
+const CLAVE_CONSULTA_CONTROL = "encosep_consulta_control";
+
+function archivoADataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// Campos de la factura que pertenecen a cada servicio, para adivinar sobre
+// cuál es la consulta a partir de qué conceptos quedaron marcados para
+// revisar (si no hay ninguno marcado, o hay de los dos, default a "agua").
+const CAMPOS_ENERGIA = new Set(["cargoFijo", "cargoVariable", "compra", "alumbrado"]);
+const CAMPOS_AGUA = new Set(["agua", "cloacas"]);
+
+function inferirServicio(state: ControlState): "agua" | "energia" {
+  const conAlerta = (state.filas ?? []).filter((f) => f.alerta && f.campo);
+  let energia = 0;
+  let agua = 0;
+  for (const f of conAlerta) {
+    if (f.campo && CAMPOS_ENERGIA.has(f.campo)) energia++;
+    if (f.campo && CAMPOS_AGUA.has(f.campo)) agua++;
+  }
+  return energia > agua ? "energia" : "agua";
+}
+
+function construirResumenControl(state: ControlState): string {
+  const e = state.extraida;
+  const filas = state.filas ?? [];
+  const conAlerta = filas.filter((f) => f.alerta);
+  const difTotal =
+    state.totalFacturado != null && state.totalCuadro
+      ? (state.totalFacturado - state.totalCuadro) / state.totalCuadro
+      : null;
+
+  const partes: string[] = ["Control automático de mi factura de la SCPL:"];
+  if (e?.periodo) partes.push(`Período: ${e.periodo}.`);
+  if (state.totalFacturado != null)
+    partes.push(`Total facturado: ${pesos(state.totalFacturado)}.`);
+  if (state.totalCuadro != null)
+    partes.push(`Según el cuadro vigente: ${pesos(state.totalCuadro)}.`);
+  if (difTotal != null)
+    partes.push(
+      `Diferencia: ${difTotal >= 0 ? "+" : ""}${(difTotal * 100).toFixed(1)}%.`,
+    );
+  if (conAlerta.length) {
+    partes.push(
+      `Conceptos marcados para revisar: ${conAlerta.map((f) => f.concepto).join(", ")}.`,
+    );
+  }
+  partes.push(
+    "Quisiera que revisen esto y me digan si corresponde hacer un reclamo formal.",
+  );
+  return partes.join(" ");
+}
+
 function mensajePaso(paso: PasoLectura | null): string | null {
   if (!paso) return null;
   if (paso.paso === "leyendo-pdf") return "Leyendo el PDF…";
@@ -19,14 +81,17 @@ function mensajePaso(paso: PasoLectura | null): string | null {
   return `Leyendo con reconocimiento óptico… ${Math.round(paso.progreso * 100)}%`;
 }
 
-export function ControlForm() {
+export function ControlForm({ estaLogueado }: { estaLogueado: boolean }) {
+  const router = useRouter();
   const [state, action, pending] = useActionState(controlarFactura, inicial);
+  const [archivo, setArchivo] = useState<File | null>(null);
   const [nombreArchivo, setNombreArchivo] = useState("");
   const [ocrTexto, setOcrTexto] = useState("");
   const [ocrEstado, setOcrEstado] = useState<"idle" | "leyendo" | "listo" | "error">(
     "idle",
   );
   const [paso, setPaso] = useState<PasoLectura | null>(null);
+  const [enviandoConsulta, setEnviandoConsulta] = useState(false);
   // Correcciones a mano acumuladas (consumo/agua y montos de conceptos mal
   // leídos por el OCR): se guardan acá, no en los sub-componentes, para que
   // cada "Recalcular" reenvíe TODAS las correcciones ya hechas, no solo la
@@ -34,6 +99,7 @@ export function ControlForm() {
   const [overrides, setOverrides] = useState<Record<string, string>>({});
 
   async function elegirArchivo(file: File) {
+    setArchivo(file);
     setNombreArchivo(file.name);
     setOcrTexto("");
     setOcrEstado("leyendo");
@@ -45,6 +111,34 @@ export function ControlForm() {
       setOcrEstado("listo");
     } catch {
       setOcrEstado("error");
+    }
+  }
+
+  // Deja la factura ya leída + el resumen del control en sessionStorage y
+  // manda a hacer un reclamo/consulta — así la persona no tiene que volver
+  // a subir el archivo, ni siquiera si de paso tiene que iniciar sesión.
+  async function irAConsultar() {
+    setEnviandoConsulta(true);
+    try {
+      const resumen = construirResumenControl(state);
+      const payload: Record<string, string> = {
+        resumen,
+        svc: inferirServicio(state),
+      };
+      if (archivo) {
+        payload.fotoDataUrl = await archivoADataUrl(archivo);
+        payload.fotoNombre = archivo.name;
+        payload.fotoTipo = archivo.type;
+      }
+      sessionStorage.setItem(CLAVE_CONSULTA_CONTROL, JSON.stringify(payload));
+      const destino = "/reclamo/nuevo?consulta=control";
+      router.push(
+        estaLogueado
+          ? destino
+          : `/ingresar?callbackUrl=${encodeURIComponent(destino)}`,
+      );
+    } finally {
+      setEnviandoConsulta(false);
     }
   }
 
@@ -130,7 +224,12 @@ export function ControlForm() {
       ) : null}
 
       {state.ok && state.extraida ? (
-        <Resultado state={state} onRecalcular={enviarConOverrides} />
+        <Resultado
+          state={state}
+          onRecalcular={enviarConOverrides}
+          onConsultar={irAConsultar}
+          consultando={enviandoConsulta}
+        />
       ) : null}
     </div>
   );
@@ -271,9 +370,13 @@ ${state.composicion ? donutComprobanteHTML(state.composicion, "Composición de t
 function Resultado({
   state,
   onRecalcular,
+  onConsultar,
+  consultando,
 }: {
   state: ControlState;
   onRecalcular: (overrides?: Record<string, string>) => void;
+  onConsultar: () => void;
+  consultando: boolean;
 }) {
   const e = state.extraida!;
   const filas = state.filas ?? [];
@@ -429,17 +532,39 @@ function Resultado({
         />
       ) : null}
 
-      <div className="rounded-2xl border border-svc-yellow/50 bg-svc-yellow/10 p-4 text-sm text-navy leading-relaxed">
-        Las diferencias chicas (hasta ~3%) son normales por redondeos. Si ves un
-        concepto marcado para revisar o una diferencia grande,{" "}
-        <Link
-          href="/reclamo/nuevo"
-          className="font-bold underline underline-offset-2 text-svc-red"
-        >
-          hacé un reclamo
-        </Link>{" "}
-        adjuntando tu factura. Este control es orientativo y no reemplaza la
-        liquidación oficial de la prestadora.
+      <div className="rounded-2xl border-2 border-svc-yellow/60 bg-svc-yellow/10 p-4 text-sm text-navy leading-relaxed flex flex-col gap-2">
+        <div className="font-bold">
+          ⚠️ Antes de reclamar: fijate si leímos bien tu factura
+        </div>
+        <p>
+          Revisá los <b>metros cuadrados</b>, el <b>agua estimada</b> y el{" "}
+          <b>consumo en kWh</b> de arriba. Si algo está mal leído, podés{" "}
+          <b>corregirlo vos</b> —en la fila marcada «⚠ revisar» o completando
+          los datos a mano— y volver a controlar antes de seguir.
+        </p>
+      </div>
+
+      <div className="rounded-2xl border border-svc-yellow/50 bg-svc-yellow/10 p-4 text-sm text-navy leading-relaxed flex flex-col gap-3">
+        <p>
+          Las diferencias chicas (hasta ~3%) son normales por redondeos. Este
+          control es orientativo y no reemplaza la liquidación oficial de la
+          prestadora.
+        </p>
+        <div>
+          <button
+            type="button"
+            onClick={onConsultar}
+            disabled={consultando}
+            className="inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-svc-red text-white font-bold text-sm shadow-md shadow-svc-red/30 hover:opacity-90 disabled:opacity-60"
+          >
+            {consultando ? "Preparando…" : "Quiero consultar sobre el control →"}
+          </button>
+          <p className="text-xs text-muted mt-1.5">
+            Ya con tu factura y este análisis cargados: si no estás logueado
+            te pedimos iniciar sesión, y después solo confirmás la ubicación
+            para registrar la consulta.
+          </p>
+        </div>
       </div>
     </div>
   );
