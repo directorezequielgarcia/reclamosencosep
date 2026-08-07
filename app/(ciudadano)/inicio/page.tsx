@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { SvcIcon } from "@/components/servicios/SvcIcon";
 import { SVC_META, SVC_ORDER } from "@/lib/servicios";
+import { ZorritoTour } from "@/components/tour/ZorritoTour";
 
 export const metadata = { title: "Inicio · Portal de Reclamos" };
 
@@ -68,7 +69,7 @@ export default async function InicioPage() {
         </Link>
       )}
 
-      <section className="grid grid-cols-2 gap-3">
+      <section id="inicio-servicios" className="grid grid-cols-2 gap-3">
         {SVC_ORDER.map((kind) => {
           const m = SVC_META[kind];
           return (
@@ -87,7 +88,7 @@ export default async function InicioPage() {
         })}
       </section>
 
-      <section className="mt-2">
+      <section id="inicio-mis-reclamos" className="mt-2">
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-sm font-bold text-navy">Mis reclamos</h2>
           <Link
@@ -136,11 +137,40 @@ export default async function InicioPage() {
       <div className="flex-1" />
 
       <Link
+        id="inicio-nuevo-reclamo"
         href="/reclamo/nuevo"
         className="inline-flex items-center justify-center px-5 py-3 rounded-xl bg-svc-red text-white font-semibold shadow-md shadow-svc-red/30 hover:opacity-90 transition"
       >
         + Iniciar nuevo reclamo
       </Link>
+
+      <ZorritoTour
+        storageKey="zorrito-tour-inicio-v1"
+        pasos={[
+          {
+            pose: "parado",
+            texto: `¡Hola ${primerNombre}! Soy el Zorrito de ENCOSEP 🦊. Te cuento rápido qué podés hacer en esta pantalla.`,
+          },
+          {
+            targetId: "inicio-servicios",
+            pose: "parado",
+            texto:
+              "Elegí el servicio sobre el que querés hacer tu reclamo: Residuos, Electricidad, Agua y Saneamiento o Transporte.",
+          },
+          {
+            targetId: "inicio-mis-reclamos",
+            pose: "agachado",
+            texto:
+              "Acá vas a ver tus últimos reclamos. Tocá 'Ver todos' para revisar el estado de todos los que hiciste.",
+          },
+          {
+            targetId: "inicio-nuevo-reclamo",
+            pose: "parado",
+            texto:
+              "O si ya sabés qué te pasa, tocá este botón para arrancar tu reclamo directo.",
+          },
+        ]}
+      />
     </main>
   );
 }
