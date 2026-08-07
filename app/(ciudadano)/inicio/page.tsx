@@ -18,6 +18,12 @@ export default async function InicioPage() {
   }
   const userId = session!.user.id;
 
+  const usuario = await prisma.usuario.findUnique({
+    where: { id: userId },
+    select: { email: true, telefono: true },
+  });
+  const faltaContacto = !usuario?.email || !usuario?.telefono;
+
   const recientes = await prisma.reclamo.findMany({
     where: { ciudadanoId: userId },
     orderBy: { createdAt: "desc" },
@@ -37,6 +43,30 @@ export default async function InicioPage() {
           Elegí el servicio sobre el que querés hacer tu reclamo.
         </p>
       </section>
+
+      {faltaContacto && (
+        <Link
+          href="/mi-cuenta"
+          className="flex items-start gap-3 rounded-2xl border border-svc-orange/40 bg-svc-orange/5 p-3 hover:bg-svc-orange/10 transition"
+        >
+          <span className="text-xl leading-none" aria-hidden>
+            📞
+          </span>
+          <span className="flex-1 min-w-0">
+            <span className="block text-sm font-bold text-navy">
+              Completá tu {!usuario?.email && !usuario?.telefono
+                ? "email y teléfono"
+                : !usuario?.email
+                  ? "email"
+                  : "teléfono"}
+            </span>
+            <span className="block text-xs text-muted leading-snug mt-0.5">
+              Así el Ente puede contactarte más rápido sobre tus reclamos.
+            </span>
+          </span>
+          <span className="text-svc-orange text-lg shrink-0">›</span>
+        </Link>
+      )}
 
       <section className="grid grid-cols-2 gap-3">
         {SVC_ORDER.map((kind) => {

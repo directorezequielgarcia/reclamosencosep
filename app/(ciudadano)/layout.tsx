@@ -42,6 +42,20 @@ export default async function CiudadanoLayout({
         right={
           <div className="flex items-center gap-2">
             <Link
+              href="/"
+              className="hidden sm:inline-flex items-center gap-1 px-3 py-1 rounded-full border border-line-strong text-xs font-semibold text-navy hover:bg-paper-2"
+            >
+              ← Sitio principal
+            </Link>
+            <Link
+              href="/"
+              aria-label="Volver al sitio principal"
+              title="Volver al sitio principal"
+              className="sm:hidden w-7 h-7 rounded-full border border-line-strong text-navy flex items-center justify-center hover:bg-paper-2"
+            >
+              ←
+            </Link>
+            <Link
               href="/mi-cuenta"
               className="w-7 h-7 rounded-full bg-navy-2 text-white flex items-center justify-center text-xs font-bold hover:opacity-90"
               title={`Mi cuenta · ${nombre}`}
