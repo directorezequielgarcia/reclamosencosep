@@ -6,6 +6,7 @@ import { SvcIcon } from "@/components/servicios/SvcIcon";
 import { EstadoBadge } from "@/components/ui/EstadoBadge";
 import { svcFromKind } from "@/lib/servicios";
 import { resumenVisitas } from "@/lib/visitas";
+import { resumenReclamos } from "@/lib/reclamos-stats";
 import type { ReclamoEstado } from "@prisma/client";
 
 export const metadata = { title: "Dashboard · Panel ENCOSEP" };
@@ -17,7 +18,7 @@ export default async function DashboardPage() {
     session!.user.prestadoraId,
   );
 
-  const [porEstado, porServicio, recientes, total, visitas] = await Promise.all([
+  const [porEstado, porServicio, recientes, total, visitas, reclamosHoy] = await Promise.all([
     prisma.reclamo.groupBy({
       by: ["estado"],
       where,
@@ -36,6 +37,7 @@ export default async function DashboardPage() {
     }),
     prisma.reclamo.count({ where }),
     resumenVisitas(),
+    resumenReclamos(where),
   ]);
 
   const servicios = await prisma.servicio.findMany();
@@ -62,7 +64,7 @@ export default async function DashboardPage() {
         <Kpi label="Total" value={total} />
         <Kpi label="Abiertos" value={abiertos} tone="warning" />
         <Kpi label="Resueltos" value={resueltos} tone="success" />
-        <Kpi label="Recibidos hoy" value={porEstado /* placeholder */ ? "—" : 0} />
+        <Kpi label="Recibidos hoy" value={reclamosHoy.hoy} />
       </section>
 
       <section className="grid md:grid-cols-2 gap-4">
@@ -178,10 +180,48 @@ export default async function DashboardPage() {
         )}
       </Card>
 
+      <Card titulo={`Reclamos de hoy · ${reclamosHoy.fecha}`}>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
+          <MiniKpi label="Nuevos hoy" value={reclamosHoy.hoy} />
+          <MiniKpi label="Fuera de horario hábil" value={reclamosHoy.hoyFueraDeHorario} />
+          <MiniKpi label="Esta semana (7 días)" value={reclamosHoy.semana} />
+        </div>
+        <p className="text-[11px] text-muted mb-3 leading-relaxed">
+          ENCOSEP atiende en horario hábil (lun. a vie. de 8 a 15 hs). &ldquo;Fuera
+          de horario&rdquo; son reclamos que un vecino cargó hoy fuera de esa
+          franja (a la noche, un fin de semana) — quedan esperando igual, y
+          se ven acá apenas se abre el horario de atención.
+        </p>
+        {reclamosHoy.porTipoHoy.length > 0 ? (
+          <div className="flex flex-wrap gap-2">
+            {reclamosHoy.porTipoHoy.map((t) => (
+              <span
+                key={t.nombre}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-line bg-paper-2 text-xs text-navy"
+              >
+                <b className="font-extrabold">{t.cantidad}</b> {t.nombreCorto}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <div className="text-sm text-muted text-center py-2">
+            Todavía no hay reclamos nuevos hoy.
+          </div>
+        )}
+      </Card>
+
       <Card titulo="Visitas al sitio">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+        <p className="text-[11px] text-muted mb-3 leading-relaxed">
+          Cada visita es una carga de página del sitio público o del área del
+          vecino (no cuenta este panel admin). &ldquo;Únicos&rdquo; son
+          dispositivos/redes distintas en el período — no se guarda la IP
+          real, solo un hash. Si una misma persona entra varias veces al día
+          suma varias &ldquo;visitas&rdquo; pero un solo &ldquo;único&rdquo;.
+        </p>
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
           <MiniKpi label="Hoy" value={visitas.hoy} />
           <MiniKpi label="Visitantes únicos hoy" value={visitas.unicosHoy} />
+          <MiniKpi label="Fuera de horario hábil" value={visitas.hoyFueraDeHorario} />
           <MiniKpi label="Últimos 7 días" value={visitas.semana} />
           <MiniKpi label="Únicos (7 días)" value={visitas.unicosSemana} />
         </div>

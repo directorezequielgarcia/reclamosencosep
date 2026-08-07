@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import { prisma } from "@/lib/prisma";
+import { esHorarioHabil, inicioDiaLocal } from "@/lib/horario";
 
 // Mismo secreto que NextAuth: evita agregar una env var nueva solo para esto.
 const SALT = process.env.AUTH_SECRET ?? "encosep-visitas";
@@ -20,17 +21,10 @@ export async function registrarVisita(path: string, ip: string, userAgent: strin
   });
 }
 
-function inicioDia(diasAtras: number) {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  d.setDate(d.getDate() - diasAtras);
-  return d;
-}
-
 export async function resumenVisitas() {
-  const desdeHoy = inicioDia(0);
-  const desde7 = inicioDia(6); // últimos 7 días incluyendo hoy
-  const desde14 = inicioDia(13);
+  const desdeHoy = inicioDiaLocal(0);
+  const desde7 = inicioDiaLocal(6); // últimos 7 días incluyendo hoy
+  const desde14 = inicioDiaLocal(13);
 
   const [hoy, hoyIps, semana, semanaIps, ultimos14] = await Promise.all([
     prisma.visita.count({ where: { createdAt: { gte: desdeHoy } } }),
@@ -53,20 +47,24 @@ export async function resumenVisitas() {
 
   const serie: { fecha: string; visitas: number }[] = [];
   for (let i = 13; i >= 0; i--) {
-    const dia = inicioDia(i);
-    const siguiente = inicioDia(i - 1);
+    const dia = inicioDiaLocal(i);
+    const siguiente = inicioDiaLocal(i - 1);
     const visitas = ultimos14.filter(
       (v) => v.createdAt >= dia && v.createdAt < siguiente,
     ).length;
     serie.push({
-      fecha: dia.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit" }),
+      fecha: dia.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", timeZone: "America/Argentina/Buenos_Aires" }),
       visitas,
     });
   }
 
+  const visitasHoy = ultimos14.filter((v) => v.createdAt >= desdeHoy);
+  const hoyFueraDeHorario = visitasHoy.filter((v) => !esHorarioHabil(v.createdAt)).length;
+
   return {
     hoy,
     unicosHoy: hoyIps.length,
+    hoyFueraDeHorario,
     semana,
     unicosSemana: semanaIps.length,
     serie,
