@@ -39,6 +39,11 @@ export default async function IndicadoresPage({
   const hasta = sp.hasta ? new Date(`${sp.hasta}T23:59:59`) : ahora;
   const svcFiltro = sp.svc && sp.svc in SVC_META ? SVC_META[sp.svc as keyof typeof SVC_META].kind : null;
   const hayFiltros = Boolean(sp.desde || sp.hasta || sp.svc);
+  const qs = new URLSearchParams({
+    desde: sp.desde ?? fechaISO(desde),
+    hasta: sp.hasta ?? fechaISO(hasta),
+    ...(sp.svc ? { svc: sp.svc } : {}),
+  }).toString();
 
   const whereFiltro: Prisma.ReclamoWhereInput = {
     createdAt: { gte: desde, lte: hasta },
@@ -321,6 +326,20 @@ export default async function IndicadoresPage({
               Limpiar filtros
             </Link>
           )}
+          <div className="flex gap-2 ml-auto">
+            <Link
+              href={`/api/indicadores/exportar?${qs}`}
+              className="px-4 py-2 rounded-lg border border-line-strong text-sm text-navy font-semibold"
+            >
+              ⬇ Descargar Word
+            </Link>
+            <Link
+              href={`/indicadores/imprimir?${qs}`}
+              className="px-4 py-2 rounded-lg border border-line-strong text-sm text-navy font-semibold"
+            >
+              🖨️ Descargar PDF
+            </Link>
+          </div>
         </form>
 
         {/* CIFRAS DE INTERÉS — estilo de la referencia */}
