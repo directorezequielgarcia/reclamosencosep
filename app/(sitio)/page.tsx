@@ -215,27 +215,28 @@ export default async function HomeInstitucional() {
 
         {/* Insignias octogonales de las áreas fiscalizadas, flotando a los
             costados de la foto — acceso directo además de la botonera de
-            "Entrá al área" más abajo. Ocultas en mobile: no hay margen a
-            los costados del bloque central sin superponerse. */}
+            "Entrá al área" más abajo. Visibles también en mobile en vertical
+            (más chicas y pegadas al borde, para no superponer al bloque
+            central). */}
         {[
-          { slug: "agua", archivo: "agua.png", titulo: "Agua y Saneamiento", pos: "left-[3%] md:left-[6%] top-[16%]", delay: "0s" },
-          { slug: "energia", archivo: "energia.png", titulo: "Energía Eléctrica", pos: "right-[3%] md:right-[6%] top-[16%]", delay: "1.3s" },
-          { slug: "residuos", archivo: "residuos.png", titulo: "Gestión de Residuos", pos: "left-[3%] md:left-[6%] bottom-[18%]", delay: "0.6s" },
-          { slug: "transporte", archivo: "transporte.png", titulo: "Transporte Público", pos: "right-[3%] md:right-[6%] bottom-[18%]", delay: "2s" },
+          { slug: "agua", archivo: "agua.png", titulo: "Agua y Saneamiento", pos: "left-[2%] sm:left-[3%] md:left-[6%] top-[13%]", delay: "0s" },
+          { slug: "energia", archivo: "energia.png", titulo: "Energía Eléctrica", pos: "right-[2%] sm:right-[3%] md:right-[6%] top-[13%]", delay: "1.3s" },
+          { slug: "residuos", archivo: "residuos.png", titulo: "Gestión de Residuos", pos: "left-[2%] sm:left-[3%] md:left-[6%] bottom-[15%]", delay: "0.6s" },
+          { slug: "transporte", archivo: "transporte.png", titulo: "Transporte Público", pos: "right-[2%] sm:right-[3%] md:right-[6%] bottom-[15%]", delay: "2s" },
         ].map((b) => (
           <Link
             key={b.slug}
             href={`/areas-fiscalizadas/${b.slug}`}
             aria-label={`Ver área: ${b.titulo}`}
             title={b.titulo}
-            className={`hidden sm:block absolute z-10 animate-flotar hover:scale-110 transition ${b.pos}`}
+            className={`absolute z-10 animate-flotar hover:scale-110 transition ${b.pos}`}
             style={{ animationDelay: b.delay }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={`/imagenes/areas/${b.archivo}`}
               alt={b.titulo}
-              className="w-16 h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 object-contain"
+              className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 lg:w-20 lg:h-20 object-contain"
               style={{ filter: "drop-shadow(0 6px 14px rgba(0,0,0,0.45))" }}
             />
           </Link>
