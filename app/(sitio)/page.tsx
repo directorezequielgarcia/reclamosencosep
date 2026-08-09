@@ -212,6 +212,57 @@ export default async function HomeInstitucional() {
             Conocé nuestras acciones ›
           </Link>
         </div>
+
+        {/* Insignias octogonales de las áreas fiscalizadas, flotando a los
+            costados de la foto — acceso directo además de la botonera de
+            "Entrá al área" más abajo. Ocultas en mobile: no hay margen a
+            los costados del bloque central sin superponerse. */}
+        {[
+          { slug: "agua", archivo: "agua.png", titulo: "Agua y Saneamiento", pos: "left-[3%] md:left-[6%] top-[16%]", delay: "0s" },
+          { slug: "energia", archivo: "energia.png", titulo: "Energía Eléctrica", pos: "right-[3%] md:right-[6%] top-[16%]", delay: "1.3s" },
+          { slug: "residuos", archivo: "residuos.png", titulo: "Gestión de Residuos", pos: "left-[3%] md:left-[6%] bottom-[18%]", delay: "0.6s" },
+          { slug: "transporte", archivo: "transporte.png", titulo: "Transporte Público", pos: "right-[3%] md:right-[6%] bottom-[18%]", delay: "2s" },
+        ].map((b) => (
+          <Link
+            key={b.slug}
+            href={`/areas-fiscalizadas/${b.slug}`}
+            aria-label={`Ver área: ${b.titulo}`}
+            title={b.titulo}
+            className={`hidden sm:block absolute z-10 animate-flotar hover:scale-110 transition ${b.pos}`}
+            style={{ animationDelay: b.delay }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={`/imagenes/areas/${b.archivo}`}
+              alt={b.titulo}
+              className="w-16 h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 object-contain"
+              style={{ filter: "drop-shadow(0 6px 14px rgba(0,0,0,0.45))" }}
+            />
+          </Link>
+        ))}
+      </section>
+
+      {/* ===================== SPOT INSTITUCIONAL (Zorritos) ===================== */}
+      {/* Justo debajo del Hero: lo primero que se ve al entrar, después del
+          bloque de logo + CTA. Video corto, no compite con los botones de
+          reclamo porque va después de ellos, pero antes de cualquier otra
+          sección. */}
+      <section className="bg-black py-10 px-6">
+        <div className="max-w-2xl mx-auto">
+          <div className="rounded-2xl overflow-hidden border border-line shadow-xl bg-black">
+            {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+            <video
+              className="w-full h-auto block"
+              controls
+              preload="none"
+              poster="/imagenes/hero-encosep-zorritos.png"
+              playsInline
+            >
+              <source src="/videos/hace-tu-reclamo.mp4" type="video/mp4" />
+              Tu navegador no puede reproducir este video.
+            </video>
+          </div>
+        </div>
       </section>
 
       {/* ===================== ÁREAS FISCALIZADAS ===================== */}
@@ -600,38 +651,6 @@ export default async function HomeInstitucional() {
                 <div className="text-sm font-extrabold text-navy">{p}</div>
               </div>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ===================== RENOVACIÓN DE IMAGEN (novedad) ===================== */}
-      {/* Contenido de novedad institucional: va al final, no compite con la acción. */}
-      <section className="bg-paper py-14 px-6">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-8">
-            <div className="text-xs font-bold tracking-[0.18em] uppercase text-muted">
-              Institucional
-            </div>
-            <h2 className="text-2xl md:text-3xl font-extrabold text-navy mt-2">
-              Renovación de imagen institucional
-            </h2>
-            <p className="text-sm text-muted mt-2 max-w-2xl mx-auto">
-              Una nueva identidad para el Ente de Control de Servicios Públicos
-              de Comodoro Rivadavia.
-            </p>
-          </div>
-          <div className="rounded-2xl overflow-hidden border border-line shadow-xl bg-black">
-            {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-            <video
-              className="w-full h-auto block"
-              controls
-              preload="none"
-              poster="/imagenes/hero-encosep.png"
-              playsInline
-            >
-              <source src="/videos/hace-tu-reclamo.mp4" type="video/mp4" />
-              Tu navegador no puede reproducir este video.
-            </video>
           </div>
         </div>
       </section>

@@ -57,6 +57,15 @@ html, body {
   letter-spacing: -0.005em;
 }
 
+/* Flotación suave — insignias de área sobre la foto del hero del home */
+@keyframes flotar {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+.animate-flotar {
+  animation: flotar 4s ease-in-out infinite;
+}
+
 /* Banda decorativa de marca */
 .brand-stripe {
   display: flex;
