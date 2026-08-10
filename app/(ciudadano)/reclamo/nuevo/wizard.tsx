@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { SvcIcon } from "@/components/servicios/SvcIcon";
 import { ZorritoTour } from "@/components/tour/ZorritoTour";
 import { POSE_POR_SVC } from "@/components/tour/zorrito-poses";
@@ -361,6 +362,21 @@ function PasoUbicacion({
         titulo="¿Dónde está el problema?"
         subtitulo="Usá GPS, escribí la dirección, o las dos juntas."
       />
+
+      {svc === "transporte" && (
+        <Link
+          href="/boletines"
+          className="flex items-start gap-2 rounded-2xl border border-svc-red/30 bg-svc-red/5 p-3 text-xs text-navy hover:bg-svc-red/10 transition"
+        >
+          <span className="text-lg leading-none">📣</span>
+          <span>
+            <strong>Ya llevamos tus reclamos a la Municipalidad.</strong> El
+            10/08 presentamos una nota a la Subsecretaría de Transporte con
+            los reclamos de Sol Bus agrupados por tipo y una propuesta de
+            mejora. Tocá para leerla.
+          </span>
+        </Link>
+      )}
 
       <label id="reclamo-campo-direccion" className="flex flex-col gap-1">
         <span className="text-xs font-semibold text-navy">
