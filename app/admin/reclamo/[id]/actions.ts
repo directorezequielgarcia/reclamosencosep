@@ -7,6 +7,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ROLES_EDIT, TRANSICIONES } from "@/lib/admin";
 import { siguienteNumero } from "@/lib/expedientes";
+import { guardarFotoReclamo } from "@/lib/uploads";
 import type { ReclamoEstado } from "@prisma/client";
 
 const CambiarEstadoSchema = z.object({
@@ -131,6 +132,71 @@ export async function agregarComentario(formData: FormData) {
   revalidatePath(`/admin/reclamo/${parsed.data.reclamoId}`);
   // Si es visible, también refrescamos la vista del vecino.
   if (visibleVecino) revalidatePath(`/mis-reclamos/${reclamo.codigo}`);
+}
+
+// El Ente adjunta documentación (foto de una inspección, un PDF de
+// respuesta, etc.) directamente en el reclamo. Queda visible para el vecino
+// en su seguimiento, igual que cuando él mismo suma documentación.
+export async function agregarAdjuntoAdmin(formData: FormData) {
+  const session = await auth();
+  if (!session || !ROLES_EDIT.includes(session.user.rol)) {
+    throw new Error("Sin permiso");
+  }
+
+  const reclamoId = String(formData.get("reclamoId") ?? "");
+  const reclamo = await prisma.reclamo.findUnique({ where: { id: reclamoId } });
+  if (!reclamo) throw new Error("Reclamo inexistente");
+
+  if (
+    session.user.rol === "OPERADOR_PRESTADORA" &&
+    reclamo.prestadoraId !== session.user.prestadoraId
+  ) {
+    throw new Error("Sin permiso sobre este reclamo");
+  }
+
+  const archivos = formData
+    .getAll("archivo")
+    .filter((f): f is File => f instanceof File && f.size > 0)
+    .slice(0, 5);
+  if (archivos.length === 0) throw new Error("Adjuntá al menos un archivo");
+
+  const mensaje = String(formData.get("mensaje") ?? "").trim();
+
+  let guardados = 0;
+  for (const f of archivos) {
+    try {
+      const saved = await guardarFotoReclamo(reclamo.id, f);
+      await prisma.adjunto.create({
+        data: {
+          reclamoId: reclamo.id,
+          tipo: saved.mimeType === "application/pdf" ? "DOCUMENTO" : "FOTO",
+          url: saved.url,
+          mimeType: saved.mimeType,
+          bytes: saved.bytes,
+        },
+      });
+      guardados++;
+    } catch (e) {
+      console.error("adjunto admin rechazado:", (e as Error).message);
+    }
+  }
+  if (guardados === 0) throw new Error("No se pudo guardar ningún archivo");
+
+  await prisma.reclamoEvento.create({
+    data: {
+      reclamoId: reclamo.id,
+      tipo: "ADJUNTO",
+      autorId: session.user.id,
+      mensaje:
+        mensaje ||
+        `El ENCOSEP agregó ${guardados} archivo${guardados === 1 ? "" : "s"}.`,
+      visibleVecino: true,
+    },
+  });
+
+  revalidatePath(`/admin/reclamo/${reclamo.id}`);
+  revalidatePath(`/mis-reclamos/${reclamo.codigo}`);
+  revalidatePath(`/admin/bandeja`);
 }
 
 const ReasignarSchema = z.object({

@@ -51,7 +51,10 @@ export default async function AdminLayout({
           <nav className="flex items-center gap-1 ml-4 flex-wrap">
             <NavLink href="/admin">Dashboard</NavLink>
             {puedeGestionarReclamos(rol) && (
-              <NavLink href="/admin/bandeja">Bandeja</NavLink>
+              <>
+                <NavLink href="/admin/bandeja">Bandeja</NavLink>
+                <NavLink href="/admin/mesa-de-trabajo">Mesa de trabajo</NavLink>
+              </>
             )}
             {puedeGestionarExpedientes(rol) && (
               <NavLink href="/admin/expedientes">Expedientes</NavLink>

@@ -189,7 +189,7 @@ export default async function DetalleMiReclamoPage({
                   })}
                 </div>
                 <div className="text-sm text-navy mt-0.5 font-semibold">
-                  {eventoLabelVecino(ev.tipo)}
+                  {eventoLabelVecino(ev, reclamo.ciudadanoId)}
                   {ev.estadoNuevo
                     ? ` → ${ESTADO_META[ev.estadoNuevo].label}`
                     : ""}
@@ -488,8 +488,11 @@ function PuntajeField({ name, label }: { name: string; label: string }) {
   );
 }
 
-function eventoLabelVecino(tipo: string): string {
-  switch (tipo) {
+function eventoLabelVecino(
+  ev: { tipo: string; autorId: string | null },
+  ciudadanoId: string,
+): string {
+  switch (ev.tipo) {
     case "CREACION":
       return "Reclamo registrado";
     case "CAMBIO_ESTADO":
@@ -497,10 +500,12 @@ function eventoLabelVecino(tipo: string): string {
     case "ASIGNACION":
       return "Derivado a la prestadora";
     case "ADJUNTO":
-      return "Documentación agregada";
+      return ev.autorId === ciudadanoId
+        ? "Agregaste documentación"
+        : "El ENCOSEP agregó documentación";
     case "NOTIFICACION":
       return "Aviso del Ente";
     default:
-      return tipo;
+      return ev.tipo;
   }
 }

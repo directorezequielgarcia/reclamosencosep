@@ -14,6 +14,8 @@ type SP = {
   svc?: string;
   q?: string;
   pendiente?: string;
+  desde?: string;
+  hasta?: string;
 };
 
 export default async function BandejaPage({
@@ -49,6 +51,11 @@ export default async function BandejaPage({
   if (soloPendientes) {
     where.eventos = { some: { leidoEnte: false } };
   }
+  if (sp.desde || sp.hasta) {
+    where.createdAt = {};
+    if (sp.desde) where.createdAt.gte = new Date(`${sp.desde}T00:00:00`);
+    if (sp.hasta) where.createdAt.lte = new Date(`${sp.hasta}T23:59:59`);
+  }
 
   const reclamos = await prisma.reclamo.findMany({
     where,
@@ -72,7 +79,10 @@ export default async function BandejaPage({
           <h1 className="text-2xl font-extrabold text-navy">Bandeja</h1>
           <p className="text-sm text-muted mt-1">
             {reclamos.length} {reclamos.length === 1 ? "reclamo" : "reclamos"}{" "}
-            {sp.estado || sp.svc || sp.q ? "según filtros" : "en total"}.
+            {sp.estado || sp.svc || sp.q || sp.desde || sp.hasta
+              ? "según filtros"
+              : "en total"}
+            .
           </p>
         </div>
       </header>
@@ -117,6 +127,22 @@ export default async function BandejaPage({
             ))}
           </select>
         </Field>
+        <Field label="Desde">
+          <input
+            type="date"
+            name="desde"
+            defaultValue={sp.desde ?? ""}
+            className="px-3 py-2 rounded-lg border border-line-strong bg-paper text-sm text-navy focus:outline-none focus:border-navy-2"
+          />
+        </Field>
+        <Field label="Hasta">
+          <input
+            type="date"
+            name="hasta"
+            defaultValue={sp.hasta ?? ""}
+            className="px-3 py-2 rounded-lg border border-line-strong bg-paper text-sm text-navy focus:outline-none focus:border-navy-2"
+          />
+        </Field>
         <label className="flex items-center gap-2 px-3 py-2 rounded-lg border border-line-strong bg-paper-2 text-sm text-navy cursor-pointer">
           <input
             type="checkbox"
@@ -133,7 +159,7 @@ export default async function BandejaPage({
         >
           Aplicar
         </button>
-        {(sp.estado || sp.svc || sp.q || soloPendientes) && (
+        {(sp.estado || sp.svc || sp.q || soloPendientes || sp.desde || sp.hasta) && (
           <Link
             href="/admin/bandeja"
             className="px-4 py-2 rounded-lg border border-line-strong text-sm text-navy"

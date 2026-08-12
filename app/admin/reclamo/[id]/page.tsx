@@ -18,6 +18,7 @@ import { MiniMapa } from "@/components/mapa/MiniMapa";
 import { svcFromKind } from "@/lib/servicios";
 import { EXPEDIENTE_ESTADO_META } from "@/lib/expedientes";
 import {
+  agregarAdjuntoAdmin,
   agregarComentario,
   cambiarEstado,
   elevarAExpediente,
@@ -217,7 +218,49 @@ export default async function ReclamoDetallePage({
               {reclamo.ciudadano.email && ` · ${reclamo.ciudadano.email}`}
               {reclamo.ciudadano.telefono && ` · ${reclamo.ciudadano.telefono}`}
             </div>
+            <Link
+              href={`/admin/usuarios/${reclamo.ciudadano.id}`}
+              className="inline-block mt-2 text-xs font-semibold text-navy-2 underline underline-offset-2"
+            >
+              Ver ficha completa del vecino →
+            </Link>
           </Card>
+
+          {puedeEditar && (
+            <Card titulo="Adjuntar documentación">
+              <p className="text-xs text-muted leading-relaxed mb-3">
+                Subí fotos o un PDF (por ejemplo, de una inspección o una
+                respuesta formal). Queda visible para el vecino en su
+                reclamo, junto con sus propias fotos y documentos.
+              </p>
+              <form
+                action={agregarAdjuntoAdmin}
+                className="flex flex-col gap-2"
+              >
+                <input type="hidden" name="reclamoId" value={reclamo.id} />
+                <input
+                  type="file"
+                  name="archivo"
+                  accept="image/*,application/pdf"
+                  multiple
+                  required
+                  className="text-sm text-navy file:mr-3 file:px-3 file:py-2 file:rounded-lg file:border-0 file:bg-navy-2 file:text-white file:font-semibold"
+                />
+                <textarea
+                  name="mensaje"
+                  rows={2}
+                  placeholder="Nota para el vecino sobre este adjunto (opcional)…"
+                  className="w-full px-3 py-2 rounded-lg border border-line-strong bg-paper text-sm focus:outline-none focus:border-navy-2 resize-none"
+                />
+                <SubmitButton
+                  className="self-end px-4 py-2 rounded-lg bg-navy-2 text-white text-sm font-semibold"
+                  pendingText="Subiendo…"
+                >
+                  Adjuntar
+                </SubmitButton>
+              </form>
+            </Card>
+          )}
 
           {/* Chat con el vecino: el mismo ida y vuelta que ve el ciudadano
               (comentarios visibles), en formato conversación. */}
