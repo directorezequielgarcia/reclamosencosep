@@ -1,12 +1,14 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { ROL_LABEL, whereReclamosByRol } from "@/lib/admin";
+import { puedeGestionarReclamos, ROL_LABEL, whereReclamosByRol } from "@/lib/admin";
 import { EstadoBadge } from "@/components/ui/EstadoBadge";
 import { SvcIcon } from "@/components/servicios/SvcIcon";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 import { svcFromKind } from "@/lib/servicios";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
+import { agregarAnotacion } from "./actions";
 
 export const metadata = { title: "Vecino · Panel ENCOSEP" };
 
@@ -17,6 +19,9 @@ export default async function FichaUsuarioPage({
 }) {
   const { id } = await params;
   const session = await auth();
+  if (!session || !puedeGestionarReclamos(session.user.rol)) {
+    redirect("/admin");
+  }
 
   const usuario = await prisma.usuario.findUnique({
     where: { id },
@@ -25,15 +30,22 @@ export default async function FichaUsuarioPage({
   if (!usuario) notFound();
 
   const whereReclamos = whereReclamosByRol(
-    session!.user.rol,
-    session!.user.prestadoraId,
+    session.user.rol,
+    session.user.prestadoraId,
   );
 
-  const reclamos = await prisma.reclamo.findMany({
-    where: { ciudadanoId: usuario.id, ...whereReclamos },
-    orderBy: { createdAt: "desc" },
-    include: { servicio: true },
-  });
+  const [reclamos, anotaciones] = await Promise.all([
+    prisma.reclamo.findMany({
+      where: { ciudadanoId: usuario.id, ...whereReclamos },
+      orderBy: { createdAt: "desc" },
+      include: { servicio: true },
+    }),
+    prisma.anotacionUsuario.findMany({
+      where: { usuarioId: usuario.id },
+      orderBy: { createdAt: "desc" },
+      include: { autor: { select: { nombre: true, apellido: true } } },
+    }),
+  ]);
 
   const fechaAlta = usuario.createdAt.toLocaleDateString("es-AR", {
     day: "2-digit",
@@ -121,6 +133,63 @@ export default async function FichaUsuarioPage({
                 </li>
               );
             })}
+          </ul>
+        )}
+      </section>
+
+      <section className="rounded-2xl border border-line bg-paper p-5">
+        <h2 className="text-[11px] font-bold text-muted uppercase tracking-wider mb-1">
+          Anotaciones internas · {anotaciones.length}
+        </h2>
+        <p className="text-xs text-muted mb-3">
+          Notas de seguimiento del equipo. Las ve todo el equipo del Ente,
+          nunca el vecino.
+        </p>
+        <form action={agregarAnotacion} className="flex flex-col gap-2 mb-4">
+          <input type="hidden" name="usuarioId" value={usuario.id} />
+          <textarea
+            name="cuerpo"
+            rows={2}
+            required
+            placeholder="Escribí una anotación para el equipo…"
+            className="w-full px-3 py-2 rounded-lg border border-line-strong bg-paper text-sm focus:outline-none focus:border-navy-2 resize-none"
+          />
+          <SubmitButton
+            className="self-end px-4 py-2 rounded-lg bg-navy-2 text-white text-sm font-semibold"
+            pendingText="Guardando…"
+          >
+            Agregar anotación
+          </SubmitButton>
+        </form>
+        {anotaciones.length === 0 ? (
+          <p className="text-sm text-muted italic">
+            Todavía no hay anotaciones sobre este usuario.
+          </p>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {anotaciones.map((a) => (
+              <li
+                key={a.id}
+                className="rounded-xl border border-line bg-paper-2 p-3"
+              >
+                <p className="text-sm text-navy whitespace-pre-wrap">
+                  {a.cuerpo}
+                </p>
+                <p className="text-[11px] text-muted mt-1.5">
+                  {a.autor.nombre} {a.autor.apellido} ·{" "}
+                  {a.createdAt.toLocaleDateString("es-AR", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                  })}{" "}
+                  ·{" "}
+                  {a.createdAt.toLocaleTimeString("es-AR", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </p>
+              </li>
+            ))}
           </ul>
         )}
       </section>

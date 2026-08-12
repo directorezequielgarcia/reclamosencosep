@@ -58,9 +58,26 @@ model Usuario {
   inspeccionesRealizadas Inspeccion[]  @relation("InspeccionInspector")
   informesMensualesEmitidos InformeMensual[]  @relation("InformeMensualEmisor")
   informesAnualesEmitidos   InformeAnual[]    @relation("InformeAnualEmisor")
+  anotacionesRecibidas AnotacionUsuario[] @relation("AnotacionUsuarioDestino")
+  anotacionesEscritas  AnotacionUsuario[] @relation("AnotacionUsuarioAutor")
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   activo          Boolean  @default(true)
+}
+
+// Anotaciones internas del equipo del Ente sobre un usuario (vecino u
+// operador de prestadora): notas de seguimiento visibles para todo el
+// equipo con acceso a reclamos, pero nunca para el propio usuario anotado.
+model AnotacionUsuario {
+  id         String   @id @default(cuid())
+  usuarioId  String
+  usuario    Usuario  @relation("AnotacionUsuarioDestino", fields: [usuarioId], references: [id], onDelete: Cascade)
+  autorId    String
+  autor      Usuario  @relation("AnotacionUsuarioAutor", fields: [autorId], references: [id])
+  cuerpo     String
+  createdAt  DateTime @default(now())
+
+  @@index([usuarioId, createdAt])
 }
 
 // ─────────────────────────────────────────────

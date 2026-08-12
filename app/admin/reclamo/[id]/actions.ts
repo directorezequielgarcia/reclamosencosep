@@ -83,6 +83,7 @@ export async function cambiarEstado(formData: FormData) {
 
   revalidatePath(`/admin/reclamo/${reclamoId}`);
   revalidatePath(`/admin/bandeja`);
+  revalidatePath(`/admin/mesa-de-trabajo`);
   revalidatePath(`/admin`);
 }
 
