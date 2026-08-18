@@ -135,6 +135,11 @@ export function puedeGestionarTarifas(rol: Rol): boolean {
   return esDireccion(rol) || rol === "GESTOR_ENTE";
 }
 
+/** Puede gestionar la fórmula de costo/km del contrato de Transporte (Grupo MR). */
+export function puedeGestionarFormulaTransporte(rol: Rol): boolean {
+  return esDireccion(rol) || rol === "GESTOR_ENTE" || rol === "EXPEDIENTES";
+}
+
 // Filtro WHERE para Prisma según el rol del usuario.
 // El operador de prestadora solo ve los reclamos asignados a su prestadora.
 export function whereReclamosByRol(rol: Rol, prestadoraId: string | null) {

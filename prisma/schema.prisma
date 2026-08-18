@@ -937,6 +937,41 @@ model CuadroTarifario {
 }
 
 // ─────────────────────────────────────────────
+// Fórmula tarifaria del Transporte Urbano y Suburbano (concesión GRUPO MR
+// S.R.L., Ordenanza 17.335/25). Un registro por período (mes) con los 18
+// rubros del Costo Kilométrico. Igual patrón que CuadroTarifario: `datos`
+// guarda toda la estructura tipada (ver lib/formula-transporte.ts) para no
+// migrar el schema cada vez que cambia un precio.
+// ─────────────────────────────────────────────
+
+enum FormulaTransporteEstado {
+  BORRADOR
+  CERTIFICADO // cargado en base a la certificación de la Autoridad de Aplicación
+  PUBLICADO
+}
+
+model FormulaTransporte {
+  id        String                  @id @default(cuid())
+  periodo   String                  @unique // "2026-08"
+  estado    FormulaTransporteEstado @default(BORRADOR)
+
+  // Objeto DatosFormula (lib/formula-transporte.ts): precios de mercado del
+  // período, costo/km de los rubros no autocalculables, kilometraje e
+  // ingresos, y los datos presentados por la prestadora para contrastar.
+  datos     Json
+
+  fuente    String? // ej. "Certificado N° X — Autoridad de Aplicación"
+
+  creadoPorId     String?
+  creadoPorNombre String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([estado])
+}
+
+// ─────────────────────────────────────────────
 // Contador de visitas (sitio público + portal ciudadano, no admin).
 // ipHash = SHA-256(ip + AUTH_SECRET): permite contar visitantes únicos
 // por día sin guardar la IP en texto plano.

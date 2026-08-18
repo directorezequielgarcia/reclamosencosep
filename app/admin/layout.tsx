@@ -8,6 +8,7 @@ import {
   puedeExportarInformes,
   puedeGestionarAudienciasMedios,
   puedeGestionarExpedientes,
+  puedeGestionarFormulaTransporte,
   puedeGestionarReclamos,
   puedeGestionarTarifas,
   puedeGestionarUsuarios,
@@ -69,6 +70,9 @@ export default async function AdminLayout({
             )}
             {puedeGestionarTarifas(rol) && (
               <NavLink href="/admin/tarifas">Tarifas</NavLink>
+            )}
+            {puedeGestionarFormulaTransporte(rol) && (
+              <NavLink href="/admin/formula-transporte">Fórmula Transporte</NavLink>
             )}
             {puedeVerInspecciones(rol) && (
               <NavLink href="/admin/inspecciones">Inspecciones</NavLink>
