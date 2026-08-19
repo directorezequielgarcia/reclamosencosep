@@ -55,6 +55,7 @@ export default async function AdminLayout({
               <>
                 <NavLink href="/admin/bandeja">Bandeja</NavLink>
                 <NavLink href="/admin/mesa-de-trabajo">Mesa de trabajo</NavLink>
+                <NavLink href="/admin/servicio-residuos">Residuos y Barrido</NavLink>
               </>
             )}
             {puedeGestionarExpedientes(rol) && (
