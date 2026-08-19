@@ -1,19 +1,29 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { BuscadorBarrio } from "@/components/ui/BuscadorBarrio";
 import {
   buscarRecoleccionPorBarrio,
   buscarBarridoPorCalleOBarrio,
+  horarioRecoleccion,
+  horarioBarrido,
   SERVICIOS_ADICIONALES,
   type NucleoRecoleccion,
   type RecorridoBarrido,
 } from "@/lib/servicios-por-barrio";
+import { resolverDireccion, type RecorridoCercano } from "./actions";
 
 export function BuscadorServicioResiduos() {
   const [barrio, setBarrio] = useState("");
   const [calle, setCalle] = useState("");
   const [copiado, setCopiado] = useState(false);
+
+  const [direccion, setDireccion] = useState("");
+  const [barrioResuelto, setBarrioResuelto] = useState<string | null>(null);
+  const [barrioAproximado, setBarrioAproximado] = useState(false);
+  const [recorridosCercanos, setRecorridosCercanos] = useState<RecorridoCercano[]>([]);
+  const [errorDireccion, setErrorDireccion] = useState<string | null>(null);
+  const [buscando, startTransition] = useTransition();
 
   const nucleos = useMemo(() => buscarRecoleccionPorBarrio(barrio), [barrio]);
   const recorridos = useMemo(
@@ -21,9 +31,39 @@ export function BuscadorServicioResiduos() {
     [calle],
   );
 
+  function buscarPorDireccion() {
+    if (!direccion.trim()) return;
+    setErrorDireccion(null);
+    startTransition(async () => {
+      try {
+        const r = await resolverDireccion(direccion.trim());
+        setBarrioResuelto(r.barrioResuelto);
+        setBarrioAproximado(r.barrioAproximado);
+        setRecorridosCercanos(r.recorridosCercanos);
+        if (r.barrioResuelto) setBarrio(r.barrioResuelto);
+        if (!r.barrioResuelto) {
+          setErrorDireccion(
+            "No pude ubicar esa dirección en el mapa de barrios. Probá escribirla distinto (ej. \"Rivadavia 100\") o buscá manualmente por barrio/calle abajo.",
+          );
+        }
+      } catch {
+        setErrorDireccion(
+          "Falló la búsqueda por dirección (puede ser un problema momentáneo del servicio de mapas). Probá de nuevo o usá la búsqueda manual abajo.",
+        );
+      }
+    });
+  }
+
   const respuesta = useMemo(
-    () => armarRespuesta(barrio, nucleos, calle, recorridos),
-    [barrio, nucleos, calle, recorridos],
+    () =>
+      armarRespuesta(
+        barrio,
+        nucleos,
+        calle,
+        recorridos,
+        barrioResuelto ? recorridosCercanos : [],
+      ),
+    [barrio, nucleos, calle, recorridos, barrioResuelto, recorridosCercanos],
   );
 
   async function copiar() {
@@ -61,6 +101,64 @@ export function BuscadorServicioResiduos() {
             recolección ni barrido.
           </li>
         </ul>
+      </Card>
+
+      <Card titulo="📍 Buscar por dirección exacta (recomendado)">
+        <p className="text-xs text-muted mb-2">
+          Escribí calle y altura (ej. &ldquo;Rivadavia 100&rdquo;) — ubica el
+          punto en el mapa y resuelve el barrio automáticamente, en vez de
+          tener que adivinar entre varios resultados de una misma avenida.
+        </p>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={direccion}
+            onChange={(e) => setDireccion(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && buscarPorDireccion()}
+            placeholder="Rivadavia 100"
+            className="flex-1 px-3 py-3 rounded-xl border border-line-strong bg-paper text-navy text-base focus:outline-none focus:border-navy-2 focus:ring-2 focus:ring-navy-2/20"
+          />
+          <button
+            type="button"
+            onClick={buscarPorDireccion}
+            disabled={buscando || !direccion.trim()}
+            className="px-4 py-3 rounded-xl bg-navy text-white text-sm font-semibold disabled:opacity-50"
+          >
+            {buscando ? "Buscando…" : "Buscar"}
+          </button>
+        </div>
+        {errorDireccion && <div className="mt-3"><Aviso>{errorDireccion}</Aviso></div>}
+        {barrioResuelto && (
+          <div className="mt-3 rounded-xl border border-navy-2/30 bg-navy/5 p-3">
+            <p className="text-sm text-navy">
+              📍 Esa dirección cae en el barrio{" "}
+              <b>{barrioResuelto}</b>
+              {barrioAproximado
+                ? " (no cayó justo dentro del límite oficial de ningún barrio — te muestro el más cercano, verificalo)."
+                : " (límite oficial municipal)."}
+            </p>
+            {recorridosCercanos.length > 0 && (
+              <div className="mt-2 flex flex-col gap-2">
+                <span className="text-xs font-semibold text-muted uppercase tracking-wider">
+                  Recorridos de barrido más cercanos
+                </span>
+                {recorridosCercanos.map((rc, i) => (
+                  <ResultadoRecorrido
+                    key={i}
+                    recorrido={rc.recorrido}
+                    distanciaKm={rc.distanciaKm}
+                  />
+                ))}
+                <p className="text-[11px] text-muted italic">
+                  Aproximado: se compara contra un punto de referencia de
+                  cada recorrido, no contra su trazado real (no está
+                  digitalizado). Si la distancia es mayor a ~1 km, verificar
+                  antes de responder.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
       </Card>
 
       <div className="grid md:grid-cols-2 gap-4">
@@ -169,11 +267,16 @@ export function BuscadorServicioResiduos() {
   );
 }
 
+function formatDistancia(km: number): string {
+  return km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`;
+}
+
 function armarRespuesta(
   barrio: string,
   nucleos: NucleoRecoleccion[],
   calle: string,
   recorridos: RecorridoBarrido[],
+  recorridosCercanos: RecorridoCercano[] = [],
 ): string {
   const partes: string[] = [];
 
@@ -181,7 +284,7 @@ function armarRespuesta(
     for (const n of nucleos) {
       if (n.diasConfirmados && n.dias.length > 0) {
         partes.push(
-          `🗑️ Recolección de residuos: pasa ${n.dias.join(", ")} (turno ${n.turno.toLowerCase()}).`,
+          `🗑️ Recolección de residuos: pasa ${n.dias.join(", ")} (turno ${n.turno.toLowerCase()}, ${horarioRecoleccion(n.turno)}).`,
         );
       } else {
         partes.push(
@@ -200,7 +303,7 @@ function armarRespuesta(
     const sinConfirmar = recorridos.filter((r) => !r.diasConfirmados);
     for (const r of confirmados) {
       partes.push(
-        `🧹 Barrido (${r.tipo.toLowerCase()}, recorrido ${r.recorrido}): pasa ${r.dias.join(" y ")}.`,
+        `🧹 Barrido (${r.tipo.toLowerCase()}, recorrido ${r.recorrido}): pasa ${r.dias.join(" y ")}, en el horario de ${horarioBarrido(r.turno)}.`,
       );
     }
     if (sinConfirmar.length > 0) {
@@ -212,6 +315,20 @@ function armarRespuesta(
     partes.push(
       `🧹 Barrido: no se encontró "${calle}" en los recorridos digitalizados — puede ser una calle sin pavimentar (fuera del contrato) o falta cotejar el nombre exacto.`,
     );
+  } else if (recorridosCercanos.length > 0) {
+    const masCercano = recorridosCercanos[0];
+    if (masCercano.distanciaKm <= 1) {
+      const r = masCercano.recorrido;
+      partes.push(
+        r.diasConfirmados && r.dias.length > 0
+          ? `🧹 Barrido (${r.tipo.toLowerCase()}, recorrido ${r.recorrido}, a ~${formatDistancia(masCercano.distanciaKm)} de la dirección): pasa ${r.dias.join(" y ")}, en el horario de ${horarioBarrido(r.turno)}. Aproximado — confirmar antes de responder.`
+          : `🧹 Barrido: el recorrido más cercano (${r.recorrido}, a ~${formatDistancia(masCercano.distanciaKm)}) no tiene el día confirmado en el pliego — verificar antes de responder.`,
+      );
+    } else {
+      partes.push(
+        `🧹 Barrido: el recorrido más cercano digitalizado está a ${formatDistancia(masCercano.distanciaKm)} de esa dirección — demasiado lejos para asumir que es el mismo, verificar manualmente por calle.`,
+      );
+    }
   }
 
   return partes.join("\n");
@@ -231,7 +348,8 @@ function ResultadoNucleo({ nucleo }: { nucleo: NucleoRecoleccion }) {
       {nucleo.diasConfirmados && nucleo.dias.length > 0 ? (
         <p className="text-sm text-navy mt-1">
           Pasa <b>{nucleo.dias.join(", ")}</b>
-          {nucleo.frecuenciaSemanal ? ` (${nucleo.frecuenciaSemanal}x por semana)` : ""}.
+          {nucleo.frecuenciaSemanal ? ` (${nucleo.frecuenciaSemanal}x por semana)` : ""},{" "}
+          {horarioRecoleccion(nucleo.turno)}.
         </p>
       ) : (
         <p className="text-sm text-muted mt-1 italic">
@@ -247,7 +365,13 @@ function ResultadoNucleo({ nucleo }: { nucleo: NucleoRecoleccion }) {
   );
 }
 
-function ResultadoRecorrido({ recorrido }: { recorrido: RecorridoBarrido }) {
+function ResultadoRecorrido({
+  recorrido,
+  distanciaKm,
+}: {
+  recorrido: RecorridoBarrido;
+  distanciaKm?: number;
+}) {
   return (
     <div className="rounded-xl border border-svc-yellow/50 bg-svc-yellow/10 p-3">
       <div className="flex items-center justify-between gap-2">
@@ -256,11 +380,13 @@ function ResultadoRecorrido({ recorrido }: { recorrido: RecorridoBarrido }) {
         </span>
         <span className="text-[10px] font-mono text-muted">
           Recorrido {recorrido.recorrido}
+          {distanciaKm !== undefined ? ` · ~${formatDistancia(distanciaKm)}` : ""}
         </span>
       </div>
       {recorrido.diasConfirmados && recorrido.dias.length > 0 ? (
         <p className="text-sm text-navy mt-1">
-          Pasa <b>{recorrido.dias.join(" y ")}</b>, turno {recorrido.turno.toLowerCase()}.
+          Pasa <b>{recorrido.dias.join(" y ")}</b>, turno {recorrido.turno.toLowerCase()}
+          {" "}({horarioBarrido(recorrido.turno)}).
         </p>
       ) : (
         <p className="text-sm text-muted mt-1 italic">

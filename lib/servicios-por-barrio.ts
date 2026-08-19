@@ -61,12 +61,12 @@ export const NUCLEOS_RECOLECCION: NucleoRecoleccion[] = [
   { codigo: "RSU-TD-ZS-N1-F3-LMV", zona: "Sur", turno: "Diurno", frecuenciaSemanal: 3, dias: LMV, diasConfirmados: true, barrios: [], referencias: ["Ruta Nacional 3", "Tenaris Nueva Base Río Senguer", "Hotel Su Estrella", "Axion El Patagón", "Feadar Comodoro Rivadavia", "Mercado Concentrador de la Costa"] },
   { codigo: "RSU-TD-ZS-N1-F6-LaS", zona: "Sur", turno: "Diurno", frecuenciaSemanal: 6, dias: LAS, diasConfirmados: true, barrios: ["Stella Maris", "Extensión Stella Maris", "Extensión Stella Maris II"], referencias: ["Av. Portugal", "Liceo Militar General Roca", "Hiper ChangoMás", "C. Eustaquio Molina", "C. Sebastián López"] },
   { codigo: "RSU-TD-ZS-N2-F2-MyJ", zona: "Sur", turno: "Diurno", frecuenciaSemanal: 2, dias: MYJ, diasConfirmados: true, barrios: ["Bella Vista Sur", "El Atardecer"], referencias: ["Vecinal Bella Vista Sur", "Vivero Nativas del Sur", "23 de Febrero"] },
-  { codigo: "RSU-TD-ZS-N2-F6-LaS", zona: "Sur", turno: "Diurno", frecuenciaSemanal: 6, dias: LAS, diasConfirmados: true, barrios: ["Cordón Forestal Juan Manuel Feeney", "Gobernador Fontana (Abel Amaya)"], referencias: ["Av. Congreso", "Av. Chile", "Escuela 723 Puerto Argentino", "Las Américas"] },
+  { codigo: "RSU-TD-ZS-N2-F6-LaS", zona: "Sur", turno: "Diurno", frecuenciaSemanal: 6, dias: LAS, diasConfirmados: true, barrios: ["Cordón Forestal Juan Manuel Feeney", "Abel Amaya"], referencias: ["Av. Congreso", "Av. Chile", "Escuela 723 Puerto Argentino", "Las Américas"] },
   { codigo: "RSU-TD-ZS-N3-F2-MyJ", zona: "Sur", turno: "Diurno", frecuenciaSemanal: 2, dias: MYJ, diasConfirmados: true, barrios: [], referencias: ["Roque González", "Cancha de Alianza Fútbol Club"] },
-  { codigo: "RSU-TD-ZS-N3-F3-LMV", zona: "Sur", turno: "Diurno", frecuenciaSemanal: 3, dias: LMV, diasConfirmados: true, barrios: ["Cordón Forestal Juan Manuel Feeney", "Dr. Quirno Costa (Isidro Quiroga)"], referencias: ["Av. 10 de Noviembre", "Complejo Fénix", "Canchas Hay Equipo"] },
+  { codigo: "RSU-TD-ZS-N3-F3-LMV", zona: "Sur", turno: "Diurno", frecuenciaSemanal: 3, dias: LMV, diasConfirmados: true, barrios: ["Cordón Forestal Juan Manuel Feeney", "Isidro Quiroga"], referencias: ["Av. 10 de Noviembre", "Complejo Fénix", "Canchas Hay Equipo"] },
   { codigo: "RSU-TD-ZS-N3-F6-LaS", zona: "Sur", turno: "Diurno", frecuenciaSemanal: 6, dias: LAS, diasConfirmados: true, barrios: ["Cordón Forestal Juan Manuel Feeney"], referencias: ["Extensión Máximo Abasolo", "Salón de eventos ZEUS"] },
-  { codigo: "RSU-TD-ZS-N4-F6-LaS", zona: "Sur", turno: "Diurno", frecuenciaSemanal: 6, dias: LAS, diasConfirmados: true, barrios: ["Los Bretes (Moure)", "Dr. Quirno Costa (Isidro Quiroga)", "Extensión Cerro Solo"], referencias: ["Av. Julio Argentino Roca", "Carrefour Hiper Comodoro Rivadavia", "Gimnasio Municipal N°2"] },
-  { codigo: "RSU-TD-ZS-N5-F6-LaS", zona: "Sur", turno: "Diurno", frecuenciaSemanal: 6, dias: LAS, diasConfirmados: true, barrios: ["El Atardecer (El Cerrito)", "Barrio San Cayetano"], referencias: ["Av. Polonia", "Av. Eva Duarte", "Escuela San Juan Bosco"] },
+  { codigo: "RSU-TD-ZS-N4-F6-LaS", zona: "Sur", turno: "Diurno", frecuenciaSemanal: 6, dias: LAS, diasConfirmados: true, barrios: ["Moure", "Isidro Quiroga", "Extensión Cerro Solo"], referencias: ["Av. Julio Argentino Roca", "Carrefour Hiper Comodoro Rivadavia", "Gimnasio Municipal N°2"] },
+  { codigo: "RSU-TD-ZS-N5-F6-LaS", zona: "Sur", turno: "Diurno", frecuenciaSemanal: 6, dias: LAS, diasConfirmados: true, barrios: ["El Cerrito", "San Cayetano"], referencias: ["Av. Polonia", "Av. Eva Duarte", "Escuela San Juan Bosco"] },
   { codigo: "RSU-TD-ZS-N6-F6-LaS", zona: "Sur", turno: "Diurno", frecuenciaSemanal: 6, dias: LAS, diasConfirmados: true, barrios: ["Dr. Quirno Costa"], referencias: ["Av. Rivadavia", "Cementerio Oeste", "Vecinal Quirno Costa"] },
   { codigo: "RSU-TD-ZS-N7-F6-LaS", zona: "Sur", turno: "Diurno", frecuenciaSemanal: 6, dias: LAS, diasConfirmados: true, barrios: ["Extensión Eva Perón", "Extensión Máximo Abasolo", "Extensión Máximo Abasolo II", "Máximo Abasolo", "San Martín"], referencias: ["Av. Eva Duarte", "Terminal Patagonia", "Av. Rivadavia"] },
   { codigo: "RSU-TD-ZS-N8-F6-LaS", zona: "Sur", turno: "Diurno", frecuenciaSemanal: 6, dias: LAS, diasConfirmados: true, barrios: ["La Floresta", "Las Flores", "Jorge Newbery", "Pietrobelli"], referencias: ["Av. Rivadavia", "C. Huergo", "Colegio Salesiano Domingo Savio"] },
@@ -80,26 +80,26 @@ export const NUCLEOS_RECOLECCION: NucleoRecoleccion[] = [
   { codigo: "RSU-TN-ZS-N7-F6-DaV", zona: "Sur", turno: "Nocturno", frecuenciaSemanal: 6, dias: DAV, diasConfirmados: true, barrios: ["Centro"], referencias: ["Puerto Comodoro Rivadavia", "Costanera", "Catedral San Juan Bosco", "Jumbo"] },
 
   // Zona Norte — turno diurno
-  { codigo: "RSU-TD-ZN-N1-F3-LMV", zona: "Norte", turno: "Diurno", frecuenciaSemanal: 3, dias: LMV, diasConfirmados: true, barrios: ["Gobernador Roque González (Rodríguez Peña)", "Juan José Castelli", "Güemes", "Malvinas Argentinas (Sarmiento)", "Manantial Rosales", "Laprida"], referencias: ["Universidad Nacional de la Patagonia San Juan Bosco", "Hiper ChangoMás"] },
+  { codigo: "RSU-TD-ZN-N1-F3-LMV", zona: "Norte", turno: "Diurno", frecuenciaSemanal: 3, dias: LMV, diasConfirmados: true, barrios: ["Rodríguez Peña", "Juan José Castelli", "Güemes", "Sarmiento", "Manantial Rosales", "Laprida"], referencias: ["Universidad Nacional de la Patagonia San Juan Bosco", "Hiper ChangoMás"] },
   { codigo: null, zona: "Norte", turno: "Diurno", frecuenciaSemanal: null, dias: [], diasConfirmados: false, barrios: ["Diadema Argentina"], referencias: ["Companías Asociadas Petroleras SA", "Natatorio Diadema", "Club Atlético Argentinos Diadema"] },
   { codigo: "RSU-TD-ZN-N2-F3-LMV", zona: "Norte", turno: "Diurno", frecuenciaSemanal: 3, dias: LMV, diasConfirmados: true, barrios: ["Acceso Noroeste", "Ciudadela"], referencias: ["La Casona", "Franja Forestal Cerro de la Cruz", "Axion El Cruce"] },
   { codigo: "RSU-TD-ZN-N3-F3-LMV", zona: "Norte", turno: "Diurno", frecuenciaSemanal: 3, dias: LMV, diasConfirmados: true, barrios: [], referencias: ["Universidad Nacional de la Patagonia San Juan Bosco", "Carrefour Comodoro Universidad"] },
-  { codigo: null, zona: "Norte", turno: "Diurno", frecuenciaSemanal: null, dias: [], diasConfirmados: false, barrios: ["Gobernador Roque González (Rodríguez Peña)"], referencias: ["Plaza Intendente Mario Morejón", "Plaza B° Las Orquídeas", "Cementerio Km5"] },
+  { codigo: null, zona: "Norte", turno: "Diurno", frecuenciaSemanal: null, dias: [], diasConfirmados: false, barrios: ["Rodríguez Peña"], referencias: ["Plaza Intendente Mario Morejón", "Plaza B° Las Orquídeas", "Cementerio Km5"] },
   { codigo: "RSU-TD-ZN-N4-F3-LMV", zona: "Norte", turno: "Diurno", frecuenciaSemanal: 3, dias: LMV, diasConfirmados: true, barrios: ["Próspero Palazzo"], referencias: ["Aeropuerto Internacional Gral. Enrique Mosconi", "Gral. Lavalle"] },
   { codigo: null, zona: "Norte", turno: "Diurno", frecuenciaSemanal: null, dias: [], diasConfirmados: false, barrios: ["Chacras Km 17"], referencias: ["Rancho de Campo", "Granja Sabaoth", "Ruta del TOAS - Unidad Histórica"] },
   { codigo: null, zona: "Norte", turno: "Diurno", frecuenciaSemanal: null, dias: [], diasConfirmados: false, barrios: ["Astra"], referencias: ["Comodoro Rugby Club", "Cine Teatro Astra", "CAPSA KM20"] },
-  { codigo: "RSU-TD-ZN-N5-F3-MJS", zona: "Norte", turno: "Diurno", frecuenciaSemanal: 3, dias: MJS, diasConfirmados: true, barrios: ["Don Bosco (Km 8)", "Bella Vista Norte (Standard Norte)"], referencias: ["Av. Francisco Pietrobelli", "YPF ORVE Km 8", "Kartódromo Internacional AKPS"] },
-  { codigo: "RSU-TD-ZN-N6-F3-MJS", zona: "Norte", turno: "Diurno", frecuenciaSemanal: 3, dias: MJS, diasConfirmados: true, barrios: ["Bella Vista Norte (Standard Norte)"], referencias: ["Gimnasio Municipal N°4 Standart Norte", "Av. Francisco Pietrobelli"] },
+  { codigo: "RSU-TD-ZN-N5-F3-MJS", zona: "Norte", turno: "Diurno", frecuenciaSemanal: 3, dias: MJS, diasConfirmados: true, barrios: ["Don Bosco (Km 8)", "Standard Norte"], referencias: ["Av. Francisco Pietrobelli", "YPF ORVE Km 8", "Kartódromo Internacional AKPS"] },
+  { codigo: "RSU-TD-ZN-N6-F3-MJS", zona: "Norte", turno: "Diurno", frecuenciaSemanal: 3, dias: MJS, diasConfirmados: true, barrios: ["Standard Norte"], referencias: ["Gimnasio Municipal N°4 Standart Norte", "Av. Francisco Pietrobelli"] },
   { codigo: null, zona: "Norte", turno: "Diurno", frecuenciaSemanal: null, dias: [], diasConfirmados: false, barrios: ["Cuarteles Chacabuco"], referencias: ["Base de Apoyo Logístico", "Regimiento de Infantería Mecanizada"] },
-  { codigo: "RSU-TD-ZN-N7-F3-MJS", zona: "Norte", turno: "Diurno", frecuenciaSemanal: 3, dias: MJS, diasConfirmados: true, barrios: ["Don Bosco (Km 8)", "Extensión Quinta Bella Vista Norte"], referencias: ["Cantera Peralta Áridos Especiales", "Av. Alejandro Maíz"] },
-  { codigo: "RSU-TD-ZN-N8-F3-MJS", zona: "Norte", turno: "Diurno", frecuenciaSemanal: 3, dias: MJS, diasConfirmados: true, barrios: ["Don Bosco", "Gasoducto (Restinga Alí Ferrocarrilera)"], referencias: ["Materiales Silpat KM8", "Vivero Mi Sueño"] },
+  { codigo: "RSU-TD-ZN-N7-F3-MJS", zona: "Norte", turno: "Diurno", frecuenciaSemanal: 3, dias: MJS, diasConfirmados: true, barrios: ["Don Bosco (Km 8)", "Extensión Quinta Standard Norte"], referencias: ["Cantera Peralta Áridos Especiales", "Av. Alejandro Maíz"] },
+  { codigo: "RSU-TD-ZN-N8-F3-MJS", zona: "Norte", turno: "Diurno", frecuenciaSemanal: 3, dias: MJS, diasConfirmados: true, barrios: ["Don Bosco", "Restinga Alí"], referencias: ["Materiales Silpat KM8", "Vivero Mi Sueño"] },
   { codigo: null, zona: "Norte", turno: "Diurno", frecuenciaSemanal: null, dias: [], diasConfirmados: false, barrios: ["Caleta Córdova"], referencias: ["El Muelle Marisquería", "Cancha Club Atlético Caleta Córdova", "Muelle de Caleta Córdova"] },
   // Zona Norte — turno nocturno
-  { codigo: "RSU-TN-ZN-N1-F6-DaV", zona: "Norte", turno: "Nocturno", frecuenciaSemanal: 6, dias: DAV, diasConfirmados: true, barrios: ["General Enrique Mosconi", "Caballeriza", "Jorge Newbery (Pietrobelli)"], referencias: ["Museo Nacional del Petróleo", "Calafate Rugby Club", "Monumento Primeros Colonos"] },
+  { codigo: "RSU-TN-ZN-N1-F6-DaV", zona: "Norte", turno: "Nocturno", frecuenciaSemanal: 6, dias: DAV, diasConfirmados: true, barrios: ["General Enrique Mosconi", "Caballeriza", "Pietrobelli"], referencias: ["Museo Nacional del Petróleo", "Calafate Rugby Club", "Monumento Primeros Colonos"] },
   { codigo: "RSU-TN-ZN-N2-F3-DMJ", zona: "Norte", turno: "Nocturno", frecuenciaSemanal: 3, dias: [], diasConfirmados: false, barrios: ["Extensión Sismográfica"], referencias: ["Unión Vecinal Sismográfica", "Cantera Peralta Áridos Especiales"] },
   { codigo: "RSU-TN-ZN-N2-F3-LMV", zona: "Norte", turno: "Nocturno", frecuenciaSemanal: 3, dias: LMV, diasConfirmados: true, barrios: ["Presidente Ortiz"], referencias: ["Club Deportivo Ferrocarril del Estado", "Centrales Térmicas Patagónicas", "Paseo Costero Barrio Ferroviario"] },
   { codigo: "RSU-TN-ZN-N2-F6-DaV", zona: "Norte", turno: "Nocturno", frecuenciaSemanal: 6, dias: DAV, diasConfirmados: true, barrios: [], referencias: ["Av. del Libertador", "Gendarmería Nacional Escuadrón 41"] },
-  { codigo: null, zona: "Norte", turno: "Nocturno", frecuenciaSemanal: null, dias: [], diasConfirmados: false, barrios: ["Los Arenales (Barrio Saavedra)"], referencias: ["Barrio Médanos Km3", "Parque Saavedra", "Quincho Saavedra"] },
+  { codigo: null, zona: "Norte", turno: "Nocturno", frecuenciaSemanal: null, dias: [], diasConfirmados: false, barrios: ["Saavedra"], referencias: ["Barrio Médanos Km3", "Parque Saavedra", "Quincho Saavedra"] },
   { codigo: "RSU-TN-ZN-N3-F3-LMV", zona: "Norte", turno: "Nocturno", frecuenciaSemanal: 3, dias: LMV, diasConfirmados: true, barrios: ["25 de Mayo"], referencias: ["Universidad Nacional de la Patagonia San Juan Bosco", "Playa Km 4", "Club Náutico YPF"] },
   { codigo: "RSU-TN-ZN-N3-F6-DaV", zona: "Norte", turno: "Nocturno", frecuenciaSemanal: 6, dias: DAV, diasConfirmados: true, barrios: ["General Enrique Mosconi"], referencias: ["Escuela 146 Gral Mosconi", "Club Ing. Luis A. Huergo", "Muelle Petrolero"] },
 ];
@@ -234,7 +234,7 @@ const BARRIDO_MANUAL_ZN_BIS: { n: number; barrios: string[]; calles: string[] }[
 const BARRIDO_MECANICO: RecorridoBarrido[] = [
   { recorrido: "550", tipo: "Mecánico", zona: "Sur – Ruta 3", turno: "Nocturno", frecuenciaSemanal: 6, dias: DAV, diasConfirmados: true, barrios: ["Stella Maris"], calles: ["Av. Rivadavia", "Av. Portugal", "Av. Estados Unidos", "Av. Alsina", "Av. Juan XXIII"] },
   { recorrido: "551", tipo: "Mecánico", zona: "Norte – Ruta 3", turno: "Nocturno", frecuenciaSemanal: 1, dias: ["Lunes"], diasConfirmados: true, barrios: ["General Enrique Mosconi"], calles: ["Ruta Nacional 3", "Cno. del Centenario"] },
-  { recorrido: "552", tipo: "Manual", zona: "Norte – Ruta 3", turno: "Nocturno", frecuenciaSemanal: 1, dias: ["Domingo"], diasConfirmados: true, barrios: ["Ciudadela", "Próspero Palazzo", "Gobernador Roque González (Rodríguez Peña)", "Juan José Castelli", "Sarmiento", "Güemes", "25 de Mayo", "General Enrique Mosconi", "Presidente Ortiz"], calles: ["Ruta Nacional 3", "Av. Tehuelches", "Av. Fray Luis Beltrán"] },
+  { recorrido: "552", tipo: "Manual", zona: "Norte – Ruta 3", turno: "Nocturno", frecuenciaSemanal: 1, dias: ["Domingo"], diasConfirmados: true, barrios: ["Ciudadela", "Próspero Palazzo", "Rodríguez Peña", "Juan José Castelli", "Sarmiento", "Güemes", "25 de Mayo", "General Enrique Mosconi", "Presidente Ortiz"], calles: ["Ruta Nacional 3", "Av. Tehuelches", "Av. Fray Luis Beltrán"] },
   { recorrido: "553", tipo: "Mecánico", zona: "Sur", turno: "Diurno", frecuenciaSemanal: 1, dias: ["Lunes"], diasConfirmados: true, barrios: ["San Cayetano"], calles: ["Av. Rivadavia", "Av. 10 de Noviembre", "13 de Diciembre", "Vélez Sársfield"] },
   { recorrido: "554", tipo: "Mecánico", zona: "Sur", turno: "Diurno", frecuenciaSemanal: 1, dias: ["Martes"], diasConfirmados: true, barrios: ["San Cayetano", "Cordón Forestal Juan Manuel Feeney"], calles: ["Av. Rivadavia", "Av. Polonia", "Av. Lisandro de la Torre", "Av. Congreso", "Av. Chile"] },
   { recorrido: "555", tipo: "Mecánico", zona: "Sur", turno: "Diurno", frecuenciaSemanal: 1, dias: ["Miércoles"], diasConfirmados: true, barrios: ["La Floresta", "Las Flores", "Cordón Forestal Juan Manuel Feeney"], calles: ["C. Huergo", "Av. Julio Argentino Roca", "Av. Estados Unidos", "Av. Chile"] },
@@ -318,6 +318,25 @@ export const SERVICIOS_ADICIONALES: ServicioAdicional[] = [
 ];
 
 // ---------------------------------------------------------------------------
+// Horarios por turno — Cap. I del ETP (recolección, art. Horarios) y Cap. II
+// del ETP (barrido, art. Horarios). Son horarios de INICIO del recorrido —
+// el pliego no fija hora de cierre para recolección ("hasta finalizar el
+// recorrido"); para barrido sí fija cierre y varía diurno según la época.
+// ---------------------------------------------------------------------------
+
+export function horarioRecoleccion(turno: Turno): string {
+  return turno === "Diurno"
+    ? "a partir de las 07:00 hs (hasta terminar el recorrido)"
+    : "a partir de las 21:00 hs (hasta terminar el recorrido)";
+}
+
+export function horarioBarrido(turno: Turno): string {
+  return turno === "Diurno"
+    ? "7:00 a 15:00 hs oct-mar / 8:00 a 16:00 hs abr-sep, lunes a viernes; sábados 8:00 a 12:00 hs"
+    : "21:00 a 04:00 hs";
+}
+
+// ---------------------------------------------------------------------------
 // Búsqueda
 // ---------------------------------------------------------------------------
 
@@ -329,12 +348,21 @@ function normalizar(s: string): string {
     .trim();
 }
 
+// Coincidencia en ambos sentidos: el pliego usa nombres informales/abreviados
+// ("Rodríguez Peña") mientras el dataset oficial de barrios usa el nombre
+// completo ("Nicolás Rodríguez Peña") — con un solo sentido de comparación se
+// pierden estos casos.
+function coincideBarrio(nombreGuardado: string, query: string): boolean {
+  const a = normalizar(nombreGuardado);
+  const b = normalizar(query);
+  return a.includes(b) || b.includes(a);
+}
+
 /** Núcleos de recolección domiciliaria cuyo barrio etiquetado matchea la búsqueda. */
 export function buscarRecoleccionPorBarrio(query: string): NucleoRecoleccion[] {
-  const q = normalizar(query);
-  if (!q) return [];
+  if (!query.trim()) return [];
   return NUCLEOS_RECOLECCION.filter((n) =>
-    n.barrios.some((b) => normalizar(b).includes(q)),
+    n.barrios.some((b) => coincideBarrio(b, query)),
   );
 }
 
@@ -345,6 +373,6 @@ export function buscarBarridoPorCalleOBarrio(query: string): RecorridoBarrido[] 
   return RECORRIDOS_BARRIDO.filter(
     (r) =>
       r.calles.some((c) => normalizar(c).includes(q)) ||
-      r.barrios.some((b) => normalizar(b).includes(q)),
+      r.barrios.some((b) => coincideBarrio(b, query)),
   );
 }
