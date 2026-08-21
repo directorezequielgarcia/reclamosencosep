@@ -24,6 +24,7 @@ import {
   elevarAExpediente,
   reasignarPrestadora,
 } from "./actions";
+import { AgregarVideoAdmin } from "./AgregarVideoAdmin";
 
 export const metadata = { title: "Reclamo · Panel ENCOSEP" };
 
@@ -104,6 +105,7 @@ export default async function ReclamoDetallePage({
   const puedeInspeccionar = puedeGestionarInspecciones(session!.user.rol);
   const fotos = reclamo.adjuntos.filter((a) => a.tipo === "FOTO");
   const documentos = reclamo.adjuntos.filter((a) => a.tipo === "DOCUMENTO");
+  const videos = reclamo.adjuntos.filter((a) => a.tipo === "VIDEO");
   const fechaLarga = reclamo.createdAt.toLocaleString("es-AR", {
     day: "2-digit",
     month: "long",
@@ -190,6 +192,28 @@ export default async function ReclamoDetallePage({
             </Card>
           )}
 
+          {videos.length > 0 && (
+            <Card titulo={`Videos · ${videos.length}`}>
+              <div className="flex flex-col gap-3">
+                {videos.map((v, i) => (
+                  <div key={v.id} className="flex flex-col gap-1">
+                    <video
+                      src={v.url}
+                      controls
+                      className="w-full rounded-lg border border-line bg-black"
+                    />
+                    <a
+                      href={`${v.url}?download=1`}
+                      className="text-xs text-navy font-semibold underline decoration-line-strong underline-offset-2 self-start"
+                    >
+                      ⬇️ Descargar video {i + 1}
+                    </a>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
+
           <Card titulo="Ubicación">
             <div className="text-sm text-navy">
               {reclamo.direccion}
@@ -259,6 +283,10 @@ export default async function ReclamoDetallePage({
                   Adjuntar
                 </SubmitButton>
               </form>
+
+              <div className="mt-3 pt-3 border-t border-line">
+                <AgregarVideoAdmin reclamoId={reclamo.id} />
+              </div>
             </Card>
           )}
 

@@ -7,6 +7,7 @@ import { SvcIcon } from "@/components/servicios/SvcIcon";
 import { ZorritoTour } from "@/components/tour/ZorritoTour";
 import { POSE_POR_SVC } from "@/components/tour/zorrito-poses";
 import { BuscadorBarrio } from "@/components/ui/BuscadorBarrio";
+import { SubirVideoReclamo, type VideoSubido } from "@/components/ui/SubirVideoReclamo";
 import {
   SVC_META,
   SVC_ORDER,
@@ -44,6 +45,7 @@ type State = {
   lat: number | null;
   lng: number | null;
   fotos: File[];
+  videos: VideoSubido[];
   linea: string;
   empresa: EmpresaTransporte | "";
   paradaAntes: string;
@@ -60,6 +62,7 @@ const INIT: State = {
   lat: null,
   lng: null,
   fotos: [],
+  videos: [],
   linea: "",
   empresa: "",
   paradaAntes: "",
@@ -190,6 +193,11 @@ export function WizardReclamo({ svcInicial }: { svcInicial?: SvcKey }) {
       if (state.svc === "transporte" && state.linea.trim()) fd.append("linea", state.linea.trim());
       if (state.svc === "transporte" && state.empresa) fd.append("empresa", state.empresa);
       for (const f of state.fotos) fd.append("foto", f);
+      for (const v of state.videos) {
+        fd.append("videoUrl", v.url);
+        fd.append("videoMime", v.mimeType);
+        fd.append("videoBytes", String(v.bytes));
+      }
 
       const res = await fetch("/api/reclamos", { method: "POST", body: fd });
       const data = await res.json();
@@ -542,6 +550,17 @@ function PasoDetalle({
     );
   }
 
+  function agregarVideo(video: VideoSubido) {
+    setField("videos", [...state.videos, video]);
+  }
+
+  function quitarVideo(i: number) {
+    setField(
+      "videos",
+      state.videos.filter((_, idx) => idx !== i),
+    );
+  }
+
   return (
     <>
       <CabeceraPaso
@@ -754,6 +773,40 @@ function PasoDetalle({
               );
             })}
           </div>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <span className="text-xs font-semibold text-navy">
+          Video <span className="text-muted font-normal">(opcional, hasta 2)</span>
+        </span>
+        {state.videos.length > 0 && (
+          <div className="flex flex-col gap-2">
+            {state.videos.map((v, i) => (
+              <div key={v.url} className="flex items-center gap-2">
+                <video
+                  src={v.url}
+                  controls
+                  className="flex-1 max-h-40 rounded-lg border border-line bg-black"
+                />
+                <button
+                  type="button"
+                  onClick={() => quitarVideo(i)}
+                  className="w-6 h-6 rounded-full bg-navy/80 text-white text-xs font-bold shrink-0"
+                  aria-label="Quitar video"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        {state.videos.length < 2 && (
+          <SubirVideoReclamo
+            pathnamePrefix="reclamos/pendientes/"
+            clientPayload={JSON.stringify({ scope: "pendiente" })}
+            onSubido={agregarVideo}
+          />
         )}
       </div>
 

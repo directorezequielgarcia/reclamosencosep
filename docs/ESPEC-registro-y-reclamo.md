@@ -189,7 +189,10 @@ avance del expediente, pasos y resolución.
 - `ReclamoEvento`: agregar `visibleVecino Boolean @default(false)` para distinguir
   **comentario público al vecino** vs nota interna. Los comentarios del Ente dirigidos
   al vecino se marcan `true` y se muestran en su vista (hoy se filtran todos los COMENTARIO).
-- `AdjuntoTipo`: agregar `VIDEO` (o tratar video como `DOCUMENTO` para no migrar). A definir.
+- `AdjuntoTipo`: agregar `VIDEO`. ✅ Implementado (2026-08) — el vecino puede
+  subir video en el wizard, en "Ampliar declaratoria" y el Ente desde el panel
+  admin. Sube directo navegador→Vercel Blob (bypasea el límite de ~4.5 MB de
+  las funciones serverless de Vercel); ver `docs/05_almacenamiento_archivos.md`.
 
 ### C) Acciones nuevas del reclamante (server actions, sin tocar gestores)
 - `ampliarDeclaratoria(codigo, texto, archivos[])` → crea `ReclamoEvento` (COMENTARIO,
@@ -214,5 +217,5 @@ Cada fase se prueba antes de pasar a la siguiente.
 
 ## 10. Decisiones abiertas
 - [ ] "Cerrar un reclamo" = ¿finalizar la carga, o darlo por resuelto? (definir el verbo en la UI).
-- [ ] Video: ¿tipo `VIDEO` nuevo o se sube como `DOCUMENTO`?
+- [x] Video: tipo `VIDEO` nuevo (no se sube como `DOCUMENTO`). Resuelto 2026-08.
 - [ ] ¿Aviso de cambio de contraseña en el primer ingreso? (recomendado).

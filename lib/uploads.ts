@@ -74,6 +74,48 @@ export async function guardarDocumentoPrestadora(
 }
 
 /**
+ * Guarda el archivo principal (PDF/Word) de una auditoría. Blob si hay
+ * token, fs local si no — misma estrategia que guardarDocumentoPrestadora.
+ */
+export async function guardarArchivoAuditoria(
+  auditoriaId: string,
+  file: File,
+): Promise<UploadedFile> {
+  if (file.size === 0) throw new Error("Archivo vacío");
+  if (file.size > MAX_DOC_BYTES) {
+    throw new Error(
+      `Archivo demasiado grande (máx ${MAX_DOC_BYTES / 1024 / 1024} MB)`,
+    );
+  }
+  if (file.type && !ALLOWED_DOC.has(file.type)) {
+    throw new Error(`Tipo de archivo no soportado: ${file.type}`);
+  }
+
+  const ext = extDocFromMime(file.type);
+  const nombre = `${randomUUID()}${ext}`;
+
+  if (process.env.BLOB_READ_WRITE_TOKEN) {
+    const key = `auditorias/${auditoriaId}/${nombre}`;
+    const blob = await put(key, file, {
+      access: "public",
+      contentType: file.type || "application/octet-stream",
+    });
+    return { url: blob.url, mimeType: file.type, bytes: file.size };
+  }
+
+  const dir = path.join(UPLOAD_ROOT, "auditorias", auditoriaId);
+  await fs.mkdir(dir, { recursive: true });
+  const dest = path.join(dir, nombre);
+  const buf = Buffer.from(await file.arrayBuffer());
+  await fs.writeFile(dest, buf);
+  return {
+    url: `/uploads/auditorias/${auditoriaId}/${nombre}`,
+    mimeType: file.type,
+    bytes: file.size,
+  };
+}
+
+/**
  * Guarda el PDF de un cuadro tarifario. Blob si hay token, fs local si no.
  */
 export async function guardarPdfCuadro(
@@ -365,8 +407,8 @@ export async function guardarFotoBoletin(
   };
 }
 
-const MAX_VIDEO_BYTES = 50 * 1024 * 1024; // 50 MB
-const ALLOWED_VIDEO = new Set([
+export const MAX_VIDEO_BYTES = 50 * 1024 * 1024; // 50 MB
+export const ALLOWED_VIDEO = new Set([
   "video/mp4",
   "video/webm",
   "video/quicktime",
@@ -437,4 +479,26 @@ export async function guardarAdjuntoActo(
     tipo,
     nombre: file.name,
   };
+}
+
+/**
+ * Verifica que una URL de video subida directo desde el navegador (client
+ * upload de Vercel Blob) efectivamente sea un blob público bajo el prefijo
+ * de ruta esperado. Los videos de reclamos no pasan por nuestro servidor
+ * (ver /api/upload/reclamo-video), así que esta es la única validación de
+ * procedencia posible antes de guardar el Adjunto en la base.
+ */
+export function validarUrlBlobDeVideo(url: string, prefijoEsperado: string): void {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    throw new Error("URL de video inválida");
+  }
+  if (!parsed.hostname.endsWith(".public.blob.vercel-storage.com")) {
+    throw new Error("El video no proviene del almacenamiento esperado");
+  }
+  if (!parsed.pathname.includes(`/${prefijoEsperado}`)) {
+    throw new Error("El video no corresponde a este reclamo");
+  }
 }

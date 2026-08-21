@@ -17,6 +17,7 @@ import {
 import { BorrarReclamo } from "./BorrarReclamo";
 import { Solucionado } from "./Solucionado";
 import { SubmitButton } from "@/components/ui/SubmitButton";
+import { AgregarVideo } from "./AgregarVideo";
 
 export const metadata = { title: "Mi reclamo · ENCOSEP" };
 
@@ -57,6 +58,7 @@ export default async function DetalleMiReclamoPage({
   const svc = svcFromKind(reclamo.servicio.kind);
   const fotos = reclamo.adjuntos.filter((a) => a.tipo === "FOTO");
   const documentos = reclamo.adjuntos.filter((a) => a.tipo === "DOCUMENTO");
+  const videos = reclamo.adjuntos.filter((a) => a.tipo === "VIDEO");
   const eventosVisibles = reclamo.eventos.filter((e) =>
     TIPOS_VISIBLES.includes(e.tipo),
   );
@@ -148,6 +150,31 @@ export default async function DetalleMiReclamoPage({
               </li>
             ))}
           </ul>
+        </section>
+      )}
+
+      {videos.length > 0 && (
+        <section className="rounded-2xl border border-line bg-paper p-4">
+          <div className="text-[11px] font-bold text-muted uppercase tracking-wider mb-2">
+            Videos · {videos.length}
+          </div>
+          <div className="flex flex-col gap-3">
+            {videos.map((v, i) => (
+              <div key={v.id} className="flex flex-col gap-1">
+                <video
+                  src={v.url}
+                  controls
+                  className="w-full rounded-lg border border-line bg-black"
+                />
+                <a
+                  href={`${v.url}?download=1`}
+                  className="text-xs text-navy font-semibold underline decoration-line-strong underline-offset-2 self-start"
+                >
+                  ⬇️ Descargar video {i + 1}
+                </a>
+              </div>
+            ))}
+          </div>
         </section>
       )}
 
@@ -246,6 +273,10 @@ export default async function DetalleMiReclamoPage({
             Agregar documentación
           </SubmitButton>
         </form>
+
+        <div className="mt-3 pt-3 border-t border-line">
+          <AgregarVideo codigo={reclamo.codigo} reclamoId={reclamo.id} />
+        </div>
       </section>
 
       {/* CONVERSACIÓN — ida y vuelta con el ENCOSEP */}

@@ -7,7 +7,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ROLES_EDIT, TRANSICIONES } from "@/lib/admin";
 import { siguienteNumero } from "@/lib/expedientes";
-import { guardarFotoReclamo } from "@/lib/uploads";
+import { guardarFotoReclamo, validarUrlBlobDeVideo } from "@/lib/uploads";
 import type { ReclamoEstado } from "@prisma/client";
 
 const CambiarEstadoSchema = z.object({
@@ -191,6 +191,66 @@ export async function agregarAdjuntoAdmin(formData: FormData) {
       mensaje:
         mensaje ||
         `El ENCOSEP agregó ${guardados} archivo${guardados === 1 ? "" : "s"}.`,
+      visibleVecino: true,
+    },
+  });
+
+  revalidatePath(`/admin/reclamo/${reclamo.id}`);
+  revalidatePath(`/mis-reclamos/${reclamo.codigo}`);
+  revalidatePath(`/admin/bandeja`);
+}
+
+const VideoAdminSchema = z.object({
+  reclamoId: z.string().min(1),
+  url: z.string().url(),
+  mimeType: z.string().min(1),
+  bytes: z.coerce.number().int().positive(),
+});
+
+// El video ya está subido a Vercel Blob (subida directa desde el navegador,
+// ver SubirVideoReclamo) — acá solo registramos el Adjunto en la base.
+export async function agregarVideoAdmin(formData: FormData) {
+  const session = await auth();
+  if (!session || !ROLES_EDIT.includes(session.user.rol)) {
+    throw new Error("Sin permiso");
+  }
+
+  const parsed = VideoAdminSchema.safeParse({
+    reclamoId: formData.get("reclamoId"),
+    url: formData.get("url"),
+    mimeType: formData.get("mimeType"),
+    bytes: formData.get("bytes"),
+  });
+  if (!parsed.success) throw new Error("Datos de video inválidos");
+
+  const reclamo = await prisma.reclamo.findUnique({
+    where: { id: parsed.data.reclamoId },
+  });
+  if (!reclamo) throw new Error("Reclamo inexistente");
+  if (
+    session.user.rol === "OPERADOR_PRESTADORA" &&
+    reclamo.prestadoraId !== session.user.prestadoraId
+  ) {
+    throw new Error("Sin permiso sobre este reclamo");
+  }
+
+  validarUrlBlobDeVideo(parsed.data.url, `reclamos/${reclamo.id}/videos/`);
+
+  await prisma.adjunto.create({
+    data: {
+      reclamoId: reclamo.id,
+      tipo: "VIDEO",
+      url: parsed.data.url,
+      mimeType: parsed.data.mimeType,
+      bytes: parsed.data.bytes,
+    },
+  });
+  await prisma.reclamoEvento.create({
+    data: {
+      reclamoId: reclamo.id,
+      tipo: "ADJUNTO",
+      autorId: session.user.id,
+      mensaje: "El ENCOSEP agregó un video.",
       visibleVecino: true,
     },
   });

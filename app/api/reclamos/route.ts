@@ -8,7 +8,12 @@ import {
   TRANSPORTE_CAMBIO_PARADA_TITULO,
   type SvcKey,
 } from "@/lib/servicios";
-import { guardarFotoReclamo } from "@/lib/uploads";
+import {
+  guardarFotoReclamo,
+  validarUrlBlobDeVideo,
+  ALLOWED_VIDEO,
+  MAX_VIDEO_BYTES,
+} from "@/lib/uploads";
 import { geocodificarDireccion } from "@/lib/geocode";
 
 export const runtime = "nodejs";
@@ -42,6 +47,7 @@ export async function POST(req: Request) {
   const ct = req.headers.get("content-type") ?? "";
   let datos: z.infer<typeof BodySchema>;
   let fotos: File[] = [];
+  let videos: { url: string; mimeType: string; bytes: number }[] = [];
 
   if (ct.includes("multipart/form-data")) {
     const fd = await req.formData();
@@ -72,6 +78,20 @@ export async function POST(req: Request) {
       if (f instanceof File && f.size > 0) fotos.push(f);
     }
     if (fotos.length > 5) fotos = fotos.slice(0, 5);
+
+    // Los videos ya están subidos a Vercel Blob (subida directa desde el
+    // navegador, ver SubirVideoReclamo) — acá solo llegan sus metadatos.
+    const videoUrls = fd.getAll("videoUrl").map(String);
+    const videoMimes = fd.getAll("videoMime").map(String);
+    const videoBytes = fd.getAll("videoBytes").map(String);
+    videos = videoUrls
+      .map((url, i) => ({
+        url,
+        mimeType: videoMimes[i] ?? "",
+        bytes: Number(videoBytes[i] ?? 0),
+      }))
+      .filter((v) => v.url && ALLOWED_VIDEO.has(v.mimeType) && v.bytes > 0 && v.bytes <= MAX_VIDEO_BYTES)
+      .slice(0, 2);
   } else {
     const raw = await req.json().catch(() => null);
     const parsed = BodySchema.safeParse(raw);
@@ -223,6 +243,24 @@ export async function POST(req: Request) {
       });
     } catch (e) {
       console.error("foto rechazada:", (e as Error).message);
+    }
+  }
+
+  // Vincular los videos (ya subidos a Blob) al reclamo recién creado.
+  for (const v of videos) {
+    try {
+      validarUrlBlobDeVideo(v.url, "reclamos/pendientes/");
+      await prisma.adjunto.create({
+        data: {
+          reclamoId: reclamo.id,
+          tipo: "VIDEO",
+          url: v.url,
+          mimeType: v.mimeType,
+          bytes: v.bytes,
+        },
+      });
+    } catch (e) {
+      console.error("video rechazado:", (e as Error).message);
     }
   }
 

@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { guardarFotoReclamo } from "@/lib/uploads";
+import { guardarFotoReclamo, validarUrlBlobDeVideo } from "@/lib/uploads";
 
 async function reclamoDelUsuario(codigo: string, userId: string) {
   const r = await prisma.reclamo.findUnique({ where: { codigo } });
@@ -186,6 +186,55 @@ export async function agregarDocumental(formData: FormData) {
     });
   }
   revalidatePath(`/mis-reclamos/${codigo}`);
+  revalidatePath(`/admin/reclamo/${r.id}`);
+  revalidatePath(`/admin/bandeja`);
+}
+
+const VideoSchema = z.object({
+  codigo: z.string().min(1),
+  url: z.string().url(),
+  mimeType: z.string().min(1),
+  bytes: z.coerce.number().int().positive(),
+});
+
+// El video ya está subido a Vercel Blob (subida directa desde el navegador,
+// ver SubirVideoReclamo) — acá solo registramos el Adjunto en la base.
+export async function agregarVideoReclamo(formData: FormData) {
+  const session = await auth();
+  if (!session) throw new Error("Sin sesión");
+
+  const parsed = VideoSchema.safeParse({
+    codigo: formData.get("codigo"),
+    url: formData.get("url"),
+    mimeType: formData.get("mimeType"),
+    bytes: formData.get("bytes"),
+  });
+  if (!parsed.success) throw new Error("Datos de video inválidos");
+
+  const r = await reclamoDelUsuario(parsed.data.codigo, session.user.id);
+  validarUrlBlobDeVideo(parsed.data.url, `reclamos/${r.id}/videos/`);
+
+  await prisma.adjunto.create({
+    data: {
+      reclamoId: r.id,
+      tipo: "VIDEO",
+      url: parsed.data.url,
+      mimeType: parsed.data.mimeType,
+      bytes: parsed.data.bytes,
+    },
+  });
+  await prisma.reclamoEvento.create({
+    data: {
+      reclamoId: r.id,
+      tipo: "ADJUNTO",
+      autorId: session.user.id,
+      mensaje: "Agregaste un video de documentación.",
+      visibleVecino: true,
+      leidoEnte: false,
+    },
+  });
+
+  revalidatePath(`/mis-reclamos/${parsed.data.codigo}`);
   revalidatePath(`/admin/reclamo/${r.id}`);
   revalidatePath(`/admin/bandeja`);
 }
