@@ -19,7 +19,7 @@ type AreaConfig = {
   normativa: Array<{ norma: string; titulo: string }>;
   acento: "blue" | "yellow" | "green" | "purple";
   // Solo Transporte: listado de líneas con resumen (origen → destino) y el
-  // detalle calle por calle transcripto del Anexo I de la Resolución 1.399/26
+  // detalle calle por calle transcripto del Anexo I de la Resolución 1.628/26
   // (desplegable por línea, para no abrumar la vista por defecto).
   lineas?: Array<{
     numero: string;
@@ -158,7 +158,7 @@ const AREAS: Record<string, AreaConfig> = {
     archivo: "transporte.png",
     prestadora: "SOL BUS (Grupo MR S.R.L.) · TRANSPORTE DIADEMA S.A.",
     prestadoraDetalle:
-      "Desde el 1° de agosto de 2026, Grupo MR S.R.L. — marca comercial SOL BUS — presta el servicio urbano y suburbano de pasajeros, en reemplazo de Patagonia Argentina S.R.L. Diadema continúa con sus líneas.",
+      "Desde el 1° de agosto de 2026, Grupo MR S.R.L. — marca comercial SOL BUS — presta el servicio urbano y suburbano de pasajeros, en reemplazo de Patagonia Argentina S.R.L. Diadema continúa con sus líneas. Desde el 1° de septiembre de 2026 rige un nuevo cuadro de líneas y recorridos (Resolución 1.628/26).",
     descripcionCorta:
       "Servicio de colectivos urbanos e interurbanos que conectan los barrios de Comodoro Rivadavia, Rada Tilly y zonas aledañas.",
     queFiscaliza: [
@@ -180,9 +180,9 @@ const AREAS: Record<string, AreaConfig> = {
     ],
     normativa: [
       {
-        norma: "Resolución Municipal Nº 1.399/26 (20-07-2026)",
+        norma: "Resolución Municipal Nº 1.628/26 (21-08-2026)",
         titulo:
-          "Establece las líneas, ramales y recorridos de la Etapa Inicial del servicio a cargo de Grupo MR S.R.L. (Sol Bus), vigente desde el 1° de agosto de 2026",
+          "Deroga la Resolución 1.399/26 y establece las nuevas líneas, ramales y recorridos de la Etapa Inicial del servicio a cargo de Grupo MR S.R.L. (Sol Bus), de cumplimiento obligatorio desde el 1° de septiembre de 2026",
       },
       {
         norma: "Ordenanza Municipal Nº 17.335/25",
@@ -191,7 +191,7 @@ const AREAS: Record<string, AreaConfig> = {
     ],
     acento: "purple",
     lineasNota:
-      "Detalle calle por calle transcripto del Anexo I de la Resolución 1.399/26 — tocá cada línea para desplegarlo. Nota: la Etapa Inicial no incluye líneas 10 ni 11.",
+      "Detalle calle por calle transcripto del Anexo I de la Resolución 1.628/26 (vigente desde el 1° de septiembre de 2026) — tocá cada línea para desplegarlo. Nota: la Etapa Inicial no incluye líneas 10 ni 11.",
     mapaSolBusUrl: "https://micronauta.dnsalias.net/web/urbano/?conf=comodoro",
     mapaMcrUrl: "https://comodoro-mit.github.io/transporte",
     linksOficiales: [
@@ -200,164 +200,172 @@ const AREAS: Record<string, AreaConfig> = {
     lineas: [
       {
         numero: "1",
-        resumen: "Centro – Máximo Abásolo",
+        resumen: "Máximo Abásolo – Centro",
         tramos: [
-          { etiqueta: "Ida", texto: "Avenida Rivadavia, Carlos Pellegrini, Avenida Rivadavia, Marcelo T. Alvear, Misiones, 13 de Diciembre, Ingeniero Huergo, Leandro N. Alem, Avenida Rivadavia, Los Nogales, San Martín, Los Pensamientos, Huergo, Los Pensamientos, San Martín, Los Álamos, Avenida Rivadavia, Viamonte, Chaco, Saavedra, Avenida Rivadavia, Belgrano, Ameghino, Almirante Brown, Carlos Pellegrini." },
-          { etiqueta: "Vuelta", texto: "Raúl Cercos, Huergo, Araucaria Norte, Blas Parera, Los Pinos, Huergo, Viamonte, Chaco, Saavedra, Dorrego, Almirante Brown, Bartolomé Mitre, Ameghino, Carlos Pellegrini, Inmigrantes Gallegos, Gil Álvarez, Avenida Rivadavia, Belgrano, Avenida Ducos, Carlos Pellegrini." },
+          { etiqueta: "Ida", texto: "Natalia Payaguala, Avenida Polonia, Raúl Cercos, Ingeniero Huergo, Los Pensamientos, San Martín, Los Álamos, Avenida Rivadavia, Viamonte, Chaco, Saavedra, Avenida Rivadavia, Belgrano, Avenida Ducos, Carlos Pellegrini, Gil Álvarez." },
+          { etiqueta: "Vuelta", texto: "Gil Álvarez, 25 de Mayo, Avenida Hipólito Yrigoyen, Avenida Alsina, Rawson, Alvear, Misiones, 13 de Diciembre, Ingeniero Huergo, Leandro N. Alem, Avenida Rivadavia, Los Nogales, San Martín, Los Pensamientos, Ingeniero Huergo, Raúl Cercos, Natalia Payaguala." },
         ],
       },
       {
         numero: "2",
-        resumen: "Centro – Máximo Abásolo",
+        resumen: "Máximo Abásolo – Centro",
         tramos: [
-          { etiqueta: "Ida", texto: "Gil Álvarez, 25 de Mayo, Almirante Brown, Rawson, Saavedra, Bouchardo, 13 de Diciembre, Salta, Avenida Sargento Cabral, Avenida Juan XXIII, Avenida Estados Unidos, Avenida Lisandro de la Torre, Francisco Behr, Gustavo Bahamonde, Avenida Julio Argentino Roca, Carlos O'Donnell, Avenida Polonia, Héctor Cámpora, Avenida Eva Duarte, Rotonda Huergo y Bruno Pieragnoli." },
-          { etiqueta: "Vuelta", texto: "Rotonda Huergo y Bruno Pieragnoli, Eva Duarte, Carlos O'Donnell, Avenida 10 de Noviembre, Avenida Roca, Maestro Carlos Guastavino, Código 829, Código 844, Gustavo Bahamonde, Francisco Behr, Avenida Lisandro de la Torre, Avenida Estados Unidos, Avenida Juan XXIII, Avenida Sargento Cabral, Aristóbulo del Valle, Alvear, Dorrego, Almirante Brown, Belgrano, Avenida Ducos, Carlos Pellegrini, Pasaje Gil Álvarez." },
+          { etiqueta: "Ida", texto: "Natalia Payaguala, Avenida Polonia, Raúl Cercos, Ingeniero Huergo, Avenida Eva Duarte, Carlos O'Donnell, Avenida 10 de Noviembre, Calle Código, Avenida Julio Argentino Roca, Maestro Carlos Guastavino, Calle Código 829, Código 884, Gustavo Bahamonde, Francisco Behr, Avenida Lisandro de la Torre, Avenida Estados Unidos, Avenida Juan XXIII, Avenida Sargento Cabral, Aristóbulo del Valle, Alvear, Dorrego, Almirante Brown, Belgrano, Avenida Ducos, Carlos Pellegrini, Gil Álvarez." },
+          { etiqueta: "Vuelta", texto: "Gil Álvarez, 25 de Mayo, Almirante Brown, Rawson, Saavedra, Bouchardo, 13 de Diciembre, Salta, Avenida Sargento Cabral, Avenida Juan XXIII, Avenida Estados Unidos, Avenida Lisandro de la Torre, Francisco Behr, Gustavo Bahamonde, Avenida Julio Argentino Roca, Carlos O'Donnell, Avenida Polonia, Cámpora, Avenida Eva Duarte, Ingeniero Huergo, Raúl Cercos, Natalia Payaguala." },
         ],
       },
       {
         numero: "3",
-        resumen: "Industrial – Centro",
+        resumen: "Estadio Centenario – Abel Amaya",
         tramos: [
-          { etiqueta: "Ida", texto: "Vueguen Juan, Juan Davies, Nicolás Mañás, Belarmino Menéndez, Julio Cabezas, Inspector Ramón Colivoro, Elio Medrano, Tomás Pedraza, Avenida J. Kennedy, Av. Rivadavia, Belgrano, Ameghino, Almirante Brown, Inmigrantes Gallegos, Domingo R. Miranda." },
-          { etiqueta: "Vuelta", texto: "Domingo R. Miranda, Carlos Pellegrini, Avenida Rivadavia, Islas Leones, Avenida John Kennedy, Avenida Chile, Tomás Pedraza, Inspector Andrés Colivoro, Julio Argentino Cabezas, Belarmino Menéndez, Nicolás Mañás, Juan Davies, Vueguen Juan." },
+          { etiqueta: "Ida", texto: "Avenida Chile, Avenida Kennedy, Avenida Rivadavia, Belgrano, Ameghino, Almirante Brown, Carlos Pellegrini, Avenida Rivadavia, 25 de Mayo, Avenida Hipólito Yrigoyen, Federico Carstens." },
+          { etiqueta: "Vuelta", texto: "Carstens, Avenida Ducos, Pellegrini, Avenida Rivadavia, Isla Leones, Avenida Kennedy, Avenida Chile." },
         ],
       },
       {
         numero: "4",
-        resumen: "Industrial – Centro",
+        resumen: "Abel Amaya – Estadio Centenario",
         tramos: [
-          { etiqueta: "Ida", texto: "Vueguen Juan, Nicolás Mañás, Belarmino Menéndez, Julio Argentino Cabezas, Inspector Andrés Colivoro, Elio Medrano, Tomás Pedraza, Avenida Chile, Avenida Lisandro de la Torre, Avenida Julio Argentino Roca, Avenida Canadá, Avenida Estados Unidos, Avenida Hipólito Yrigoyen, Avenida Ducos, Avenida Alsina, Bahía Bustamante, Democracia, Roque Sáenz Peña, Avenida Ducos, Máximo Abásolo, Avenida Rivadavia." },
-          { etiqueta: "Vuelta", texto: "Avenida Rivadavia, 25 de Mayo, Avenida Hipólito Yrigoyen, Avenida Estados Unidos, Avenida Canadá, Avenida Roca, Avenida Lisandro de la Torre, Avenida Chile, Tomás Pedraza, Inspector Ramón Colivoro, Julio Argentino Cabezas, Belarmino Menéndez, Nicolás Mañás, Juan Davies, Vueguen Juan." },
+          { etiqueta: "Ida", texto: "Carstens, Avenida Ducos, Carlos Pellegrini, Avenida Hipólito Yrigoyen, Máximo Abásolo, Avenida Rivadavia, 25 de Mayo, Avenida Hipólito Yrigoyen, Avenida Estados Unidos, Avenida Canadá, Avenida Julio Argentino Roca, Avenida Lisandro de la Torre." },
+          { etiqueta: "Vuelta", texto: "Avenida Chile, Luis Alassia, Avenida Lisandro de la Torre, Avenida Julio Argentino Roca, Avenida Canadá, Avenida Estados Unidos, Avenida Hipólito Yrigoyen, Avenida Ducos, Avenida Alsina, Bahía Bustamante, Democracia, Roque Sáenz Peña, Avenida Ducos, Carlos Pellegrini, Avenida Hipólito Yrigoyen, Máximo Abásolo, Avenida Rivadavia, 25 de Mayo, Avenida Hipólito Yrigoyen, Carstens." },
         ],
       },
       {
         numero: "5",
-        resumen: "Industrial – Centro / Industrial – Universidad – Las Orquídeas",
+        resumen: "Estadio Centenario – Abel Amaya / Abel Amaya – Las Orquídeas",
         tramos: [
-          { etiqueta: "Ramal Industrial – Centro · Ida", texto: "Vueguen Juan, Davies Juan, Nicolás Mañás, Belarmino Menéndez, Julio Argentino Cabezas, Inspector Ramón Colivoro, Tomás Pedraza, Avenida Chile, Antonio Morán, La Razón, Avenida Roca, La Nación, Avenida Polonia, Colonos Galeses, Figueroa Alcorta, Salta, Avenida Sargento Cabral, Aristóbulo del Valle, Alvear, Avenida Rivadavia, Belgrano, Ameghino, Almirante Brown, Carlos Pellegrini." },
-          { etiqueta: "Ramal Industrial – Centro · Vuelta", texto: "25 de Mayo, Avenida Rivadavia, Avenida Alsina, Sarmiento, Leandro N. Alem, Ceferino Namuncurá, Fontana, Ramos Mejía, Necochea, 13 de Diciembre, Aristóbulo del Valle, Sargento Cabral, Salta, José G. Artigas, Avenida Estados Unidos, Sargento Ramírez, Avenida Polonia, La Nación, Avenida Chile, Tomás Pedraza, Inspector Ramón Colivoro, Julio Argentino Cabezas, Belarmino Menéndez, Nicolás Mañás, Juan Davies, Vueguen Juan David." },
-          { etiqueta: "Ramal 5U Universidad – Las Orquídeas · Ida", texto: "Vueguen Juan, Juan Davies, Nicolás Mañás, Belarmino Menéndez, Julio Argentino Cabezas, Inspector Ramón Colivoro, Tomás Pedraza, Avenida Chile, Antonio Morán, La Razón, Avenida Roca, La Nación, Avenida Polonia, Colonos Galeses, Figueroa Alcorta, Salta, Aristóbulo del Valle, Alvear, Avenida Rivadavia, Belgrano, Avenida Ducos, Carlos Pellegrini, Avenida Hipólito Yrigoyen, Máximo Abásolo, Ruta Nacional N° 3, Avenida del Libertador, Avenida José Ingenieros, López de Vega, Ferrocarril Patagónico, Ferrocarril Roca, Galetto de Abad, Ferrocarril San Martín, Edmundo Perea, Ferrocarril Roca, Reconquista, Rotonda Barrio Usina, Reconquista, Ruta Provincial N° 1, 4 de Noviembre, García Marcet, Los Bolleros, Baldomero Terrazas." },
-          { etiqueta: "Ramal 5U Universidad – Las Orquídeas · Vuelta", texto: "Los Sargentos, Pedro Granzón, Baldomero Terrazas, Julio Cortázar, Soldado Argentino, Avenida del Parque, José Ingenieros, Ruta N° 3, Avenida del Libertador, Ruta Nacional N° 3, Avenida Rivadavia, Alsina, Sarmiento, Leandro N. Alem, Ceferino Namuncurá, Fontana, Ramos Mejía, Necochea, 13 de Diciembre, Aristóbulo del Valle, Avenida Sargento Cabral, Salta, José G. Artigas, Avenida Estados Unidos, Sargento Ramírez, Avenida Polonia, La Nación, Avenida Chile, Tomás Pedraza, Inspector Ramón Colivoro, Julio Argentino Cabezas, Belarmino Menéndez, Nicolás Mañás, Juan Davies, Vueguen Juan David." },
+          { etiqueta: "Ramal 5 · Ida", texto: "Carstens, Avenida Ducos, Carlos Pellegrini, Avenida Rivadavia, Avenida Alsina, Sarmiento, Leandro N. Alem, Ceferino Namuncurá, Fontana, Ramos Mejía, Necochea, 13 de Diciembre, Aristóbulo del Valle, Avenida Sargento Cabral, Salta, José G. Artigas, Isla de los Estados, Federico Alcorta, Avenida Estados Unidos, Sargento Ramírez, Avenida Polonia, La Nación, Avenida Chile." },
+          { etiqueta: "Ramal 5 · Vuelta", texto: "Avenida Chile, Antonio Morán, La Razón, Avenida Julio Argentino Roca, La Nación, Avenida Polonia, Colonos Galeses, Isla de los Estados, Figueroa Alcorta, Salta, Avenida Sargento Cabral, Aristóbulo del Valle, Alvear, Avenida Rivadavia, Belgrano, Ameghino, Almirante Brown, Carlos Pellegrini, Avenida Rivadavia, 25 de Mayo, Hipólito Yrigoyen, Carstens." },
+          { etiqueta: "Ramal 5U Abel Amaya – Las Orquídeas · Ida", texto: "Avenida Kennedy, La Razón, Gabriel Barcelos, Avenida Chile, Rotonda Chile y Kennedy, Avenida Chile, Antonio Morán, La Razón, Avenida Julio Argentino Roca, La Nación, Avenida Polonia, Colonos Galeses, Isla de los Estados, Figueroa Alcorta, Salta, Avenida Sargento Cabral, Aristóbulo del Valle, Alvear, Avenida Rivadavia, Belgrano, Avenida Ducos, Pellegrini, Avenida Hipólito Yrigoyen, Máximo Abásolo, Ruta Nacional N° 3, Avenida del Libertador, Los Búlgaros, Gobernador Moyano, Avenida J. M. Pueyrredón, Avenida del Libertador, Ruta Provincial N° 1, Avenida José Ingenieros, López de Vega, Ferrocarril Patagónico, Ferrocarril Roca, Galetto de Abad, Reconquista, Rotonda Barrio Usina, Reconquista, Ruta Provincial N° 1, 4 de Noviembre, García Marcet, Los Bolleros, Terraza, Los Sargentos, Benjamín Rollán." },
+          { etiqueta: "Ramal 5U Abel Amaya – Las Orquídeas · Vuelta", texto: "Pedro Granzón, Terraza, Cortázar, Soldado Argentino, Avenida del Parque, Avenida José Ingenieros, Ruta Nacional N° 3, Avenida del Libertador, Ruta Nacional N° 3, Avenida Rivadavia, Alsina, Sarmiento, Leandro N. Alem, Ceferino Namuncurá, Fontana, Ramos Mejía, Necochea, 13 de Diciembre, Aristóbulo del Valle, Avenida Sargento Cabral, Salta, José G. Artigas, Isla de los Estados, Avenida Estados Unidos, Sargento Ramírez, Avenida Polonia, La Nación, Avenida Chile, Rotonda Chile y Kennedy, Avenida Kennedy." },
         ],
       },
       {
         numero: "6",
-        resumen: "Circular: Estadio Municipal – Stella Maris – Abásolo – Gral. Mosconi – Centro",
+        resumen: "Circular AH / Circular H: Estadio Municipal – Centro – Gral. Mosconi – Abásolo – Stella Maris",
         tramos: [
-          { etiqueta: "Sentido Estadio → Stella Maris → Abásolo → Mosconi → Centro", texto: "Carstens, Ducos, Avenida Alsina, Avenida Hipólito Yrigoyen, Juan P. Evet, Monseñor de Andrea, Gerónimo Maliqueo, José Suazo, Avenida Portugal, José Dalle Mura, Alfredo Llames Massini, Eustaquio Molina, Saturnino López, Juan Domingo Perón, Ignacio Gatica, Avenida Hipólito Yrigoyen, Avenida Constituyentes, Avenida Callao, Avenida Roca, Avenida Canadá, Olavarría, Colonos Sudafricanos, Avenida Julio Argentino Roca, Del Trabajo, Avenida Polonia, Roque González, Código 2222, Fabián Arienti, Código 2224, Código 2226, Código 2222, Roque González, Fray Luis Beltrán, José Fuchs, Marcelino Reyes, Avenida del Libertador, Ruta Nacional N° 3, Sarmiento, 25 de Mayo, Avenida Hipólito Yrigoyen, Federico Carstens." },
-          { etiqueta: "Sentido Estadio → Centro → Mosconi → Abásolo → Stella Maris → Centro", texto: "Federico Carstens, Avenida Ducos, Carlos Pellegrini, Hipólito Yrigoyen, Máximo Abásolo, Ruta Nacional N° 3, Avenida del Libertador, Los Búlgaros, Gobernador Moyano, Avenida J. M. Pueyrredón, Avenida Fray Luis Beltrán, Roque González, Código 2222, Fabián Arienti, Código 2226, Código 2222, Roque González, Avenida Polonia, Raúl Cercos, Natalia Payaguala, Avenida Polonia, Avenida J. Kennedy, Avenida Constituyentes, Avenida Hipólito Yrigoyen, Ignacio Gatica, Juan Domingo Perón, Saturnino López, Eustaquio Molina, Alfredo Llames Massini, José Dalle Mura, Avenida Hipólito Yrigoyen, Avenida Ducos, Alsina, Avenida Hipólito Yrigoyen, Carstens." },
+          { etiqueta: "Circular AH: Estadio Municipal → Centro → Gral. Mosconi → Abásolo → Stella Maris → Centro", texto: "Carstens, Avenida Ducos, Pellegrini, Avenida Hipólito Yrigoyen, Máximo Abásolo, Ruta Nacional N° 3, Avenida del Libertador, Los Búlgaros, Gobernador Moyano, Avenida J. M. Pueyrredón, Fray Luis Beltrán, Gallardo Rodríguez, Colectora Fray Luis Beltrán, Los Cedros, Fray Luis Beltrán, Roque González, Avenida Polonia, Raúl Cercos, Natalia Payaguala, Avenida Polonia, Avenida Kennedy, Avenida Constituyentes, Ruta Nacional N° 3, Ignacio Gatica, Camino Juan Domingo Perón, Saturnino López, Eustaquio Molina, José Dalle Mura, Avenida Hipólito Yrigoyen, Avenida Ducos, Avenida Alsina, Avenida Hipólito Yrigoyen, Carstens." },
+          { etiqueta: "Circular H: Estadio Municipal → Stella Maris → Abásolo → Gral. Mosconi → Centro", texto: "Carstens, Avenida Ducos, Avenida Alsina, Avenida Hipólito Yrigoyen, Juan P. Evet, Monseñor de Andrea, Gerónimo Maliqueo, José Suazo, Avenida Portugal, José Dalle Mura, Alfredo Llames Massini, Eustaquio Molina, Saturnino López, Juan Domingo Perón, Ignacio Gatica, Avenida Hipólito Yrigoyen, Avenida Constituyentes, Avenida Callao, Avenida Roca, Del Trabajo, Avenida Polonia, Roque González, Avenida Fray Luis Beltrán, Los Cedros, Colectora Avenida Fray Luis Beltrán, Doctor Manuel Sueiro, Gallardo Rodríguez, Avenida Fray Luis Beltrán, José Fuchs, Marcelino Reyes, Avenida del Libertador, Ruta Nacional N° 3, Sarmiento, 25 de Mayo, Avenida Hipólito Yrigoyen, Carstens." },
         ],
       },
       {
         numero: "7",
-        resumen: "Estadio – Centro – Laprida",
+        resumen: "Estadio Centenario – Laprida",
         tramos: [
-          { etiqueta: "Ida", texto: "Carstens, Avenida Ducos, Avenida Alsina, Bahía Bustamante, Democracia, Sáenz Peña, Ducos, Carlos Pellegrini, Avenida Hipólito Yrigoyen, Máximo Abásolo, Ruta Nacional N° 3, Avenida del Libertador, Los Búlgaros, Gobernador Moyano, Avenida J. M. Pueyrredón, Fray Luis Beltrán, Francisco de Viedma, Avenida Petrolero San Lorenzo, Avenida Tehuelches, Cerro Viteau, Avenida del Libertador, Avenida José Ingenieros, Ruta Provincial 25 de Mayo, Paraguay, Bogotá, Costa Rica, Alaska, Acapulco, Potosí, Jamaica, Bogotá, Ecuador, Paraguay." },
-          { etiqueta: "Vuelta", texto: "Paraguay, Ruta 25 de Mayo, Avenida del Libertador, Avenida Tehuelches, Avenida Lángara, Francisco de Viedma, Fray Luis Beltrán, José Fuchs, Marcelino Reyes, Avenida del Libertador, Ruta Nacional N° 3, Sarmiento, 25 de Mayo, Avenida Hipólito Yrigoyen, Carstens." },
+          { etiqueta: "Ida", texto: "Carstens, Avenida Ducos, Avenida Alsina, Bahía Bustamante, Democracia, Roque Sáenz Peña, Avenida Ducos, Carlos Pellegrini, Hipólito Yrigoyen, Máximo Abásolo, Ruta Nacional N° 3, Avenida del Libertador, Los Búlgaros, Gobernador Moyano, Avenida J. M. Pueyrredón, Avenida Fray Luis Beltrán, Francisco de Viedma, Petrolero San Lorenzo, Avenida Tehuelches, Jesús Garré, Avenida del Libertador, Ruta 25 de Mayo, Argelino Suluaga, Buenos Aires, Tucumán, Entre Ríos, Argelino Suluaga, Ruta 25 de Mayo, Jorge Blachakis, Sara Andreoli, Código 3162, Código 3161, Rotonda Código 3161, Código 3161, Código 3162, Sara Andreoli, Jorge Blachakis, Ruta 25 de Mayo, Paraguay, Bogotá, Costa Rica, Alaska, Acapulco, Potosí, Jamaica, Bogotá, Ecuador, Paraguay." },
+          { etiqueta: "Vuelta", texto: "Paraguay, Ruta 25 de Mayo, Jorge Blachakis, Sara Andreoli, Código 3162, Código 3161, Rotonda Código 3161, Código 3161, Código 3162, Sara Andreoli, Jorge Blachakis, Ruta 25 de Mayo, Argelino Suluaga, Buenos Aires, Tucumán, Entre Ríos, Argelino Suluaga, Ruta 25 de Mayo, Avenida del Libertador, Avenida Tehuelches, Avenida Lángara, Francisco de Viedma, Avenida Fray Luis Beltrán, José Fuchs, Doctor Marcelino Reyes, Avenida del Libertador, Ruta Nacional N° 3, Güemes, Avenida Rivadavia, Belgrano, Avenida Hipólito Yrigoyen, Carstens." },
         ],
       },
       {
         numero: "8",
         resumen: "Standard – Palazzo",
         tramos: [
-          { etiqueta: "Standard → Palazzo", texto: "Carstens, Avenida Ducos, Alsina, Bahía Bustamante, Democracia, Sáenz Peña, Ducos, Carlos Pellegrini, Avenida Hipólito Yrigoyen, Máximo Abásolo, Ruta Nacional N° 3, Avenida del Libertador, Los Búlgaros, Gobernador Moyano, J. M. Pueyrredón, Fray Luis Beltrán, Francisco de Viedma, Avenida Petrolero San Lorenzo, Avenida Tehuelches, Cerro Viteau, Av. del Libertador, Av. José Ingenieros, Ruta Provincial N° 1, Avenida Alejandro Maíz, Base Petrel, Base Irízar, Base Matienzo, Código 2404, Teniente Daniel Jukic, Comodoro Rivadavia, Los Arrayanes, Avenida Nahuel Huapi, Avenida Raúl Encina, 8 de Diciembre, Cerro Hermitte, F. Pigafetta, Escalante, Teodoro Petroff, Ítalo Dell'Oro, Juan José Paso, Reconquista, Juan José Paso, 1° de Noviembre, Teniente Lavalle, Antártida Argentina, Ruta Provincial N° 39, Ruta Nacional N° 3, Salida Ruta Nacional N° 3, Rotonda Rodríguez Peña, ARA General Belgrano, Michinovich, Sin Nombre, Mariano Rodríguez, Ruta Nacional N° 3, Avenida del Libertador, Avenida Tehuelches, Avenida Lángara, Francisco de Viedma, Fray Luis Beltrán, José Fuchs, Marcelino Reyes, Avenida del Libertador, Ruta Nacional N° 3, Sarmiento, 25 de Mayo, Avenida Hipólito Yrigoyen, Carstens." },
-          { etiqueta: "Palazzo → Standard", texto: "Carstens, Avenida Ducos, Alsina, Bahía Bustamante, Democracia, Sáenz Peña, Ducos, Carlos Pellegrini, Avenida Hipólito Yrigoyen, Máximo Abásolo, Ruta Nacional N° 3, Avenida del Libertador, Los Búlgaros, Gobernador Moyano, J. M. Pueyrredón, Fray Luis Beltrán, Francisco de Viedma, Avenida Petrolero San Lorenzo, Avenida Tehuelches, Cerro Viteau, Av. del Libertador, Mariano Rodríguez, Calle Código S/N, Rosalía Guaida, Mariano Rodríguez, Ruta Nacional N° 3, Avenida Juan José Paso, Teniente Vanesia, San Lorenzo, Fuerza Aérea Argentina, Juan José Paso, Teodoro Petroff, Escalante, Raúl Encina, Avenida Nahuel Huapi, Laguna Blanca, Ignacio Zúñiga, Los Arrayanes, Comodoro Rivadavia, Teniente Daniel Jukic, Código 2404, Base Matienzo, Base Irízar, Base Petrel, Avenida Alejandro Maíz, Ruta Provincial N° 1, Avenida José Ingenieros, Avenida del Libertador, Avenida Tehuelches, Avenida Lángara, Francisco de Viedma, Fray Luis Beltrán, José Fuchs, Marcelino Reyes, Avenida del Libertador, Ruta Nacional N° 3, Sarmiento, 25 de Mayo, Avenida Hipólito Yrigoyen, Carstens." },
+          { etiqueta: "8 AH: Standard → Palazzo", texto: "Carstens, Avenida Ducos, Avenida Alsina, Bahía Bustamante, Democracia, Roque Sáenz Peña, Avenida Ducos, Mitre, Avenida Rivadavia, Belgrano, Avenida Ducos, Pellegrini, Avenida Hipólito Yrigoyen, Máximo Abásolo, Ruta Nacional N° 3, Avenida del Libertador, Los Búlgaros, Gobernador Moyano, Avenida J. M. Pueyrredón, Avenida Fray Luis Beltrán, Francisco de Viedma, Petrolero San Lorenzo, Avenida Tehuelches, Jesús Garré, Avenida del Libertador, Ruta Provincial N° 1, Avenida José Ingenieros, Ruta Provincial N° 1, Avenida Alejandro Maíz, Base Petrel, Base Matienzo, Código 2404, Teniente Daniel Jukic, Martín Comodoro Rivadavia, Los Arrayanes, Avenida Nahuel Huapi, Avenida Raúl Encina, 8 de Diciembre, E. Hermitte, F. Pigafetta, Wenceslao Escalante, Teodoro Petroff, Ítalo Dell'Oro, Juan José Paso, Reconquista, Juan José Paso, 1° de Noviembre, General Lavalle, Antártida Argentina, Ruta Provincial N° 39, Ruta Nacional N° 3, Salida Ruta Nacional N° 3, Rotonda Rodríguez Peña, ARA Crucero General Belgrano, Ruta Nacional N° 3, Mirco Michinovich, Dionisio Néstor Páez, Mariano Rodríguez, Ruta Nacional N° 3, Avenida del Libertador, Avenida Tehuelches, Avenida Lángara, Francisco de Viedma, Fray Luis Beltrán, José Fuchs, Doctor Marcelino Reyes, Avenida del Libertador, Ruta Nacional N° 3, Sarmiento, Belgrano, Avenida Hipólito Yrigoyen, Carstens." },
+          { etiqueta: "8 H: Palazzo → Standard", texto: "Carstens, Avenida Ducos, Avenida Alsina, Bahía Bustamante, Democracia, Roque Sáenz Peña, Avenida Ducos, Mitre, Avenida Rivadavia, Belgrano, Avenida Ducos, Pellegrini, Avenida Hipólito Yrigoyen, Máximo Abásolo, Ruta Nacional N° 3, Avenida del Libertador, Los Búlgaros, Gobernador Moyano, Avenida J. M. Pueyrredón, Avenida Fray Luis Beltrán, Francisco de Viedma, Petrolero San Lorenzo, Avenida Tehuelches, Jesús Garré, Avenida del Libertador, Rotonda Universidad, Ruta Nacional N° 3, Ingreso Barrio Castelli, Mariano Rodríguez, Código 2930, Rosalía Eulalia Guaita, Adrián Silva, Mariano Rodríguez, Ruta Nacional N° 3, Avenida Juan José Paso, Teniente Vanesia, San Lorenzo, Fuerza Aérea Argentina, Avenida Juan José Paso, Teodoro Petroff, Wenceslao Escalante, Avenida Raúl Encina, Avenida Nahuel Huapi, Laguna Blanca, Ignacio Zúñiga, Los Arrayanes, Martín Comodoro Rivadavia, Teniente Daniel Jukic, Código 2404, Base Matienzo, Base Petrel, Avenida Alejandro Maíz, Ruta Provincial N° 1, Avenida José Ingenieros, Ruta Provincial N° 1, Ruta Nacional N° 3, Avenida Tehuelches, Avenida Lángara, Francisco de Viedma, Avenida Fray Luis Beltrán, José Fuchs, Doctor Marcelino Reyes, Avenida del Libertador, Ruta Nacional N° 3, Sarmiento, Belgrano, Avenida Hipólito Yrigoyen, Carstens." },
         ],
       },
       {
         numero: "9",
         resumen: "Centro – Barrio Industrial",
         tramos: [
-          { etiqueta: "Ida", texto: "Gil Álvarez, 25 de Mayo, Almirante Brown, Carlos Pellegrini, Avenida Rivadavia, Los Nogales, San Martín, Los Pensamientos, Ingeniero Huergo, Bruno Pieragnoli, Avenida Polonia, Avenida Hipólito Yrigoyen, Avenida del Progreso." },
-          { etiqueta: "Vuelta", texto: "Avenida del Progreso, Rotonda Ruta Nacional N° 3 y Ruta Nacional N° 26, Avenida Hipólito Yrigoyen, Avenida Polonia, Avenida Bruno Pieragnoli, Ingeniero Huergo, Los Pensamientos, San Martín, Los Álamos, Avenida Rivadavia, Belgrano, Ameghino, Almirante Brown, Carlos Pellegrini, Gil Álvarez." },
+          { etiqueta: "Ida (9A)", texto: "Gil Álvarez, 25 de Mayo, Almirante Brown, Carlos Pellegrini, Avenida Rivadavia, Los Nogales, San Martín, Los Pensamientos, Ingeniero Huergo, Bruno Pieragnoli, Avenida Polonia, Avenida Hipólito Yrigoyen, Avenida del Progreso, Rotonda Avenida del Progreso, Avenida del Progreso, Avenida Hipólito Yrigoyen, Rotonda Ruta Nacional N° 3 y Ruta Nacional N° 26." },
+          { etiqueta: "Vuelta (9)", texto: "Avenida del Progreso, Rotonda Avenida del Progreso, Avenida del Progreso, Avenida Hipólito Yrigoyen, Rotonda Ruta Nacional N° 3 y Ruta Nacional N° 26, Avenida Hipólito Yrigoyen, Avenida Polonia, Bruno Pieragnoli, Ingeniero Huergo, Los Pensamientos, San Martín, Los Álamos, Avenida Rivadavia, Belgrano, Ameghino, Almirante Brown, Carlos Pellegrini, Gil Álvarez." },
+        ],
+      },
+      {
+        numero: "9A",
+        resumen: "Centro – Barrio Industrial (Extensión Arenales)",
+        tramos: [
+          { etiqueta: "Ida", texto: "Pasaje Gil Álvarez, 25 de Mayo, Almirante Brown, Carlos Pellegrini, Avenida Rivadavia, Los Nogales, San Martín, Los Pensamientos, Ingeniero Huergo, Bruno Pieragnoli, Avenida Polonia, Avenida Hipólito Yrigoyen, Avenida del Progreso, Rotonda Avenida del Progreso, Avenida del Progreso, Avenida Hipólito Yrigoyen, Rotonda Ruta Nacional N° 3 y Ruta Nacional N° 26, Oscar Poltroneri, Antonio Corrales, Antonio Berni, Luis Alberto Blanco." },
+          { etiqueta: "Vuelta", texto: "Piedra Parada, Luis Alberto Blanco, Nicolás Esandi, Antonio Corrales, Oscar Poltroneri, Ruta Nacional N° 26, Rotonda Ruta Nacional N° 26 y Ruta Nacional N° 3, Avenida Hipólito Yrigoyen, Avenida Polonia, Bruno Pieragnoli, Ingeniero Huergo, Los Pensamientos, San Martín, Los Álamos, Avenida Rivadavia, Belgrano, Ameghino, Almirante Brown, Carlos Pellegrini, Gil Álvarez." },
         ],
       },
       {
         numero: "12",
         resumen: "Centro – Abásolo",
         tramos: [
-          { etiqueta: "Ida", texto: "Gil Álvarez, 25 de Mayo, Avenida Hipólito Yrigoyen, Avenida Alsina, Rawson, Marcelo T. de Alvear, Avenida Rivadavia, Avenida Estados Unidos, Avenida 10 de Noviembre, Avenida Polonia, Marinero López, Francisco Behr, Gustavo Bahamonde, Jaime Francisco de Nevares, Miguel Amado, Calle 844, Código 829, Wilfredo Andrade, Maestro Carlos Guastavino, Avenida Roca, Avenida 10 de Noviembre, Calle Código S/N, Ricardo Balbín, Avenida Polonia, Rotonda Polonia y Raúl Cercos." },
-          { etiqueta: "Vuelta", texto: "Raúl Cercos, Natalia Payaguala, Ricardo Balbín, Código 651, Calle Código S/N, Avenida 10 de Noviembre, Avenida Roca, Maestro Carlos Guastavino, Código 829, Código 844, Miguel Amado, Jaime Francisco de Nevares, Marinero López, Francisco Behr, Avenida 10 de Noviembre, Avenida Estados Unidos, Avenida Rivadavia, Saavedra, Dorrego, Almirante Brown, Mitre, Ameghino, Carlos Pellegrini, Gil Álvarez." },
+          { etiqueta: "Ida", texto: "Raúl Cercos, Natalia Payaguala, Avenida Polonia, Ricardo Balbín, Calle Código 651, Calle Código 821, Avenida 10 de Noviembre, Avenida Roca, Maestro Carlos Guastavino, Calle Código 829, Calle Código 844, Miguel Amado, Francisco de Nevares, Jorge Marinero López, Francisco Behr, Avenida 10 de Noviembre, Avenida Estados Unidos, Avenida Rivadavia, Saavedra, Dorrego, Almirante Brown, Mitre, Ameghino, Almirante Brown, Pellegrini, Gil Álvarez." },
+          { etiqueta: "Vuelta", texto: "Gil Álvarez, 25 de Mayo, Avenida Hipólito Yrigoyen, Avenida Alsina, Rawson, Alvear, Avenida Rivadavia, Avenida Estados Unidos, Avenida 10 de Noviembre, Avenida Polonia, Marinero Jorge López, Francisco Behr, Gustavo Bahamonde, José Ortega, Gustavo Bahamonde, Jaime Francisco de Nevares, Miguel Amado, Calle Código 844, Calle Código 829, Maestro Carlos Guastavino, Avenida Roca, Avenida 10 de Noviembre, Calle Código 821, Calle Código 651, Ricardo Balbín, Avenida Polonia, Rotonda Avenida Polonia y Raúl Cercos." },
         ],
       },
       {
         numero: "13",
-        resumen: "Centro – Standard",
+        resumen: "Estadio Centenario – Standard",
         tramos: [
-          { etiqueta: "Ida", texto: "Carstens, Avenida Ducos, Alsina, Bahía Bustamante, Democracia, Sáenz Peña, Ducos, Carlos Pellegrini, Avenida Hipólito Yrigoyen, Máximo Abásolo, Ruta Nacional N° 3, Avenida del Libertador, Los Búlgaros, Gobernador Moyano, J. M. Pueyrredón, Av. del Libertador, Av. José Ingenieros, Alejandro Maíz, Base Petrel, Base Irizar, Base Matienzo, Código 2404, Código 2434, Código 2438, Los Arrayanes, El Cóndor." },
-          { etiqueta: "Vuelta", texto: "El Cóndor, Código 2464, Facundo Quiroga, Código 2393, Punta Borja, Cerro Hermitte, F. Pigafetta, Teodoro Petroff, Ítalo Dell'Oro, Alejandro Maíz, Avenida José Ingenieros, Avenida del Libertador, Ruta Nacional N° 3, Güemes, Avenida Rivadavia, 25 de Mayo, Avenida Hipólito Yrigoyen, Carstens." },
+          { etiqueta: "Ida", texto: "Carstens, Avenida Ducos, Avenida Alsina, Bahía Bustamante, Democracia, Roque Sáenz Peña, Avenida Ducos, Mitre, Avenida Rivadavia, Belgrano, Avenida Ducos, Pellegrini, Avenida Hipólito Yrigoyen, Máximo Abásolo, Ruta Nacional N° 3, Avenida del Libertador, Los Búlgaros, Gobernador Moyano, Avenida J. M. Pueyrredón, Avenida del Libertador, Ruta Provincial N° 1, Avenida José Ingenieros, Ruta Provincial N° 1, Avenida Alejandro Maíz, Base Petrel, Base Matienzo, Código 2404, Código 2434, Código 2438, Los Arrayanes." },
+          { etiqueta: "Vuelta", texto: "El Cóndor, Código 2404, Facundo Quiroga, Código 2393, Avenida Punta Borja, E. Hermitte, F. Pigafetta, Teodoro Petroff, Ítalo Dell'Oro, Avenida Alejandro Maíz, Ruta Provincial N° 1, Avenida José Ingenieros, Ruta Provincial N° 1, Avenida del Libertador, Ruta Nacional N° 3, Güemes, Avenida Rivadavia, Belgrano, Hipólito Yrigoyen, Carstens." },
         ],
       },
       {
         numero: "14",
-        resumen: "Industrial – Fracción 14 y 15 – B. Vista – Los Bretes – Cerro Solo",
+        resumen: "30 de Octubre – Centro (F14-15)",
         tramos: [
-          { etiqueta: "Ida", texto: "Vueguen Juan, Juan Davies, Nicolás Mañás, Belarmino Menéndez, Julio Argentino Cabezas, Inspector Ramón Colivoro, Tomás Pedraza, Avenida Chile, Padre Juan Corti, Código 748, Raúl Cercos, José Leandro Trevisan, Doctor René Favaloro, Magdalena Güemes, Rotonda Código 748, Calle S/N Código 3111, Raúl Cercos, Ana Herrera, Armando Cistari, Lorenzo Rognetta, Código 586, Juana Azurduy, Avenida Lisandro de la Torre, Avenida Estados Unidos, Avenida Rivadavia, Belgrano, Ameghino, Almirante Brown, Carlos Pellegrini." },
-          { etiqueta: "Vuelta", texto: "Carlos Pellegrini, Avenida Rivadavia, Avenida Estados Unidos, Avenida Lisandro de la Torre, Juana Azurduy, Código 586, Lorenzo Rognetta, Armando Cistari, Ana Herrera, Raúl Cercos, Calle Código 3111, Código 3536, Magdalena Güemes, Doctor Favaloro, Leandro Trevisan, Raúl Cercos, Código 748, Padre Juan Corti, Avenida Chile, Tomás Pedraza, Inspector Ramón Colivoro, Julio Argentino Cabezas, Belarmino Menéndez, Nicolás Mañás, Juan Davies, Vueguen Juan David." },
+          { etiqueta: "Ida", texto: "Avenida Kennedy, La Razón, Gabriel Barcelo, Avenida Chile, Padre Juan Corti, Código 748, Raúl Cercos, Leonardo Trevisan, René Favaloro, María Magdalena Güemes, Nicolás Chacoma, Sixto Ojeda, Rotonda Código 748, Raúl Cercos, Código 3536, Código 3111, Raúl Cercos, Ana Herrera, Armando Cistari, Lorenzo Rognetta, Código 586, Juana Azurduy, Avenida Lisandro de la Torre, Avenida Estados Unidos, Avenida Rivadavia, Belgrano, Ameghino, Almirante Brown, Carlos Pellegrini." },
+          { etiqueta: "Vuelta", texto: "Pellegrini, Avenida Rivadavia, Avenida Estados Unidos, Avenida Lisandro de la Torre, Juana Azurduy, Código 586, Lorenzo Rognetta, Armando Cistari, Ana Herrera, Raúl Cercos, Código 3111, Código 3536, Nicolás Chacoma, Sixto Ojeda, María Magdalena Güemes, René Favaloro, Leonardo Trevisan, Raúl Cercos, Código 748, Padre Corti, Avenida Chile, Rotonda Chile y Avenida Kennedy." },
         ],
       },
       {
         numero: "15",
         resumen: "Centro – Los Tres Pinos",
         tramos: [
-          { etiqueta: "Ida", texto: "Gil Álvarez, 25 de Mayo, Avenida Hipólito Yrigoyen, Avenida Polonia, Aldo Masuccio, Eduardo Masuccio." },
-          { etiqueta: "Vuelta", texto: "Eduardo Masuccio, Código 3116, Haroldo Conti, Antonio Di Benedetto, Marco De Nevi, Alberto Rivas, Haroldo Conti, Roberto Ragido, Concejal Alcorta, Código 3111, Ocaso, Roberto Payró, Ramírez, Código 3219, Código 3218, Jorge Daniel Ludeña, Eduardo Sosa, Ocaso, Jorge Daniel Ludueña, 10 de Noviembre, Avenida Polonia, Avenida Hipólito Yrigoyen, Avenida Ducos, García Fernández, Bahía Bustamante, Democracia, Rodríguez Peña, Avenida Ducos, Carlos Pellegrini, Gil Álvarez." },
+          { etiqueta: "Ida", texto: "Pellegrini, Avenida Rivadavia, 25 de Mayo, Avenida Hipólito Yrigoyen, Avenida Polonia, Rotonda Avenida Polonia y Roque González, Doctor Eduardo Musaccio." },
+          { etiqueta: "Vuelta", texto: "Eduardo Musaccio, Código 3116, Haroldo Conti, Antonio Di Benedetto, Marcos Denevi, C. Alberto Rivas, Haroldo Conti, Roberto Rajido, Roberto Payró, Concejal Alcoleas, Doctor Eduardo Musaccio, Código Ocaso, Roberto Payró, Teolindo Ramírez, Código 3219, Código 3218, Jorge Daniel Ludueña, Código 3220, C. Mazaredo, José María Moreno, Doctor Manuel Sueiro, Colectora Fray Luis Beltrán, Los Robles, Los Alerces, Los Aromos, Las Araucarias, Avenida del Pinar, El Algarrobo, Avenida 10 de Noviembre, Avenida Polonia, Avenida Hipólito Yrigoyen, Avenida Ducos, Avenida Alsina, Bahía Bustamante, Democracia, Roque Sáenz Peña, Avenida Ducos, Carlos Pellegrini." },
         ],
       },
       {
         numero: "16",
-        resumen: "Centro – Saavedra",
+        resumen: "Estadio – Saavedra – Aeronáutico",
         tramos: [
-          { etiqueta: "Ida", texto: "Gil Álvarez, 25 de Mayo, Avenida Ducos, Carlos Pellegrini, Avenida Hipólito Yrigoyen, Máximo Abásolo, Ruta Nacional N° 3, Avenida del Libertador, Los Búlgaros, Gobernador Moyano, J. M. Pueyrredón, Fray Luis Beltrán, Francisco de Viedma, Avenida Petrolero San Lorenzo, Avenida Tehuelches, Lángara, Avenida Mazarredo, J. M. Moreno, Juan José Aimar, Santa Lucía, Edward Flagel, Sueiro, Colectora Fray Luis Beltrán, Los Cedros, Algarrobo, Avenida del Pinar, Ceibos, Los Robles, Los Alerces, Los Aromos, Las Araucarias, Avenida del Pinar." },
-          { etiqueta: "Vuelta", texto: "Avenida del Pinar, El Algarrobo, Los Ñires, Alberto Toussaint, Gallardo Rodríguez, Sueiro, Isaías Carrizo, Edward Flagel, Santa Lucía, José Aimar, María Moreno, Mazarredo, Avenida Lángara, Francisco de Viedma, Fray Luis Beltrán, José Fuchs, Marcelino Reyes, Avenida del Libertador, Ruta Nacional N° 3, Sarmiento, 25 de Mayo, Avenida Hipólito Yrigoyen, Carstens." },
+          { etiqueta: "Ida", texto: "Carstens, Avenida Ducos, Avenida Alsina, Bahía Bustamante, Democracia, Roque Sáenz Peña, Pellegrini, Avenida Hipólito Yrigoyen, Máximo Abásolo, Ruta Nacional N° 3, Avenida del Libertador, Los Búlgaros, Gobernador Moyano, Avenida J. M. Pueyrredón, Fray Luis Beltrán, Francisco de Viedma, Petrolero San Lorenzo, Avenida Tehuelches, Avenida Lángara, Avenida Mazaredo, José María Moreno, José Aimar, Santa Lucía, Edward Flagel, Doctor Manuel Sueiro, Colectora Fray Luis Beltrán, Los Cedros, El Algarrobo, Avenida Fray Luis Beltrán, Roque González, Código 2222, Fabián Arienti, Código 2224, Código 2226." },
+          { etiqueta: "Vuelta", texto: "Código 2226, Código 2222, Roque González, Avenida Fray Luis Beltrán, Los Robles, Los Alerces, Los Aromos, Las Araucarias, Avenida del Pinar, El Algarrobo, Alberto Toussaint, Carlos Rodríguez Gallardo, Doctor Manuel Sueiro, Antonio Isaías Carrizo, Edward Flagel, Santa Lucía, José Aimar, Avenida Mazaredo, Avenida Lángara, Francisco de Viedma, Avenida Fray Luis Beltrán, José Fuchs, Marcelino Reyes, Avenida del Libertador, Ruta Nacional N° 3, Avenida Rivadavia, Belgrano, Avenida Hipólito Yrigoyen, Carstens." },
         ],
       },
       {
         numero: "17",
-        resumen: "Centro – Ciudadela – Padre Corti",
+        resumen: "Estadio – Padre Corti",
         tramos: [
-          { etiqueta: "Ida", texto: "Carstens, Avenida Ducos, Alsina, Bahía Bustamante, Democracia, Sáenz Peña, Ducos, Carlos Pellegrini, Avenida Hipólito Yrigoyen, Máximo Abásolo, Ruta Nacional N° 3, Avenida del Libertador, Los Búlgaros, Gobernador Moyano, J. M. Pueyrredón, Fray Luis Beltrán, Francisco de Viedma, Avenida Petrolero San Lorenzo, Avenida Tehuelches, Cerro Viteau, Av. del Libertador, Mariano Rodríguez, Norma Gladys Vosila, Rosalía Guaita, Mariano Rodríguez, Ruta Nacional N° 3, Independencia, Fitz Roy, Los Andes, La Pulpería, El Chasqui, El Rastreador, Los Andes, Cerro La Plata." },
-          { etiqueta: "Vuelta", texto: "Cerro La Plata, Cerro Solano, Cerro Domuyo, Cerro Hermitte, Monte Pissis, Cerro Mercedario, Cerro La Plata, Los Andes, El Rastreador, El Chasqui, El Baquiano, Los Andes, Pucará, Independencia, José Hernández, Primero de Mayo, Ruta Nacional N° 3, Rotonda Barrio Rodríguez Peña, Crucero General Belgrano, Ruta Nacional N° 3, Mirco Michunovich, Calle Sin Nombre, Avenida Tehuelches, Avenida Lángara, Francisco de Viedma, Fray Luis Beltrán, José Fuchs, Marcelino Reyes, Avenida del Libertador, Ruta Nacional N° 3, Sarmiento, 25 de Mayo, Avenida Hipólito Yrigoyen, Carstens." },
+          { etiqueta: "Ida", texto: "Carstens, Avenida Ducos, Avenida Alsina, Bahía Bustamante, Democracia, Roque Sáenz Peña, Avenida Ducos, Carlos Pellegrini, Hipólito Yrigoyen, Máximo Abásolo, Ruta Nacional N° 3, Avenida del Libertador, Los Búlgaros, Gobernador Moyano, Avenida J. M. Pueyrredón, Avenida Fray Luis Beltrán, Francisco de Viedma, Petrolero San Lorenzo, Avenida Tehuelches, Jesús Garré, Avenida del Libertador, Rotonda Universidad, Avenida del Libertador, Acceso al Barrio Castelli, Mariano Rodríguez, Dionisio Néstor Páez, Mirco Michunovich, Mariano Rodríguez, Ruta Nacional N° 3, Rotonda Ruta Nacional N° 3 y Ruta Provincial N° 39, Independencia, Fitz Roy, Los Andes, El Baqueano, El Chasqui, El Rastreador, Los Andes, Cerro La Plata, Cerro Solano." },
+          { etiqueta: "Vuelta", texto: "Cerro Domuyo, Monte Pissis, Cerro Mercedario, Cerro La Plata, Los Andes, El Rastreador, El Chasqui, El Baqueano, Los Andes, Pucará, Independencia, José Hernández, Primero de Mayo, Ruta Nacional N° 3, Ingreso Rodríguez Peña, Rotonda Rodríguez Peña, ARA General Belgrano, Ruta Nacional N° 3, Mirco Michunovich, Dionisio Néstor Páez, Mariano Rodríguez, Ruta Nacional N° 3, Avenida del Libertador, Avenida Tehuelches, Avenida Lángara, Francisco de Viedma, Avenida Fray Luis Beltrán, José Fuchs, Marcelino Reyes, Avenida del Libertador, Ruta Nacional N° 3, Sarmiento, 25 de Mayo, Avenida Hipólito Yrigoyen, Carstens." },
         ],
       },
       {
         numero: "18",
-        resumen: "Centro – Restinga Alí",
+        resumen: "Estadio Centenario – Restinga Alí",
         tramos: [
-          { etiqueta: "Ida", texto: "Carstens, Ducos, Carlos Pellegrini, Avenida Hipólito Yrigoyen, Abásolo, Ruta Nacional N° 3, Avenida del Libertador, Búlgaros, Gobernador Moyano, J. M. Pueyrredón, Avenida del Libertador, Avenida José Ingenieros, Avenida del Parque, Soldado Argentino, Los Sargentos, Pedro Granzón, Mario Morejón, Avenida Nahuel Huapi, Baltazar González, Código 2438, Código 2432, Base Irízar, Base Petrel, Sosa Toledo, Dolores Mora." },
-          { etiqueta: "Vuelta", texto: "Dolores Mora, Andrés Bello, Pablo Neruda, Sosa Toledo, Base Petrel, Base Irízar, Código 2432, Código 2438, Baltazar González, Avenida Nahuel Huapi, Mario Morejón, Pedro Granzón, Baldomero Terraza, Julio Cortázar, Soldado Argentino, Avenida del Parque, Avenida José Ingenieros, Avenida del Libertador, Ruta Nacional N° 3, Sarmiento, 25 de Mayo, Avenida Hipólito Yrigoyen, Carstens." },
+          { etiqueta: "Ida", texto: "Carstens, Avenida Ducos, Carlos Pellegrini, Hipólito Yrigoyen, Máximo Abásolo, Ruta Nacional N° 3, Avenida del Libertador, Los Búlgaros, Gobernador Moyano, Avenida J. M. Pueyrredón, Francisco de Viedma, Petrolero San Lorenzo, Avenida Tehuelches, Jesús Garré, Avenida del Libertador, Ruta Provincial N° 1, Avenida José Ingenieros, Avenida del Parque, Soldado Argentino, Los Sargentos, Pedro Granzón, Mario Morejón, Avenida Nahuel Huapi, Sargento Baltazar González, Código 2438, Código 2432, Base Irízar, Base Petrel, Doña Juana Sosa Toledo, Rubén Darío, Dolores Mora." },
+          { etiqueta: "Vuelta", texto: "Andrés Bello, Pablo Neruda, Doña Juana Sosa Toledo, Base Petrel, Base Irízar, Código 2432, Código 2438, Sargento Baltazar González, Avenida Nahuel Huapi, Mario Morejón, Pedro Granzón, Baldomero Terraza, Julio Cortázar, Soldado Argentino, Avenida del Parque, Avenida José Ingenieros, Ruta Provincial N° 1, Avenida del Libertador, Avenida Tehuelches, Avenida Lángara, Francisco de Viedma, Fray Luis Beltrán, José Fuchs, Marcelino Reyes, Avenida del Libertador, Ruta Nacional N° 3, Sarmiento, Belgrano, Avenida Hipólito Yrigoyen, Carstens." },
         ],
       },
       {
         numero: "19",
-        resumen: "Centro – Caleta Córdova",
+        resumen: "Estadio Centenario – Caleta Córdova",
         tramos: [
-          { etiqueta: "Ida", texto: "Carstens, Ducos, Carlos Pellegrini, Avenida Hipólito Yrigoyen, Abásolo, Ruta Nacional N° 3, Avenida del Libertador, Búlgaros, Gobernador Moyano, J. M. Pueyrredón, Avenida del Libertador, Avenida José Ingenieros, Ruta Provincial N° 1, Avenida Alejandro Maíz, Ruta Provincial N° 1, Punta Novales, El Ancla, Código 2727." },
-          { etiqueta: "Vuelta", texto: "Código 2727, Código 2731, Punta Novales, Ruta Provincial N° 1, Alejandro Maíz, Ruta Provincial N° 1, Avenida José Ingenieros, Avenida del Libertador, Ruta Nacional N° 3, Sarmiento, 25 de Mayo, Avenida Hipólito Yrigoyen, Carstens." },
+          { etiqueta: "Ida", texto: "Carstens, Avenida Ducos, Carlos Pellegrini, Avenida Hipólito Yrigoyen, Máximo Abásolo, Ruta Nacional N° 3, Avenida del Libertador, Los Búlgaros, Gobernador Moyano, Avenida J. M. Pueyrredón, Avenida del Libertador, Ruta Provincial N° 1, Avenida José Ingenieros, Ruta Provincial N° 1, Avenida Alejandro Maíz, Ruta Provincial N° 1, Avenida Punta Novales, El Ancla, Código 2727." },
+          { etiqueta: "Vuelta", texto: "Código 2727, Avenida Punta Novales, Ruta Provincial N° 1, Avenida Alejandro Maíz, Ruta Provincial N° 1, Avenida José Ingenieros, Ruta Provincial N° 1, Avenida del Libertador, Ruta Nacional N° 3, Sarmiento, 25 de Mayo, Avenida Hipólito Yrigoyen, Carstens." },
         ],
       },
       {
         numero: "20",
-        resumen: "Industrial – Stella Maris – Hospital Alvear",
+        resumen: "Base Sol Bus – Stella Maris – Hospital Alvear",
         tramos: [
-          { etiqueta: "Ida", texto: "Juan Vueguen, Juan Davies, Nicolás Mañás, Avenida Hipólito Yrigoyen, Ignacio Gatica, Antonio Roqueta Prat, C. Saavedra Lamas, Vicente Torraca, Código 811, Ramón Castillo, Ignacio Gatica, Código 562, Lorenzo Gastaldi, Código 516, Luis Gallino, Saturnino López, Eustaquio Molina, Alfredo Llames Massini, José Dalle Mura, Avenida Hipólito Yrigoyen, Avenida Ducos, Avenida Alsina, Bahía Bustamante, Democracia, Roque Sáenz Peña, Avenida Ducos, 25 de Mayo, Avenida Hipólito Yrigoyen, Ruta Nacional N° 3, Avenida del Libertador, Los Búlgaros, Gobernador Moyano, J. M. Pueyrredón, José María Paz, Ignacio Warnes, Mariano de Vedia, Ingeniero Raventós, Moscarda de Medrano, Avenida Ramón Balcarce." },
-          { etiqueta: "Vuelta", texto: "Avenida Ramón Balcarce, Mariano de Vedia, Avenida Manuel Quintana, Gobernador Moyano, J. M. Pueyrredón, Avenida del Libertador, Ruta Nacional N° 3, Sarmiento, 25 de Mayo, Avenida Hipólito Yrigoyen, Juan P. Evet, Monseñor de Andrea, Gerónimo Maliqueo, José Suazo, Avenida Portugal, José Dalle Mura, Llames Massini, Eustaquio Molina, Saturnino López, José Liñeiro, Ignacio Gatica, Ramón Castillo, Código 811, Vicente Torraca, Saavedra Lamas, Antonio Roqueta Pratt, Ignacio Gatica, Avenida Hipólito Yrigoyen, Nicolás Mañás, Juan Davies, Juan Vueguen." },
+          { etiqueta: "Ida", texto: "Juan Vueguen, Juan Davies, Avenida Hipólito Yrigoyen, Ignacio Gatica, Antonio Roqueta Pratt, Saavedra Lamas, Vicente Torraca, Código 811, Ramón Castillo, Ignacio Gatica, Código 562, Lorenzo Gastaldi, Código 516, Luis Gallino, Saturnino López, Eustaquio Molina, Alfredo Llames Massini, José Dalle Mura, Avenida Hipólito Yrigoyen, Avenida Ducos, Avenida Alsina, Bahía Bustamante, Democracia, Roque Sáenz Peña, Avenida Ducos, Carlos Pellegrini, Avenida Hipólito Yrigoyen, Máximo Abásolo, Ruta Nacional N° 3, Avenida del Libertador, Los Búlgaros, Gobernador Moyano, Avenida J. M. Pueyrredón, José María Paz, Avenida Mariano de Vedia, Dolores Moscara de Medrano, Avenida Juan Ramón Balcarce." },
+          { etiqueta: "Vuelta", texto: "Avenida Juan Ramón Balcarce, Avenida Mariano de Vedia, Avenida Manuel Quintana, Gobernador Moyano, Avenida J. M. Pueyrredón, Avenida del Libertador, Ruta Nacional N° 3, Sarmiento, 25 de Mayo, Avenida Hipólito Yrigoyen, Juan P. Evet, Monseñor de Andrea, Gerónimo Maliqueo, José Suazo, Avenida Portugal, José Dalle Mura, Alfredo Llames Massini, Eustaquio Molina, Saturnino López, José Liñeiro, Presidente Ramón Castillo, Código 811, Vicente Torraca, Saavedra Lamas, Antonio Roqueta Pratt, Ignacio Gatica, Avenida Hipólito Yrigoyen, Tirso López, Juan Davies, Juan Vueguen." },
         ],
       },
       {
         numero: "21",
-        resumen: "Ciudadela – Don Bosco – Standard",
+        resumen: "Padre Corti – Don Bosco – Standard",
         tramos: [
-          { etiqueta: "Ida", texto: "Cerro Solano, Cerro Domuyo, Cerro Hermitte, Monte Pissis, Cerro Mercedario, Cerro La Plata, Los Andes, El Rastreador, Tradición, El Baquiano, Los Andes, Pucará, Independencia, Fitz Roy, 1 de Mayo, Bulevar Constitución, Los Andes, Bulevar Ameghino, Ruta Provincial N° 39, Antártida Argentina, General Lavalle, Luro Cambaceres, Juan José Paso, Teniente Vanecea, San Lorenzo, Fuerza Aérea Argentina, Juan José Paso, Ítalo Dell'Oro, Teodoro Petroff, Wenceslao Escalante, 8 de Diciembre, Martín Comodoro Rivadavia, Teniente Daniel Jukic, Código 2404, Base Matienzo, Base Irízar, Base Petrel, Avenida Alejandro Maíz, Ítalo Dell'Oro." },
-          { etiqueta: "Vuelta", texto: "Ítalo Dell'Oro, Teniente Miguel Giménez, Avenida Alejandro Maíz, Base Petrel, Base Irízar, Base Matienzo, Código 2404, Teniente Daniel Jukic, Francisco Petrobelli, Ítalo Dell'Oro, Avenida Juan José Paso, Reconquista, Avenida Juan José Paso, 1 de Noviembre, General Lavalle, Antártida Argentina, Ruta Provincial N° 39, Independencia, Pucará, Los Andes, El Baquiano, El Chasqui, El Rastreador, Los Andes, Cerro La Plata, Cerro Solano." },
+          { etiqueta: "Ida", texto: "Cerro Solano, Cerro Domuyo, Cerro Hermitte, Monte Pissis, Cerro Mercedario, Cerro La Plata, Los Andes, El Rastreador, Tradición, El Baqueano, Los Andes, Pucará, Independencia, Fitz Roy, 1 de Mayo, Bulevar Constitución, Los Andes, Ruta Provincial N° 39, Antártida Argentina, Avenida General Lavalle, Luro Cambaceres, Avenida Juan José Paso, Teniente Vanesia, San Lorenzo, Fuerza Aérea Argentina, Avenida Juan José Paso, Ítalo Dell'Oro, Teodoro Petroff, Wenceslao Escalante, 8 de Diciembre, Martín Comodoro Rivadavia, Teniente Daniel Jukic, Código 2404, Base Matienzo, Base Petrel, Avenida Alejandro Maíz, Ítalo Dell'Oro." },
+          { etiqueta: "Vuelta", texto: "Ítalo Dell'Oro, Teniente Miguel Giménez, Avenida Alejandro Maíz, Base Petrel, Base Matienzo, Código 2404, Teniente Daniel Jukic, Aldo Juan Silvestrini, Avenida Francisco Pietrobelli, Ítalo Dell'Oro, Juan José Paso, Reconquista, Juan José Paso, Teniente Vanesia, Avenida Juan José Paso, 1 de Noviembre, General Lavalle, Antártida Argentina, Ruta Provincial N° 39, Ruta Nacional N° 3, Independencia, Pucará, Los Andes, El Baqueano, El Chasqui, El Rastreador, Los Andes, Cerro Solano." },
         ],
       },
       {
         numero: "22",
-        resumen: "Centro – Standard – Km. 11",
+        resumen: "Estadio Centenario – Standard – Km. 11",
         tramos: [
-          { etiqueta: "Ida", texto: "Carstens, Ducos, Carlos Pellegrini, Avenida Hipólito Yrigoyen, Abásolo, Ruta Nacional N° 3, Avenida del Libertador, Búlgaros, Gobernador Moyano, J. M. Pueyrredón, Avenida del Libertador, Avenida José Ingenieros, Alejandro Maíz, Teniente Miguel Giménez, Ítalo Dell'Oro, Teodoro Petroff, Wenceslao Escalante, 8 de Diciembre, Martín Comodoro Rivadavia, Los Arrayanes, Avenida Nahuel Huapi, Código 2459, Camino Rural Palazzo, Ruta Cuartel RIM 8, Circuito Interno Barrio, Camino Cantera, Rotonda Km 18." },
-          { etiqueta: "Vuelta", texto: "Rotonda Km 18, Camino Cantera, Enlace Rural Palazzo, Código 2459, Teniente Manuel Mujica Láinez, Francisco Petrobelli, Ítalo Dell'Oro, Teniente Giménez, Avenida Alejandro Maíz, Ruta Provincial N° 1, Avenida José Ingenieros, Avenida del Libertador, Ruta Nacional N° 3, Sarmiento, 25 de Mayo, Avenida Hipólito Yrigoyen, Carstens." },
+          { etiqueta: "Ida", texto: "Carstens, Avenida Ducos, Carlos Pellegrini, Yrigoyen, Máximo Abásolo, Ruta Nacional N° 3, Avenida del Libertador, Los Búlgaros, Gobernador Moyano, J. M. Pueyrredón, Avenida del Libertador, Ruta Provincial N° 1, Avenida José Ingenieros, Ruta Provincial N° 1, Avenida Alejandro Maíz, Teniente Miguel Giménez, Ítalo Dell'Oro, Teodoro Petroff, Wenceslao Escalante, 8 de Diciembre, Martín Comodoro Rivadavia, Los Arrayanes, Avenida Nahuel Huapi, Copihue, Enlace Rural Palazzo, Barrio Cuartel Chacabuco (RIM 28), Camino Cantera, Rotonda Km 18." },
+          { etiqueta: "Vuelta", texto: "Rotonda Km 18, Camino Cantera, Enlace Rural Palazzo, Copihue, Teniente Manuel Mujica Láinez, Aldo Juan Silvestrini, Francisco Pietrobelli, Ítalo Dell'Oro, Teniente Giménez, Avenida Alejandro Maíz, Ruta Provincial N° 1, Avenida José Ingenieros, Ruta Provincial N° 1, Avenida del Libertador, Ruta Nacional N° 3, Sarmiento, 25 de Mayo, Avenida Hipólito Yrigoyen, Carstens." },
         ],
       },
     ],
@@ -524,12 +532,20 @@ export default async function AreaFiscalizadaPage({
             </ul>
 
             <a
-              href="/normativa/resolucion-1399-26-lineas-y-ramales-sol-bus.pdf"
+              href="/normativa/resolucion-1628-26-lineas-y-ramales-grupo-mr.pdf"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-block mt-4 text-xs text-navy-2 underline underline-offset-4 font-semibold"
             >
-              📄 Ver el texto oficial completo (Resolución 1.399/26, Anexo I) →
+              📄 Ver el texto oficial completo (Resolución 1.628/26, Anexo I) →
+            </a>{" "}
+            <a
+              href="/normativa/resolucion-1399-26-lineas-y-ramales-sol-bus.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block mt-4 text-xs text-muted underline underline-offset-4"
+            >
+              (Resolución 1.399/26 anterior, derogada →)
             </a>
           </section>
         )}
@@ -639,7 +655,7 @@ export default async function AreaFiscalizadaPage({
               targetId: "lineas",
               pose: "colectivo",
               texto:
-                "Acá tenés el mapa interactivo oficial para buscar tu línea por origen y destino, y el detalle calle por calle de las 22 líneas.",
+                "Acá tenés el mapa interactivo oficial para buscar tu línea por origen y destino, y el detalle calle por calle de todas las líneas de la Etapa Inicial.",
             },
             {
               targetId: "zorrito-guia-widget",
