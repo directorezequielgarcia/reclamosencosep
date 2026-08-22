@@ -54,6 +54,7 @@ model Usuario {
   documentosSubidos Documento[]        @relation("DocSubeUsuario")
   documentosRevisados Documento[]      @relation("DocRevisor")
   boletines       Boletin[]
+  auditorias      Auditoria[]
   audienciasPublicas AudienciaPublica[]
   inspeccionesRealizadas Inspeccion[]  @relation("InspeccionInspector")
   informesMensualesEmitidos InformeMensual[]  @relation("InformeMensualEmisor")
@@ -112,6 +113,7 @@ model Prestadora {
   documentos  Documento[]
   vencimientos Vencimiento[]
   inspecciones Inspeccion[]
+  auditorias  Auditoria[]
   activa      Boolean    @default(true)
   createdAt   DateTime   @default(now())
 }
@@ -577,6 +579,68 @@ model Boletin {
 
   @@index([tipo, fechaPublicacion])
   @@index([publicado, fechaPublicacion])
+}
+
+// ─────────────────────────────────────────────
+// Auditorías a prestadoras
+// Registro interno de una auditoría (económico-financiera, de cumplimiento,
+// operativa, etc.) practicada a una prestadora por cualquier organismo
+// (Municipio, TCM, UNPSJB, el propio ENCOSEP). Se carga primero como
+// borrador (publicado=false) para análisis interno del Directorio, y se
+// publica más adelante como novedad cuando el Ente decide comunicarla.
+// ─────────────────────────────────────────────
+
+model Auditoria {
+  id                  String      @id @default(cuid())
+  titulo              String
+  prestadoraId        String?
+  prestadora          Prestadora? @relation(fields: [prestadoraId], references: [id])
+  expediente          String?     // "Expte. Municipal N° 1979-M-2024"
+  auditorResponsable  String?     // organismo/área que la ejecutó
+  tipoAuditoria       String?     // "Auditoría de Cumplimiento (ISSAI 4100)…"
+  periodoAuditado     String?     // "01/01/2021 – 31/12/2024"
+  fechaInforme        DateTime?
+  resumen             String?     // teaser corto para la tarjeta de listado
+
+  // Contenido de lectura — una sección por cada pregunta que debe responder
+  // el registro para que sea autocontenido si se publica como novedad.
+  queEsAuditoria      String?     // ¿qué es una auditoría? (explicación general)
+  procedimientos      String?     // ¿qué procedimientos aplicaron? (metodología/evidencia/muestreo)
+  alcance             String?     // elementos auditados y exclusiones del alcance
+  hallazgos           String?     // elementos hallados
+  conclusiones        String?     // conclusiones a las que arribaron
+  razonabilidad       String?     // distancia entre la evidencia y la conclusión
+  recomendaciones     String?     // cómo corregir a futuro
+  opinionEncosep      String?     // opinión propia del Ente — cómo debería ser
+
+  archivoUrl          String?     // documento principal (informe/análisis), adjunto
+  fotoUrl             String?
+  fechaPublicacion    DateTime?
+  publicado           Boolean     @default(false)
+  autorId             String
+  autor               Usuario     @relation(fields: [autorId], references: [id])
+  documentos          AuditoriaDocumento[]
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+
+  @@index([publicado, fechaPublicacion])
+  @@index([prestadoraId])
+}
+
+// Documentos adicionales de una auditoría (además del documento principal):
+// el análisis técnico, la explicación en lenguaje llano, papeles de trabajo
+// puntuales, etc. — cada uno con su propio título para mostrar en la lista.
+model AuditoriaDocumento {
+  id           String    @id @default(cuid())
+  auditoriaId  String
+  auditoria    Auditoria @relation(fields: [auditoriaId], references: [id], onDelete: Cascade)
+  titulo       String
+  url          String
+  mimeType     String?
+  bytes        Int?
+  createdAt    DateTime  @default(now())
+
+  @@index([auditoriaId])
 }
 
 // ─────────────────────────────────────────────

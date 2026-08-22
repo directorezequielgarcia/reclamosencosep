@@ -115,6 +115,11 @@ export function puedeGestionarAudienciasMedios(rol: Rol): boolean {
   return esDireccion(rol) || rol === "AUDIENCIAS_MEDIOS" || rol === "GESTOR_ENTE";
 }
 
+/** Puede gestionar auditorías a prestadoras (crear, editar, publicar). */
+export function puedeGestionarAuditorias(rol: Rol): boolean {
+  return esDireccion(rol) || rol === "AUDITOR" || rol === "GESTOR_ENTE";
+}
+
 /** Puede gestionar usuarios (alta, reset clave, bloqueo). */
 export function puedeGestionarUsuarios(rol: Rol): boolean {
   return esDireccion(rol) || rol === "GESTOR_ENTE";
