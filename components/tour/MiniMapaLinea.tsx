@@ -26,7 +26,9 @@ type LineaGeoJSON = {
 };
 
 async function fetchDataJs<T>(url: string): Promise<T> {
-  const texto = await fetch(url).then((r) => r.text());
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error("MCR_DATASET_DOWN");
+  const texto = await resp.text();
   const idx = texto.indexOf("=");
   const jsonTexto = texto.slice(idx + 1).trim().replace(/;\s*$/, "");
   return JSON.parse(jsonTexto) as T;
@@ -47,7 +49,7 @@ function capitalizar(s: string) {
 }
 
 export function MiniMapaLinea({ codigos }: { codigos: string[] }) {
-  const [estado, setEstado] = useState<"cargando" | "ok" | "error">("cargando");
+  const [estado, setEstado] = useState<"cargando" | "ok" | "error" | "mantenimiento">("cargando");
   const [leyenda, setLeyenda] = useState<ItemLeyenda[]>([]);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -122,8 +124,9 @@ export function MiniMapaLinea({ codigos }: { codigos: string[] }) {
         mapRef.current = map;
         setLeyenda(leyendaNueva);
         setEstado("ok");
-      } catch {
-        if (!cancelado) setEstado("error");
+      } catch (err) {
+        if (cancelado) return;
+        setEstado(err instanceof Error && err.message === "MCR_DATASET_DOWN" ? "mantenimiento" : "error");
       }
     })();
 
@@ -149,6 +152,11 @@ export function MiniMapaLinea({ codigos }: { codigos: string[] }) {
       {estado === "error" && (
         <div className="text-xs text-muted text-center">
           No pudimos cargar el mapa de este recorrido ahora.
+        </div>
+      )}
+      {estado === "mantenimiento" && (
+        <div className="text-xs text-muted text-center px-2">
+          El mapa oficial de la Municipalidad está en mantenimiento (probablemente actualizando los recorridos a la nueva resolución). Mientras tanto, guiate por el detalle calle por calle de abajo.
         </div>
       )}
       {estado === "ok" && (

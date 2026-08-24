@@ -77,7 +77,9 @@ type LineaProcesada = {
 };
 
 async function fetchDataJs<T>(url: string): Promise<T> {
-  const texto = await fetch(url).then((r) => r.text());
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error("MCR_DATASET_DOWN");
+  const texto = await resp.text();
   const idx = texto.indexOf("=");
   const jsonTexto = texto
     .slice(idx + 1)
@@ -457,6 +459,7 @@ export function ZorritoGuia() {
   const [destinoTexto, setDestinoTexto] = useState("");
   const [estado, setEstado] = useState<"idle" | "buscando" | "ok" | "error">("idle");
   const [errorTexto, setErrorTexto] = useState<string | null>(null);
+  const [errorMantenimiento, setErrorMantenimiento] = useState(false);
   const [resultado, setResultado] = useState<Resultado | null>(null);
   const [resultadoRuta, setResultadoRuta] = useState<ResultadoRuta | null>(null);
 
@@ -550,6 +553,7 @@ export function ZorritoGuia() {
 
     setEstado("buscando");
     setErrorTexto(null);
+    setErrorMantenimiento(false);
 
     let origen: Coords;
     try {
@@ -582,8 +586,14 @@ export function ZorritoGuia() {
       } else {
         await buscarPorCoords(origen.lat, origen.lng);
       }
-    } catch {
-      setErrorTexto("No pudimos calcular las paradas y líneas ahora. Probá de nuevo.");
+    } catch (err) {
+      const esMantenimiento = err instanceof Error && err.message === "MCR_DATASET_DOWN";
+      setErrorMantenimiento(esMantenimiento);
+      setErrorTexto(
+        esMantenimiento
+          ? "El mapa oficial de la Municipalidad está en mantenimiento (probablemente actualizando los recorridos a la nueva resolución) — por ahora no podemos calcular paradas ni líneas cercanas. Mirá el detalle calle por calle más abajo mientras tanto."
+          : "No pudimos calcular las paradas y líneas ahora. Probá de nuevo.",
+      );
       setEstado("error");
     }
   }
@@ -693,21 +703,25 @@ export function ZorritoGuia() {
       {estado === "error" && (
         <div className="flex flex-col gap-2 items-center py-2">
           <div className="text-sm text-svc-red text-center">{errorTexto}</div>
-          <button
-            type="button"
-            onClick={reiniciar}
-            className="text-xs text-navy-2 underline underline-offset-4"
-          >
-            Probar de nuevo
-          </button>
-          <a
-            href={MAPA_MCR_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-[#7e57c2] underline underline-offset-4"
-          >
-            O usá el mapa interactivo completo
-          </a>
+          {!errorMantenimiento && (
+            <>
+              <button
+                type="button"
+                onClick={reiniciar}
+                className="text-xs text-navy-2 underline underline-offset-4"
+              >
+                Probar de nuevo
+              </button>
+              <a
+                href={MAPA_MCR_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-[#7e57c2] underline underline-offset-4"
+              >
+                O usá el mapa interactivo completo
+              </a>
+            </>
+          )}
         </div>
       )}
 
