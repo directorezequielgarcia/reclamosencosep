@@ -7,13 +7,16 @@ import type * as L from "leaflet";
 /**
  * Mapa real (Leaflet + OpenStreetMap) con el trazado de una línea, a partir
  * de las coordenadas reales que publica la Municipalidad (mismo dataset que
- * usa ZorritoGuia). Se consulta en vivo al abrir cada línea — no hay
- * captura estática que mantener ni que se desactualice si la Municipalidad
- * ajusta un recorrido. Sin calles de referencia el trazado solo es una
- * forma abstracta ilegible, por eso va sobre el mapa real y no como SVG suelto.
+ * usa ZorritoGuia). Se consulta en vivo al abrir cada línea — así no se
+ * desactualiza si la Municipalidad ajusta un recorrido. Si esa fuente no
+ * responde, cae a un snapshot local en public/data/transporte-mcr-snapshot/
+ * (ver LEEME.md ahí) y avisa en pantalla que puede estar desactualizado.
+ * Sin calles de referencia el trazado solo es una forma abstracta ilegible,
+ * por eso va sobre el mapa real y no como SVG suelto.
  */
 
 const BASE = "https://comodoro-mit.github.io/transporte/layers_transporte";
+const SNAPSHOT_BASE = "/data/transporte-mcr-snapshot";
 const COMODORO: [number, number] = [-45.864, -67.4969];
 
 type Geometry =
@@ -25,13 +28,24 @@ type LineaGeoJSON = {
   features: Array<{ properties?: { sentido?: string }; geometry: Geometry }>;
 };
 
-async function fetchDataJs<T>(url: string): Promise<T> {
-  const resp = await fetch(url);
-  if (!resp.ok) throw new Error("MCR_DATASET_DOWN");
-  const texto = await resp.text();
+function parseDataJs<T>(texto: string): T {
   const idx = texto.indexOf("=");
   const jsonTexto = texto.slice(idx + 1).trim().replace(/;\s*$/, "");
   return JSON.parse(jsonTexto) as T;
+}
+
+// Fetch en vivo primero; si el mapa oficial está caído, cae al último
+// snapshot conocido en public/data/transporte-mcr-snapshot/ (ver LEEME.md
+// ahí) y marca snapshotFlag.usado para avisar en pantalla.
+async function fetchDataJs<T>(url: string, snapshotFlag?: { usado: boolean }): Promise<T> {
+  const resp = await fetch(url);
+  if (resp.ok) return parseDataJs<T>(await resp.text());
+
+  const nombreArchivo = url.split("/").pop()!;
+  const respSnapshot = await fetch(`${SNAPSHOT_BASE}/${nombreArchivo}`);
+  if (!respSnapshot.ok) throw new Error("MCR_DATASET_DOWN");
+  if (snapshotFlag) snapshotFlag.usado = true;
+  return parseDataJs<T>(await respSnapshot.text());
 }
 
 function extraerLineas(geom: Geometry): [number, number][][] {
@@ -51,6 +65,7 @@ function capitalizar(s: string) {
 export function MiniMapaLinea({ codigos }: { codigos: string[] }) {
   const [estado, setEstado] = useState<"cargando" | "ok" | "error" | "mantenimiento">("cargando");
   const [leyenda, setLeyenda] = useState<ItemLeyenda[]>([]);
+  const [usoSnapshot, setUsoSnapshot] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
 
@@ -58,12 +73,13 @@ export function MiniMapaLinea({ codigos }: { codigos: string[] }) {
     let cancelado = false;
     (async () => {
       try {
+        const snapshotFlag = { usado: false };
         const [leaflet, datos] = await Promise.all([
           import("leaflet"),
           Promise.all(
             codigos.map(async (codigo) => ({
               codigo,
-              data: await fetchDataJs<LineaGeoJSON>(`${BASE}/linea_${codigo}_data.js`),
+              data: await fetchDataJs<LineaGeoJSON>(`${BASE}/linea_${codigo}_data.js`, snapshotFlag),
             })),
           ),
         ]);
@@ -123,6 +139,7 @@ export function MiniMapaLinea({ codigos }: { codigos: string[] }) {
 
         mapRef.current = map;
         setLeyenda(leyendaNueva);
+        setUsoSnapshot(snapshotFlag.usado);
         setEstado("ok");
       } catch (err) {
         if (cancelado) return;
@@ -184,7 +201,9 @@ export function MiniMapaLinea({ codigos }: { codigos: string[] }) {
             ))}
           </div>
           <p className="text-[10px] text-muted text-center">
-            Trazado real desde datos públicos del mapa oficial de transporte.
+            {usoSnapshot
+              ? "⚠️ Mapa oficial en mantenimiento — trazado del último dato publicado (04/08/2026), puede no reflejar la Resolución 1.628/26."
+              : "Trazado real desde datos públicos del mapa oficial de transporte."}
           </p>
         </div>
       )}

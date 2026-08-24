@@ -6,8 +6,14 @@ import { useState, type FormEvent } from "react";
  * "Zorrito Guía" — responde ¿dónde estoy? ¿qué paradas hay? ¿qué líneas pasan
  * por acá?, usando los datos geográficos reales y públicos que publica la
  * Municipalidad para su propio mapa interactivo (comodoro-mit.github.io).
- * No se copian esos datos al repo: se consultan en vivo (CORS abierto), así
- * nunca quedan desactualizados si la Municipalidad corrige un recorrido.
+ * Se consultan EN VIVO primero (CORS abierto), así nunca quedan
+ * desactualizados si la Municipalidad corrige un recorrido. Si esa fuente no
+ * responde (pasó el 12-22/08/2026: sitio en mantenimiento mientras cargaban
+ * la Resolución 1.628/26), cae a un snapshot local en
+ * public/data/transporte-mcr-snapshot/ — el último dataset publicado antes
+ * del mantenimiento (commit 5b7e770 del repo comodoro-mit/transporte,
+ * 04/08/2026), así la guía sigue funcionando aunque desactualizada. En ese
+ * caso se avisa en pantalla — ver LEEME.md en esa carpeta.
  *
  * El vínculo "esta parada la sirve tal línea" y "esta línea te lleva de A a
  * B" se calculan con el MISMO criterio que usa el mapa oficial de la
@@ -76,16 +82,29 @@ type LineaProcesada = {
   rutas: Ruta[];
 };
 
-async function fetchDataJs<T>(url: string): Promise<T> {
-  const resp = await fetch(url);
-  if (!resp.ok) throw new Error("MCR_DATASET_DOWN");
-  const texto = await resp.text();
+const SNAPSHOT_BASE = "/data/transporte-mcr-snapshot";
+
+function parseDataJs<T>(texto: string): T {
   const idx = texto.indexOf("=");
   const jsonTexto = texto
     .slice(idx + 1)
     .trim()
     .replace(/;\s*$/, "");
   return JSON.parse(jsonTexto) as T;
+}
+
+// snapshotFlag.usado queda en true si ALGÚN archivo tuvo que resolverse
+// desde el snapshot local (alcanza con que falle uno para que toda la
+// respuesta se considere potencialmente desactualizada).
+async function fetchDataJs<T>(url: string, snapshotFlag?: { usado: boolean }): Promise<T> {
+  const resp = await fetch(url);
+  if (resp.ok) return parseDataJs<T>(await resp.text());
+
+  const nombreArchivo = url.split("/").pop()!;
+  const respSnapshot = await fetch(`${SNAPSHOT_BASE}/${nombreArchivo}`);
+  if (!respSnapshot.ok) throw new Error("MCR_DATASET_DOWN");
+  if (snapshotFlag) snapshotFlag.usado = true;
+  return parseDataJs<T>(await respSnapshot.text());
 }
 
 function distanciaMetros(lat1: number, lng1: number, lat2: number, lng2: number) {
@@ -460,6 +479,10 @@ export function ZorritoGuia() {
   const [estado, setEstado] = useState<"idle" | "buscando" | "ok" | "error">("idle");
   const [errorTexto, setErrorTexto] = useState<string | null>(null);
   const [errorMantenimiento, setErrorMantenimiento] = useState(false);
+  // true si la respuesta se armó con el snapshot local (mapa oficial caído) —
+  // ver fetchDataJs. Sigue siendo un resultado real, solo puede no reflejar
+  // los últimos cambios de recorrido.
+  const [datosDesactualizados, setDatosDesactualizados] = useState(false);
   const [resultado, setResultado] = useState<Resultado | null>(null);
   const [resultadoRuta, setResultadoRuta] = useState<ResultadoRuta | null>(null);
 
@@ -477,19 +500,27 @@ export function ZorritoGuia() {
     setResultado(null);
     setResultadoRuta(null);
     setErrorTexto(null);
+    setDatosDesactualizados(false);
   }
 
-  async function cargarLineas(): Promise<{ paradas: Parada[]; lineas: LineaProcesada[] }> {
+  async function cargarLineas(): Promise<{
+    paradas: Parada[];
+    lineas: LineaProcesada[];
+    usoSnapshot: boolean;
+  }> {
+    const snapshotFlag = { usado: false };
     const [paradas, ...lineasRaw] = await Promise.all([
-      fetchDataJs<Parada[]>(`${BASE}/paradas_data.js`),
-      ...CODIGOS_LINEA.map((c) => fetchDataJs<LineaGeoJSON>(`${BASE}/linea_${c}_data.js`)),
+      fetchDataJs<Parada[]>(`${BASE}/paradas_data.js`, snapshotFlag),
+      ...CODIGOS_LINEA.map((c) =>
+        fetchDataJs<LineaGeoJSON>(`${BASE}/linea_${c}_data.js`, snapshotFlag),
+      ),
     ]);
     const lineas = CODIGOS_LINEA.map((c, i) => procesarLinea(c, lineasRaw[i]));
-    return { paradas, lineas };
+    return { paradas, lineas, usoSnapshot: snapshotFlag.usado };
   }
 
   async function buscarPorCoords(lat: number, lng: number) {
-    const { paradas, lineas } = await cargarLineas();
+    const { paradas, lineas, usoSnapshot } = await cargarLineas();
 
     const paradasCercanas = paradas
       .map((p) => ({ ...p, distancia: distanciaMetros(lat, lng, p.lat, p.lng) }))
@@ -502,12 +533,14 @@ export function ZorritoGuia() {
       .sort((a, b) => a.distancia - b.distancia)
       .slice(0, 6);
 
+    setDatosDesactualizados(usoSnapshot);
     setResultado({ paradasCercanas, lineasCercanas });
     setEstado("ok");
   }
 
   async function buscarRutaPorCoords(origen: Coords, destino: Coords) {
-    const { paradas, lineas } = await cargarLineas();
+    const { paradas, lineas, usoSnapshot } = await cargarLineas();
+    setDatosDesactualizados(usoSnapshot);
     const lineasPorCodigo = new Map(lineas.map((l) => [l.codigo, l]));
 
     // Hasta 3 líneas que van directo, en orden: cada una con SU parada de
@@ -554,6 +587,7 @@ export function ZorritoGuia() {
     setEstado("buscando");
     setErrorTexto(null);
     setErrorMantenimiento(false);
+    setDatosDesactualizados(false);
 
     let origen: Coords;
     try {
@@ -722,6 +756,12 @@ export function ZorritoGuia() {
               </a>
             </>
           )}
+        </div>
+      )}
+
+      {estado === "ok" && datosDesactualizados && (
+        <div className="text-[11px] text-amber-800 bg-amber-100 border border-amber-300 rounded-lg px-3 py-2">
+          ⚠️ El mapa oficial de la Municipalidad está en mantenimiento — esto se calculó con el último trazado que publicaron (04/08/2026), que puede no reflejar los cambios de la Resolución 1.628/26 vigente desde el 1° de septiembre. Confirmá con el detalle calle por calle de cada línea.
         </div>
       )}
 
