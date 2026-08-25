@@ -67,7 +67,7 @@ export async function cambiarEstado(formData: FormData) {
       where: { id: reclamoId },
       data: {
         estado: estado as ReclamoEstado,
-        cerradoEn: esCierre ? new Date() : actual.cerradoEn,
+        cerradoEn: esCierre ? new Date() : null,
       },
     }),
     prisma.reclamoEvento.create({

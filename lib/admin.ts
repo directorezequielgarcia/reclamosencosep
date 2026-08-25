@@ -155,12 +155,15 @@ export function whereReclamosByRol(rol: Rol, prestadoraId: string | null) {
 }
 
 // Transiciones de estado permitidas según el estado actual.
+// Los estados "definitivos" (RESUELTO, CERRADO_SIN_SOLUCION, RECHAZADO) admiten
+// corregirse a RESUELTO o reabrirse a EN_PROCESO; EN_PROCESO admite retroceder
+// a un estado anterior si hace falta revisar o derivar de nuevo.
 export const TRANSICIONES: Record<ReclamoEstado, ReclamoEstado[]> = {
   RECIBIDO: ["EN_REVISION", "DERIVADO", "RECHAZADO"],
   EN_REVISION: ["DERIVADO", "EN_PROCESO", "RESUELTO", "RECHAZADO"],
-  DERIVADO: ["EN_PROCESO", "RESUELTO", "CERRADO_SIN_SOLUCION"],
-  EN_PROCESO: ["RESUELTO", "CERRADO_SIN_SOLUCION"],
-  RESUELTO: [],
-  CERRADO_SIN_SOLUCION: [],
-  RECHAZADO: [],
+  DERIVADO: ["EN_REVISION", "EN_PROCESO", "RESUELTO", "CERRADO_SIN_SOLUCION"],
+  EN_PROCESO: ["EN_REVISION", "DERIVADO", "RESUELTO", "CERRADO_SIN_SOLUCION"],
+  RESUELTO: ["EN_PROCESO", "CERRADO_SIN_SOLUCION"],
+  CERRADO_SIN_SOLUCION: ["EN_PROCESO", "RESUELTO"],
+  RECHAZADO: ["EN_PROCESO", "RESUELTO"],
 };
