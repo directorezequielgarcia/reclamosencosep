@@ -17,6 +17,16 @@ const USER_AGENT =
 const VIEWBOX = "-67.65,-45.75,-67.35,-45.95";
 const CENTRO_COMODORO: Coordenadas = { lat: -45.864, lng: -67.4969 };
 
+/**
+ * Valida que unas coordenadas caigan dentro de la Patagonia argentina,
+ * alrededor de Comodoro Rivadavia. Usarla siempre que se acepten
+ * coordenadas de una fuente sin control (geolocalización del navegador,
+ * que puede fallar groseramente por IP/VPN en vez de GPS real).
+ */
+export function estaEnZonaComodoro(lat: number, lng: number): boolean {
+  return lat >= -47 && lat <= -45 && lng >= -68 && lng <= -67;
+}
+
 async function tryQuery(
   q: string,
   bounded: boolean,
@@ -45,8 +55,7 @@ async function tryQuery(
     const lat = Number(data[0].lat);
     const lng = Number(data[0].lon);
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
-    // Validar zona (Patagonia argentina, alrededor de Comodoro)
-    if (lat < -47 || lat > -45 || lng < -68 || lng > -67) return null;
+    if (!estaEnZonaComodoro(lat, lng)) return null;
     return { lat, lng };
   } catch {
     return null;

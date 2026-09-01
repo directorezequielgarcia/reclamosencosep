@@ -8,6 +8,7 @@ import { ZorritoTour } from "@/components/tour/ZorritoTour";
 import { POSE_POR_SVC } from "@/components/tour/zorrito-poses";
 import { BuscadorBarrio } from "@/components/ui/BuscadorBarrio";
 import { SubirVideoReclamo, type VideoSubido } from "@/components/ui/SubirVideoReclamo";
+import { estaEnZonaComodoro } from "@/lib/geocode";
 import {
   SVC_META,
   SVC_ORDER,
@@ -344,8 +345,17 @@ function PasoUbicacion({
     setGpsState("asking");
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setField("lat", pos.coords.latitude);
-        setField("lng", pos.coords.longitude);
+        const { latitude, longitude } = pos.coords;
+        // El navegador puede reportar una ubicación muy alejada de Comodoro
+        // (geolocalización por IP/VPN fallando en vez de GPS real). En ese
+        // caso no la aceptamos: mejor que el usuario cargue la dirección en
+        // texto, que sí pasa por el geocoding validado del lado del server.
+        if (!estaEnZonaComodoro(latitude, longitude)) {
+          setGpsState("error");
+          return;
+        }
+        setField("lat", latitude);
+        setField("lng", longitude);
         setGpsState("ok");
       },
       () => setGpsState("error"),

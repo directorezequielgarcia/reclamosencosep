@@ -5,6 +5,7 @@ import { useState } from "react";
 import { TIPO_INSPECCION_META } from "@/lib/inspecciones";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { crearInspeccion } from "../actions";
+import { estaEnZonaComodoro } from "@/lib/geocode";
 import type { TipoInspeccion } from "@prisma/client";
 
 type Servicio = { id: string; nombre: string };
@@ -42,8 +43,15 @@ export function NuevaInspeccionForm({
     setGpsLoading(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setCoord({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        const { latitude, longitude } = pos.coords;
         setGpsLoading(false);
+        if (!estaEnZonaComodoro(latitude, longitude)) {
+          setGpsError(
+            "La ubicación detectada está fuera de Comodoro Rivadavia. Verificá el GPS del dispositivo (o desconectá cualquier VPN activa) e intentá de nuevo.",
+          );
+          return;
+        }
+        setCoord({ lat: latitude, lng: longitude });
       },
       (err) => {
         setGpsLoading(false);

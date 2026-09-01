@@ -10,6 +10,7 @@
  */
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { estaEnZonaComodoro } from "@/lib/geocode";
 
 type Props = {
   inspeccionId: string;
@@ -46,6 +47,13 @@ export function CapturaCampo({
       async (pos) => {
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
+        if (!estaEnZonaComodoro(lat, lng)) {
+          setGpsLoading(false);
+          setGpsError(
+            "La ubicación detectada está fuera de Comodoro Rivadavia. Verificá el GPS del dispositivo (o desconectá cualquier VPN activa) e intentá de nuevo.",
+          );
+          return;
+        }
         setCoord({ lat, lng });
         try {
           const r = await fetch(`/api/inspecciones/${inspeccionId}/gps`, {

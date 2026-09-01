@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { crearInspeccionRapido } from "@/app/admin/inspecciones/actions";
+import { estaEnZonaComodoro } from "@/lib/geocode";
 
 type Servicio = { id: string; nombre: string; nombreCorto: string };
 
@@ -44,8 +45,12 @@ export function FormMovil({
   useEffect(() => {
     if (!("geolocation" in navigator)) return;
     navigator.geolocation.getCurrentPosition(
-      (pos) =>
-        setCoord({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        if (estaEnZonaComodoro(latitude, longitude)) {
+          setCoord({ lat: latitude, lng: longitude });
+        }
+      },
       () => {},
       { enableHighAccuracy: true, timeout: 10000 },
     );
@@ -60,8 +65,17 @@ export function FormMovil({
     setGpsLoading(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setCoord({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        const { latitude, longitude } = pos.coords;
         setGpsLoading(false);
+        // Ubicación muy alejada de Comodoro: geolocalización por IP/VPN
+        // fallando en vez de GPS real. No la aceptamos.
+        if (!estaEnZonaComodoro(latitude, longitude)) {
+          setGpsError(
+            "La ubicación detectada está fuera de Comodoro Rivadavia. Verificá el GPS del dispositivo (o desconectá cualquier VPN activa) e intentá de nuevo.",
+          );
+          return;
+        }
+        setCoord({ lat: latitude, lng: longitude });
       },
       () => {
         setGpsLoading(false);
