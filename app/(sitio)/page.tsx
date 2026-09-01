@@ -50,33 +50,34 @@ function IconoWsp({ size = 20 }: { size?: number }) {
 
 export default async function HomeInstitucional() {
   const ahora = new Date();
-  const [
-    encuestaAgg,
-    totalReclamos,
-    reclamosPorEstado,
-    totalPrestadoras,
-    audienciasProximas,
-    ultimosBoletines,
-  ] = await Promise.all([
-    prisma.encuestaServicios.aggregate({
-      _count: { _all: true },
-      _avg: {
-        puntajeAgua: true,
-        puntajeEnergia: true,
-        puntajeResiduos: true,
-        puntajeTransporte: true,
-      },
-    }),
-    prisma.reclamo.count(),
-    prisma.reclamo.groupBy({ by: ["estado"], _count: { _all: true } }),
-    prisma.prestadora.count({ where: { activa: true } }),
-    prisma.audienciaPublica.count({ where: { fecha: { gte: ahora } } }),
-    prisma.boletin.findMany({
-      where: { publicado: true },
-      orderBy: { fechaPublicacion: "desc" },
-      take: 4,
-    }),
-  ]);
+  // Consultas secuenciales (no Promise.all): con el compute recién
+  // despertado de un scale-to-zero, una ráfaga de 6 conexiones simultáneas
+  // puede fallar de conjunto donde una sola conexión sí conecta bien.
+  const encuestaAgg = await prisma.encuestaServicios.aggregate({
+    _count: { _all: true },
+    _avg: {
+      puntajeAgua: true,
+      puntajeEnergia: true,
+      puntajeResiduos: true,
+      puntajeTransporte: true,
+    },
+  });
+  const totalReclamos = await prisma.reclamo.count();
+  const reclamosPorEstado = await prisma.reclamo.groupBy({
+    by: ["estado"],
+    _count: { _all: true },
+  });
+  const totalPrestadoras = await prisma.prestadora.count({
+    where: { activa: true },
+  });
+  const audienciasProximas = await prisma.audienciaPublica.count({
+    where: { fecha: { gte: ahora } },
+  });
+  const ultimosBoletines = await prisma.boletin.findMany({
+    where: { publicado: true },
+    orderBy: { fechaPublicacion: "desc" },
+    take: 4,
+  });
 
   const totalRespuestasEncuesta = encuestaAgg._count._all;
   const estadoCount = new Map(
