@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import type { Prisma } from "@prisma/client";
+import type { Prisma, ServicioKind } from "@prisma/client";
 import { esHorarioHabil, inicioDiaLocal, fechaHoyLocal } from "@/lib/horario";
 
 export type ReclamoPorTipo = {
@@ -57,5 +57,89 @@ export async function resumenReclamos(
     hoyFueraDeHorario,
     porTipoHoy,
     semana,
+  };
+}
+
+export type ReporteProblematica = {
+  titulo: string; // texto libre cargado por el vecino ("¿Qué pasó?") — la problemática puntual
+  cantidad: number;
+};
+
+export type ReporteTema = {
+  servicioId: string;
+  nombre: string;
+  nombreCorto: string;
+  kind: ServicioKind;
+  cantidad: number;
+  problematicas: ReporteProblematica[];
+};
+
+export type ReporteDiario = {
+  desde: string; // dd/mm/aaaa
+  hasta: string; // dd/mm/aaaa
+  generadoEn: string; // dd/mm/aaaa hh:mm
+  total: number;
+  temas: ReporteTema[];
+};
+
+/** Reclamos del rango [desde, hasta] agrupados por servicio (tema) y, dentro
+ *  de cada uno, por título (la problemática puntual que cargó el vecino) —
+ *  para el botón "Reporte diario" de la Bandeja. `where` permite respetar el
+ *  filtrado por rol (ej. operador de prestadora ve solo lo suyo). */
+export async function reporteDiarioPorTema(
+  where: Prisma.ReclamoWhereInput,
+  desde: Date,
+  hasta: Date,
+): Promise<ReporteDiario> {
+  const reclamos = await prisma.reclamo.findMany({
+    where: { ...where, createdAt: { gte: desde, lte: hasta } },
+    select: {
+      titulo: true,
+      servicio: { select: { id: true, nombre: true, nombreCorto: true, kind: true } },
+    },
+    orderBy: { createdAt: "asc" },
+  });
+
+  const temaMap = new Map<string, ReporteTema>();
+  for (const r of reclamos) {
+    let tema = temaMap.get(r.servicio.id);
+    if (!tema) {
+      tema = {
+        servicioId: r.servicio.id,
+        nombre: r.servicio.nombre,
+        nombreCorto: r.servicio.nombreCorto,
+        kind: r.servicio.kind,
+        cantidad: 0,
+        problematicas: [],
+      };
+      temaMap.set(r.servicio.id, tema);
+    }
+    tema.cantidad += 1;
+    const titulo = r.titulo.trim() || "Sin especificar";
+    const prob = tema.problematicas.find((p) => p.titulo === titulo);
+    if (prob) prob.cantidad += 1;
+    else tema.problematicas.push({ titulo, cantidad: 1 });
+  }
+
+  const temas = [...temaMap.values()]
+    .map((t) => ({
+      ...t,
+      problematicas: t.problematicas.sort((a, b) => b.cantidad - a.cantidad),
+    }))
+    .sort((a, b) => b.cantidad - a.cantidad);
+
+  const fmtFecha = (d: Date) =>
+    d.toLocaleDateString("es-AR", { timeZone: "America/Argentina/Buenos_Aires" });
+
+  return {
+    desde: fmtFecha(desde),
+    hasta: fmtFecha(hasta),
+    generadoEn: new Date().toLocaleString("es-AR", {
+      timeZone: "America/Argentina/Buenos_Aires",
+      dateStyle: "short",
+      timeStyle: "short",
+    }),
+    total: reclamos.length,
+    temas,
   };
 }

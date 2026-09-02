@@ -85,6 +85,18 @@ export default async function BandejaPage({
             .
           </p>
         </div>
+        <Link
+          href={{
+            pathname: "/admin/bandeja/reporte",
+            query: {
+              ...(sp.desde ? { desde: sp.desde } : {}),
+              ...(sp.hasta ? { hasta: sp.hasta } : {}),
+            },
+          }}
+          className="px-4 py-2 rounded-lg border border-line-strong text-sm font-semibold text-navy hover:bg-paper-2"
+        >
+          📋 Reporte diario por tema
+        </Link>
       </header>
 
       <form

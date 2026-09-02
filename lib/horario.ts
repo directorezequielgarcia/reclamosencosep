@@ -41,3 +41,10 @@ export function inicioDiaLocal(diasAtras: number): Date {
 export function fechaHoyLocal(): string {
   return new Intl.DateTimeFormat("es-AR", { timeZone: TZ }).format(new Date());
 }
+
+/** Último instante de "hoy - diasAtras" (23:59:59.999) en hora de Comodoro
+ *  Rivadavia, como el instante UTC equivalente. Complemento de `inicioDiaLocal`
+ *  para armar rangos [desde, hasta] de un día completo. */
+export function finDiaLocal(diasAtras: number): Date {
+  return new Date(inicioDiaLocal(diasAtras - 1).getTime() - 1);
+}

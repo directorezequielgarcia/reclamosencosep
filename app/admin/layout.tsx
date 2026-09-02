@@ -38,7 +38,7 @@ export default async function AdminLayout({
 
   return (
     <div className="flex flex-1 flex-col w-full min-h-screen bg-paper-2">
-      <header className="bg-navy text-white">
+      <header className="bg-navy text-white print:hidden">
         <div className="max-w-7xl mx-auto px-6 py-3 flex items-center gap-6">
           <Link href="/admin" className="flex items-center gap-3">
             <div className="text-[10px] font-bold tracking-widest opacity-70 uppercase leading-tight">
