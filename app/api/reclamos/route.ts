@@ -21,7 +21,7 @@ export const runtime = "nodejs";
 const BodySchema = z
   .object({
     svc: z.enum(["residuos", "energia", "agua", "transporte"]),
-    titulo: z.string().min(3).max(120),
+    titulo: z.string().min(3).max(60),
     descripcion: z.string().min(5).max(2000),
     direccion: z.string().max(200).optional().nullable(),
     barrio: z.string().max(80).optional().nullable(),

@@ -15,9 +15,26 @@ import {
   TRANSPORTE_CAMBIO_PARADA_TITULO,
   MOTIVOS_CAMBIO_PARADA,
   EMPRESAS_TRANSPORTE,
+  LINEAS_SOL_BUS,
+  LINEAS_DIADEMA,
   type SvcKey,
   type EmpresaTransporte,
 } from "@/lib/servicios";
+
+// Límite de caracteres del título: es un resumen corto de un solo tema, no
+// el relato — el relato va en "Contanos más detalles". Un poco más largo
+// que el ejemplo predefinido más largo (TRANSPORTE_CAMBIO_PARADA_TITULO,
+// 53 caracteres) para no cortarlo si se reusa como valor inicial.
+const TITULO_MAX = 60;
+
+// Líneas disponibles para el desplegable según la empresa elegida — nunca
+// mezcladas (elegir DIADEMA no debe dejar ver las líneas de Sol Bus, y
+// viceversa).
+function lineasPorEmpresa(empresa: EmpresaTransporte | ""): readonly string[] {
+  if (empresa === "SOL_BUS") return LINEAS_SOL_BUS;
+  if (empresa === "DIADEMA") return LINEAS_DIADEMA;
+  return [];
+}
 
 type Paso = "servicio" | "ubicacion" | "detalle" | "revision";
 
@@ -599,14 +616,14 @@ function PasoDetalle({
           <input
             type="text"
             value={m.examples.includes(state.titulo) ? "" : state.titulo}
-            onChange={(e) => elegirTitulo(e.target.value.slice(0, 120))}
-            maxLength={120}
-            placeholder="O escribilo con tus palabras… (resumen corto)"
+            onChange={(e) => elegirTitulo(e.target.value.slice(0, TITULO_MAX))}
+            maxLength={TITULO_MAX}
+            placeholder="O escribilo con tus palabras… (un tema, no el relato)"
             className="mt-1 w-full px-3 py-2.5 rounded-xl border border-dashed border-line-strong bg-paper-2 text-navy text-sm focus:outline-none focus:border-navy-2 focus:bg-paper"
           />
           {!m.examples.includes(state.titulo) && state.titulo.length > 0 && (
             <div className="text-[11px] text-muted text-right -mt-1">
-              {state.titulo.length}/120 — para el relato completo usá &quot;Contanos más detalles&quot; más abajo
+              {state.titulo.length}/{TITULO_MAX} — solo el tema; el relato completo va en &quot;Contanos más detalles&quot; más abajo
             </div>
           )}
         </div>
@@ -615,14 +632,19 @@ function PasoDetalle({
       {esCambioParada ? (
         <div className="flex flex-col gap-3 rounded-2xl border border-line bg-paper-2 p-3">
           <label className="flex flex-col gap-1">
-            <span className="text-xs font-semibold text-navy">Línea</span>
-            <input
-              type="text"
+            <span className="text-xs font-semibold text-navy">Línea (Sol Bus)</span>
+            <select
               value={state.linea}
               onChange={(e) => actualizarCambioParada({ linea: e.target.value })}
-              placeholder="Ej: 14"
               className="w-full px-3 py-2.5 rounded-xl border border-line-strong bg-paper text-navy text-sm focus:outline-none focus:border-navy-2 focus:ring-2 focus:ring-navy-2/20"
-            />
+            >
+              <option value="">Elegí la línea…</option>
+              {LINEAS_SOL_BUS.map((l) => (
+                <option key={l} value={l}>
+                  Línea {l}
+                </option>
+              ))}
+            </select>
           </label>
 
           <label className="flex flex-col gap-1">
@@ -689,18 +711,6 @@ function PasoDetalle({
         <>
         {svc === "transporte" && (
           <div id="reclamo-campo-linea-empresa" className="flex flex-col gap-3 rounded-2xl border border-line bg-paper-2 p-3">
-            <label className="flex flex-col gap-1">
-              <span className="text-xs font-semibold text-navy">
-                ¿Qué línea? <span className="text-muted font-normal">(opcional)</span>
-              </span>
-              <input
-                type="text"
-                value={state.linea}
-                onChange={(e) => setField("linea", e.target.value)}
-                placeholder="Ej: 5U, 14, 6A"
-                className="w-full px-3 py-2.5 rounded-xl border border-line-strong bg-paper text-navy text-sm focus:outline-none focus:border-navy-2 focus:ring-2 focus:ring-navy-2/20"
-              />
-            </label>
             <div className="flex flex-col gap-1.5">
               <span className="text-xs font-semibold text-navy">
                 ¿Qué empresa? <span className="text-muted font-normal">(opcional, si la conocés)</span>
@@ -710,9 +720,15 @@ function PasoDetalle({
                   <button
                     key={emp.value}
                     type="button"
-                    onClick={() =>
-                      setField("empresa", state.empresa === emp.value ? "" : emp.value)
-                    }
+                    onClick={() => {
+                      const nuevaEmpresa = state.empresa === emp.value ? "" : emp.value;
+                      setField("empresa", nuevaEmpresa);
+                      // No dejar una línea de otra empresa cargada (ej. venía de
+                      // Sol Bus "14" y pasa a Diadema, que no tiene línea "14").
+                      if (!lineasPorEmpresa(nuevaEmpresa).includes(state.linea)) {
+                        setField("linea", "");
+                      }
+                    }}
                     className={`px-3 py-2 rounded-xl border text-xs font-semibold transition ${
                       state.empresa === emp.value
                         ? "border-navy-2 bg-navy-2/5 text-navy"
@@ -724,6 +740,28 @@ function PasoDetalle({
                 ))}
               </div>
             </div>
+            <label className="flex flex-col gap-1">
+              <span className="text-xs font-semibold text-navy">
+                ¿Qué línea? <span className="text-muted font-normal">(opcional)</span>
+              </span>
+              <select
+                value={state.linea}
+                onChange={(e) => setField("linea", e.target.value)}
+                disabled={state.empresa !== "SOL_BUS" && state.empresa !== "DIADEMA"}
+                className="w-full px-3 py-2.5 rounded-xl border border-line-strong bg-paper text-navy text-sm focus:outline-none focus:border-navy-2 focus:ring-2 focus:ring-navy-2/20 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <option value="">
+                  {state.empresa === "SOL_BUS" || state.empresa === "DIADEMA"
+                    ? "Elegí la línea…"
+                    : "Elegí primero la empresa"}
+                </option>
+                {lineasPorEmpresa(state.empresa).map((l) => (
+                  <option key={l} value={l}>
+                    {state.empresa === "SOL_BUS" ? `Línea ${l}` : l}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
         )}
         <label id="reclamo-campo-detalles" className="flex flex-col gap-1">

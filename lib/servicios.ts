@@ -25,6 +25,25 @@ export const EMPRESAS_TRANSPORTE = [
   { value: "NO_SABE", label: "No sé / no estoy seguro" },
 ] as const;
 
+// Líneas de Sol Bus vigentes desde el 1°/09/2026 (Resolución 1.628/26, Anexo
+// I) — mismo listado que app/(sitio)/areas-fiscalizadas/[svc]/page.tsx
+// (AREAS.transporte.lineas). Mantener sincronizado si cambia el cuadro de
+// líneas; la Etapa Inicial no incluye 10 ni 11.
+export const LINEAS_SOL_BUS = [
+  "1", "2", "3", "4", "5", "6", "7", "8", "9", "9A",
+  "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22",
+] as const;
+
+// Recorridos de Transporte Diadema (opera aparte de las líneas numeradas de
+// Sol Bus) — según indicó el Directorio de ENCOSEP, no hay dataset público
+// que los liste. Si cambian o se detecta un error, corregir acá.
+export const LINEAS_DIADEMA = [
+  "Diadema",
+  "Astra",
+  "Gesta de Malvinas",
+  "Favaloro",
+] as const;
+
 export type EmpresaTransporte = (typeof EMPRESAS_TRANSPORTE)[number]["value"];
 
 export const SVC_META: Record<
