@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { MiniMapaLinea } from "./MiniMapaLinea";
+import type { BloqueHorario } from "@/lib/horarios-transporte";
 
 // Genera un link de Google Maps que encadena las calles del tramo como
 // paradas de una ruta (misma URL que usa la gente para compartir viajes
@@ -79,11 +80,15 @@ const CODIGOS_ARCHIVO: Record<string, string[]> = {
 export function LineaDetalle({
   numero,
   resumen,
+  horario,
   tramos,
+  horariosDetalle,
 }: {
   numero: string;
   resumen: string;
+  horario: string;
   tramos: Array<{ etiqueta: string; texto: string }>;
+  horariosDetalle?: BloqueHorario[];
 }) {
   const [abierto, setAbierto] = useState(false);
   const codigosMapa = CODIGOS_ARCHIVO[numero] ?? [numero];
@@ -98,7 +103,10 @@ export function LineaDetalle({
         <span className="shrink-0 w-9 h-9 rounded-full bg-[#7e57c2]/15 border-2 border-[#7e57c2]/60 text-[#7e57c2] font-extrabold text-sm flex items-center justify-center">
           {numero}
         </span>
-        <span className="text-sm text-navy font-semibold flex-1">{resumen}</span>
+        <span className="flex-1 min-w-0">
+          <span className="block text-sm text-navy font-semibold">{resumen}</span>
+          <span className="block text-[11px] text-muted mt-0.5">🕒 {horario}</span>
+        </span>
         <span className="text-muted text-xs shrink-0 group-open:hidden">
           ver recorrido ▾
         </span>
@@ -134,6 +142,74 @@ export function LineaDetalle({
             );
           })}
         </div>
+        {horariosDetalle && horariosDetalle.length > 0 && (
+          <details className="rounded-lg border border-line bg-paper-2/60">
+            <summary className="cursor-pointer list-none px-2.5 py-2 text-[11px] font-bold uppercase tracking-wider text-[#7e57c2]">
+              🕒 Ver todos los horarios estimados →
+            </summary>
+            <div className="px-2.5 pb-2.5 pt-1 flex flex-col gap-3">
+              <p className="text-[10px] text-muted leading-relaxed">
+                Horarios estimados de salida por parada de referencia, según el
+                mapa oficial de la Municipalidad. Pueden variar por tránsito.
+              </p>
+              {horariosDetalle.map((b) => (
+                <div key={b.titulo}>
+                  <div className="text-[11px] font-bold text-navy">{b.titulo}</div>
+                  <div className="text-[10px] text-muted mt-0.5">
+                    Lun a vier
+                    {b.sabado.length === 0 && b.domFer.length === 0
+                      ? " · sin datos publicados para sábados ni domingos/feriados"
+                      : ""}
+                  </div>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {b.lunVier.map((h, i) => (
+                      <span
+                        key={`${h}-${i}`}
+                        className="inline-block px-1.5 py-0.5 rounded bg-[#7e57c2]/10 text-[#7e57c2] text-[10px] font-semibold tabular-nums"
+                      >
+                        {h}
+                      </span>
+                    ))}
+                  </div>
+                  {(b.sabado.length > 0 || b.domFer.length > 0) && (
+                    <div className="flex flex-col gap-1 mt-2">
+                      {b.sabado.length > 0 && (
+                        <div>
+                          <div className="text-[10px] text-muted">Sábados</div>
+                          <div className="flex flex-wrap gap-1 mt-0.5">
+                            {b.sabado.map((h, i) => (
+                              <span
+                                key={`sab-${h}-${i}`}
+                                className="inline-block px-1.5 py-0.5 rounded bg-svc-green/10 text-navy text-[10px] font-semibold tabular-nums"
+                              >
+                                {h}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {b.domFer.length > 0 && (
+                        <div>
+                          <div className="text-[10px] text-muted">Domingos y feriados</div>
+                          <div className="flex flex-wrap gap-1 mt-0.5">
+                            {b.domFer.map((h, i) => (
+                              <span
+                                key={`dom-${h}-${i}`}
+                                className="inline-block px-1.5 py-0.5 rounded bg-svc-yellow/15 text-navy text-[10px] font-semibold tabular-nums"
+                              >
+                                {h}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </details>
+        )}
       </div>
     </details>
   );

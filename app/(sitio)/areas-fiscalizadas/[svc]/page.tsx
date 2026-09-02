@@ -6,6 +6,7 @@ import { ZorritoTour } from "@/components/tour/ZorritoTour";
 import { ZorritoGuia } from "@/components/tour/ZorritoGuia";
 import { LineaDetalle } from "@/components/tour/LineaDetalle";
 import { POSES, POSE_POR_SVC } from "@/components/tour/zorrito-poses";
+import { HORARIOS_DETALLE } from "@/lib/horarios-transporte";
 import type { SvcKey } from "@/lib/servicios";
 
 type AreaConfig = {
@@ -24,6 +25,10 @@ type AreaConfig = {
   lineas?: Array<{
     numero: string;
     resumen: string;
+    // Horario de primer y último servicio (fuente: dataset oficial
+    // comodoro-mit/transporte, data/horarios.json — mismo dataset que
+    // alimenta los mapas de MiniMapaLinea).
+    horario: string;
     tramos: Array<{ etiqueta: string; texto: string }>;
   }>;
   lineasNota?: string;
@@ -201,6 +206,7 @@ const AREAS: Record<string, AreaConfig> = {
       {
         numero: "1",
         resumen: "Máximo Abásolo – Centro",
+        horario: "Primer servicio 05:00 hs · Último 00:30 hs",
         tramos: [
           { etiqueta: "Ida", texto: "Natalia Payaguala, Avenida Polonia, Raúl Cercos, Ingeniero Huergo, Los Pensamientos, San Martín, Los Álamos, Avenida Rivadavia, Viamonte, Chaco, Saavedra, Avenida Rivadavia, Belgrano, Avenida Ducos, Carlos Pellegrini, Gil Álvarez." },
           { etiqueta: "Vuelta", texto: "Gil Álvarez, 25 de Mayo, Avenida Hipólito Yrigoyen, Avenida Alsina, Rawson, Alvear, Misiones, 13 de Diciembre, Ingeniero Huergo, Leandro N. Alem, Avenida Rivadavia, Los Nogales, San Martín, Los Pensamientos, Ingeniero Huergo, Raúl Cercos, Natalia Payaguala." },
@@ -209,6 +215,7 @@ const AREAS: Record<string, AreaConfig> = {
       {
         numero: "2",
         resumen: "Máximo Abásolo – Centro",
+        horario: "Primer servicio 05:00 hs · Último 00:30 hs",
         tramos: [
           { etiqueta: "Ida", texto: "Natalia Payaguala, Avenida Polonia, Raúl Cercos, Ingeniero Huergo, Avenida Eva Duarte, Carlos O'Donnell, Avenida 10 de Noviembre, Calle Código, Avenida Julio Argentino Roca, Maestro Carlos Guastavino, Calle Código 829, Código 884, Gustavo Bahamonde, Francisco Behr, Avenida Lisandro de la Torre, Avenida Estados Unidos, Avenida Juan XXIII, Avenida Sargento Cabral, Aristóbulo del Valle, Alvear, Dorrego, Almirante Brown, Belgrano, Avenida Ducos, Carlos Pellegrini, Gil Álvarez." },
           { etiqueta: "Vuelta", texto: "Gil Álvarez, 25 de Mayo, Almirante Brown, Rawson, Saavedra, Bouchardo, 13 de Diciembre, Salta, Avenida Sargento Cabral, Avenida Juan XXIII, Avenida Estados Unidos, Avenida Lisandro de la Torre, Francisco Behr, Gustavo Bahamonde, Avenida Julio Argentino Roca, Carlos O'Donnell, Avenida Polonia, Cámpora, Avenida Eva Duarte, Ingeniero Huergo, Raúl Cercos, Natalia Payaguala." },
@@ -217,6 +224,7 @@ const AREAS: Record<string, AreaConfig> = {
       {
         numero: "3",
         resumen: "Estadio Centenario – Abel Amaya",
+        horario: "Primer servicio 05:00 hs · Último 01:00 hs",
         tramos: [
           { etiqueta: "Ida", texto: "Avenida Chile, Avenida Kennedy, Avenida Rivadavia, Belgrano, Ameghino, Almirante Brown, Carlos Pellegrini, Avenida Rivadavia, 25 de Mayo, Avenida Hipólito Yrigoyen, Federico Carstens." },
           { etiqueta: "Vuelta", texto: "Carstens, Avenida Ducos, Pellegrini, Avenida Rivadavia, Isla Leones, Avenida Kennedy, Avenida Chile." },
@@ -225,6 +233,7 @@ const AREAS: Record<string, AreaConfig> = {
       {
         numero: "4",
         resumen: "Abel Amaya – Estadio Centenario",
+        horario: "Primer servicio 05:00 hs · Último 01:00 hs",
         tramos: [
           { etiqueta: "Ida", texto: "Carstens, Avenida Ducos, Carlos Pellegrini, Avenida Hipólito Yrigoyen, Máximo Abásolo, Avenida Rivadavia, 25 de Mayo, Avenida Hipólito Yrigoyen, Avenida Estados Unidos, Avenida Canadá, Avenida Julio Argentino Roca, Avenida Lisandro de la Torre." },
           { etiqueta: "Vuelta", texto: "Avenida Chile, Luis Alassia, Avenida Lisandro de la Torre, Avenida Julio Argentino Roca, Avenida Canadá, Avenida Estados Unidos, Avenida Hipólito Yrigoyen, Avenida Ducos, Avenida Alsina, Bahía Bustamante, Democracia, Roque Sáenz Peña, Avenida Ducos, Carlos Pellegrini, Avenida Hipólito Yrigoyen, Máximo Abásolo, Avenida Rivadavia, 25 de Mayo, Avenida Hipólito Yrigoyen, Carstens." },
@@ -233,6 +242,7 @@ const AREAS: Record<string, AreaConfig> = {
       {
         numero: "5",
         resumen: "Estadio Centenario – Abel Amaya / Abel Amaya – Las Orquídeas",
+        horario: "Ramal 5: 05:00 a 01:00 hs · Ramal 5U (Las Orquídeas): 06:00 a 23:00 hs",
         tramos: [
           { etiqueta: "Ramal 5 · Ida", texto: "Carstens, Avenida Ducos, Carlos Pellegrini, Avenida Rivadavia, Avenida Alsina, Sarmiento, Leandro N. Alem, Ceferino Namuncurá, Fontana, Ramos Mejía, Necochea, 13 de Diciembre, Aristóbulo del Valle, Avenida Sargento Cabral, Salta, José G. Artigas, Isla de los Estados, Federico Alcorta, Avenida Estados Unidos, Sargento Ramírez, Avenida Polonia, La Nación, Avenida Chile." },
           { etiqueta: "Ramal 5 · Vuelta", texto: "Avenida Chile, Antonio Morán, La Razón, Avenida Julio Argentino Roca, La Nación, Avenida Polonia, Colonos Galeses, Isla de los Estados, Figueroa Alcorta, Salta, Avenida Sargento Cabral, Aristóbulo del Valle, Alvear, Avenida Rivadavia, Belgrano, Ameghino, Almirante Brown, Carlos Pellegrini, Avenida Rivadavia, 25 de Mayo, Hipólito Yrigoyen, Carstens." },
@@ -243,6 +253,7 @@ const AREAS: Record<string, AreaConfig> = {
       {
         numero: "6",
         resumen: "Circular AH / Circular H: Estadio Municipal – Centro – Gral. Mosconi – Abásolo – Stella Maris",
+        horario: "Circular AH y Circular H: 06:00 a 22:30 hs",
         tramos: [
           { etiqueta: "Circular AH: Estadio Municipal → Centro → Gral. Mosconi → Abásolo → Stella Maris → Centro", texto: "Carstens, Avenida Ducos, Pellegrini, Avenida Hipólito Yrigoyen, Máximo Abásolo, Ruta Nacional N° 3, Avenida del Libertador, Los Búlgaros, Gobernador Moyano, Avenida J. M. Pueyrredón, Fray Luis Beltrán, Gallardo Rodríguez, Colectora Fray Luis Beltrán, Los Cedros, Fray Luis Beltrán, Roque González, Avenida Polonia, Raúl Cercos, Natalia Payaguala, Avenida Polonia, Avenida Kennedy, Avenida Constituyentes, Ruta Nacional N° 3, Ignacio Gatica, Camino Juan Domingo Perón, Saturnino López, Eustaquio Molina, José Dalle Mura, Avenida Hipólito Yrigoyen, Avenida Ducos, Avenida Alsina, Avenida Hipólito Yrigoyen, Carstens." },
           { etiqueta: "Circular H: Estadio Municipal → Stella Maris → Abásolo → Gral. Mosconi → Centro", texto: "Carstens, Avenida Ducos, Avenida Alsina, Avenida Hipólito Yrigoyen, Juan P. Evet, Monseñor de Andrea, Gerónimo Maliqueo, José Suazo, Avenida Portugal, José Dalle Mura, Alfredo Llames Massini, Eustaquio Molina, Saturnino López, Juan Domingo Perón, Ignacio Gatica, Avenida Hipólito Yrigoyen, Avenida Constituyentes, Avenida Callao, Avenida Roca, Del Trabajo, Avenida Polonia, Roque González, Avenida Fray Luis Beltrán, Los Cedros, Colectora Avenida Fray Luis Beltrán, Doctor Manuel Sueiro, Gallardo Rodríguez, Avenida Fray Luis Beltrán, José Fuchs, Marcelino Reyes, Avenida del Libertador, Ruta Nacional N° 3, Sarmiento, 25 de Mayo, Avenida Hipólito Yrigoyen, Carstens." },
@@ -251,6 +262,7 @@ const AREAS: Record<string, AreaConfig> = {
       {
         numero: "7",
         resumen: "Estadio Centenario – Laprida",
+        horario: "Primer servicio 05:35 hs · Último 00:30 hs",
         tramos: [
           { etiqueta: "Ida", texto: "Carstens, Avenida Ducos, Avenida Alsina, Bahía Bustamante, Democracia, Roque Sáenz Peña, Avenida Ducos, Carlos Pellegrini, Hipólito Yrigoyen, Máximo Abásolo, Ruta Nacional N° 3, Avenida del Libertador, Los Búlgaros, Gobernador Moyano, Avenida J. M. Pueyrredón, Avenida Fray Luis Beltrán, Francisco de Viedma, Petrolero San Lorenzo, Avenida Tehuelches, Jesús Garré, Avenida del Libertador, Ruta 25 de Mayo, Argelino Suluaga, Buenos Aires, Tucumán, Entre Ríos, Argelino Suluaga, Ruta 25 de Mayo, Jorge Blachakis, Sara Andreoli, Código 3162, Código 3161, Rotonda Código 3161, Código 3161, Código 3162, Sara Andreoli, Jorge Blachakis, Ruta 25 de Mayo, Paraguay, Bogotá, Costa Rica, Alaska, Acapulco, Potosí, Jamaica, Bogotá, Ecuador, Paraguay." },
           { etiqueta: "Vuelta", texto: "Paraguay, Ruta 25 de Mayo, Jorge Blachakis, Sara Andreoli, Código 3162, Código 3161, Rotonda Código 3161, Código 3161, Código 3162, Sara Andreoli, Jorge Blachakis, Ruta 25 de Mayo, Argelino Suluaga, Buenos Aires, Tucumán, Entre Ríos, Argelino Suluaga, Ruta 25 de Mayo, Avenida del Libertador, Avenida Tehuelches, Avenida Lángara, Francisco de Viedma, Avenida Fray Luis Beltrán, José Fuchs, Doctor Marcelino Reyes, Avenida del Libertador, Ruta Nacional N° 3, Güemes, Avenida Rivadavia, Belgrano, Avenida Hipólito Yrigoyen, Carstens." },
@@ -259,6 +271,7 @@ const AREAS: Record<string, AreaConfig> = {
       {
         numero: "8",
         resumen: "Standard – Palazzo",
+        horario: "8 AH (Standard→Palazzo): 05:40 a 00:20 hs · 8 H (Palazzo→Standard): 04:00 a 23:50 hs",
         tramos: [
           { etiqueta: "8 AH: Standard → Palazzo", texto: "Carstens, Avenida Ducos, Avenida Alsina, Bahía Bustamante, Democracia, Roque Sáenz Peña, Avenida Ducos, Mitre, Avenida Rivadavia, Belgrano, Avenida Ducos, Pellegrini, Avenida Hipólito Yrigoyen, Máximo Abásolo, Ruta Nacional N° 3, Avenida del Libertador, Los Búlgaros, Gobernador Moyano, Avenida J. M. Pueyrredón, Avenida Fray Luis Beltrán, Francisco de Viedma, Petrolero San Lorenzo, Avenida Tehuelches, Jesús Garré, Avenida del Libertador, Ruta Provincial N° 1, Avenida José Ingenieros, Ruta Provincial N° 1, Avenida Alejandro Maíz, Base Petrel, Base Matienzo, Código 2404, Teniente Daniel Jukic, Martín Comodoro Rivadavia, Los Arrayanes, Avenida Nahuel Huapi, Avenida Raúl Encina, 8 de Diciembre, E. Hermitte, F. Pigafetta, Wenceslao Escalante, Teodoro Petroff, Ítalo Dell'Oro, Juan José Paso, Reconquista, Juan José Paso, 1° de Noviembre, General Lavalle, Antártida Argentina, Ruta Provincial N° 39, Ruta Nacional N° 3, Salida Ruta Nacional N° 3, Rotonda Rodríguez Peña, ARA Crucero General Belgrano, Ruta Nacional N° 3, Mirco Michinovich, Dionisio Néstor Páez, Mariano Rodríguez, Ruta Nacional N° 3, Avenida del Libertador, Avenida Tehuelches, Avenida Lángara, Francisco de Viedma, Fray Luis Beltrán, José Fuchs, Doctor Marcelino Reyes, Avenida del Libertador, Ruta Nacional N° 3, Sarmiento, Belgrano, Avenida Hipólito Yrigoyen, Carstens." },
           { etiqueta: "8 H: Palazzo → Standard", texto: "Carstens, Avenida Ducos, Avenida Alsina, Bahía Bustamante, Democracia, Roque Sáenz Peña, Avenida Ducos, Mitre, Avenida Rivadavia, Belgrano, Avenida Ducos, Pellegrini, Avenida Hipólito Yrigoyen, Máximo Abásolo, Ruta Nacional N° 3, Avenida del Libertador, Los Búlgaros, Gobernador Moyano, Avenida J. M. Pueyrredón, Avenida Fray Luis Beltrán, Francisco de Viedma, Petrolero San Lorenzo, Avenida Tehuelches, Jesús Garré, Avenida del Libertador, Rotonda Universidad, Ruta Nacional N° 3, Ingreso Barrio Castelli, Mariano Rodríguez, Código 2930, Rosalía Eulalia Guaita, Adrián Silva, Mariano Rodríguez, Ruta Nacional N° 3, Avenida Juan José Paso, Teniente Vanesia, San Lorenzo, Fuerza Aérea Argentina, Avenida Juan José Paso, Teodoro Petroff, Wenceslao Escalante, Avenida Raúl Encina, Avenida Nahuel Huapi, Laguna Blanca, Ignacio Zúñiga, Los Arrayanes, Martín Comodoro Rivadavia, Teniente Daniel Jukic, Código 2404, Base Matienzo, Base Petrel, Avenida Alejandro Maíz, Ruta Provincial N° 1, Avenida José Ingenieros, Ruta Provincial N° 1, Ruta Nacional N° 3, Avenida Tehuelches, Avenida Lángara, Francisco de Viedma, Avenida Fray Luis Beltrán, José Fuchs, Doctor Marcelino Reyes, Avenida del Libertador, Ruta Nacional N° 3, Sarmiento, Belgrano, Avenida Hipólito Yrigoyen, Carstens." },
@@ -267,6 +280,7 @@ const AREAS: Record<string, AreaConfig> = {
       {
         numero: "9",
         resumen: "Centro – Barrio Industrial",
+        horario: "Primer servicio 05:15 hs · Último 21:00 hs",
         tramos: [
           { etiqueta: "Ida (9A)", texto: "Gil Álvarez, 25 de Mayo, Almirante Brown, Carlos Pellegrini, Avenida Rivadavia, Los Nogales, San Martín, Los Pensamientos, Ingeniero Huergo, Bruno Pieragnoli, Avenida Polonia, Avenida Hipólito Yrigoyen, Avenida del Progreso, Rotonda Avenida del Progreso, Avenida del Progreso, Avenida Hipólito Yrigoyen, Rotonda Ruta Nacional N° 3 y Ruta Nacional N° 26." },
           { etiqueta: "Vuelta (9)", texto: "Avenida del Progreso, Rotonda Avenida del Progreso, Avenida del Progreso, Avenida Hipólito Yrigoyen, Rotonda Ruta Nacional N° 3 y Ruta Nacional N° 26, Avenida Hipólito Yrigoyen, Avenida Polonia, Bruno Pieragnoli, Ingeniero Huergo, Los Pensamientos, San Martín, Los Álamos, Avenida Rivadavia, Belgrano, Ameghino, Almirante Brown, Carlos Pellegrini, Gil Álvarez." },
@@ -275,6 +289,7 @@ const AREAS: Record<string, AreaConfig> = {
       {
         numero: "9A",
         resumen: "Centro – Barrio Industrial (Extensión Arenales)",
+        horario: "Salidas 06:30, 12:30 y 18:30 hs · último regreso 19:30 hs desde Los Arenales",
         tramos: [
           { etiqueta: "Ida", texto: "Pasaje Gil Álvarez, 25 de Mayo, Almirante Brown, Carlos Pellegrini, Avenida Rivadavia, Los Nogales, San Martín, Los Pensamientos, Ingeniero Huergo, Bruno Pieragnoli, Avenida Polonia, Avenida Hipólito Yrigoyen, Avenida del Progreso, Rotonda Avenida del Progreso, Avenida del Progreso, Avenida Hipólito Yrigoyen, Rotonda Ruta Nacional N° 3 y Ruta Nacional N° 26, Oscar Poltroneri, Antonio Corrales, Antonio Berni, Luis Alberto Blanco." },
           { etiqueta: "Vuelta", texto: "Piedra Parada, Luis Alberto Blanco, Nicolás Esandi, Antonio Corrales, Oscar Poltroneri, Ruta Nacional N° 26, Rotonda Ruta Nacional N° 26 y Ruta Nacional N° 3, Avenida Hipólito Yrigoyen, Avenida Polonia, Bruno Pieragnoli, Ingeniero Huergo, Los Pensamientos, San Martín, Los Álamos, Avenida Rivadavia, Belgrano, Ameghino, Almirante Brown, Carlos Pellegrini, Gil Álvarez." },
@@ -283,6 +298,7 @@ const AREAS: Record<string, AreaConfig> = {
       {
         numero: "12",
         resumen: "Centro – Abásolo",
+        horario: "Primer servicio 05:15 hs · Último 23:40 hs",
         tramos: [
           { etiqueta: "Ida", texto: "Raúl Cercos, Natalia Payaguala, Avenida Polonia, Ricardo Balbín, Calle Código 651, Calle Código 821, Avenida 10 de Noviembre, Avenida Roca, Maestro Carlos Guastavino, Calle Código 829, Calle Código 844, Miguel Amado, Francisco de Nevares, Jorge Marinero López, Francisco Behr, Avenida 10 de Noviembre, Avenida Estados Unidos, Avenida Rivadavia, Saavedra, Dorrego, Almirante Brown, Mitre, Ameghino, Almirante Brown, Pellegrini, Gil Álvarez." },
           { etiqueta: "Vuelta", texto: "Gil Álvarez, 25 de Mayo, Avenida Hipólito Yrigoyen, Avenida Alsina, Rawson, Alvear, Avenida Rivadavia, Avenida Estados Unidos, Avenida 10 de Noviembre, Avenida Polonia, Marinero Jorge López, Francisco Behr, Gustavo Bahamonde, José Ortega, Gustavo Bahamonde, Jaime Francisco de Nevares, Miguel Amado, Calle Código 844, Calle Código 829, Maestro Carlos Guastavino, Avenida Roca, Avenida 10 de Noviembre, Calle Código 821, Calle Código 651, Ricardo Balbín, Avenida Polonia, Rotonda Avenida Polonia y Raúl Cercos." },
@@ -291,6 +307,7 @@ const AREAS: Record<string, AreaConfig> = {
       {
         numero: "13",
         resumen: "Estadio Centenario – Standard",
+        horario: "Primer servicio 05:35 hs · Último 22:40 hs",
         tramos: [
           { etiqueta: "Ida", texto: "Carstens, Avenida Ducos, Avenida Alsina, Bahía Bustamante, Democracia, Roque Sáenz Peña, Avenida Ducos, Mitre, Avenida Rivadavia, Belgrano, Avenida Ducos, Pellegrini, Avenida Hipólito Yrigoyen, Máximo Abásolo, Ruta Nacional N° 3, Avenida del Libertador, Los Búlgaros, Gobernador Moyano, Avenida J. M. Pueyrredón, Avenida del Libertador, Ruta Provincial N° 1, Avenida José Ingenieros, Ruta Provincial N° 1, Avenida Alejandro Maíz, Base Petrel, Base Matienzo, Código 2404, Código 2434, Código 2438, Los Arrayanes." },
           { etiqueta: "Vuelta", texto: "El Cóndor, Código 2404, Facundo Quiroga, Código 2393, Avenida Punta Borja, E. Hermitte, F. Pigafetta, Teodoro Petroff, Ítalo Dell'Oro, Avenida Alejandro Maíz, Ruta Provincial N° 1, Avenida José Ingenieros, Ruta Provincial N° 1, Avenida del Libertador, Ruta Nacional N° 3, Güemes, Avenida Rivadavia, Belgrano, Hipólito Yrigoyen, Carstens." },
@@ -299,6 +316,7 @@ const AREAS: Record<string, AreaConfig> = {
       {
         numero: "14",
         resumen: "30 de Octubre – Centro (F14-15)",
+        horario: "Primer servicio 05:00 hs · Último 00:00 hs",
         tramos: [
           { etiqueta: "Ida", texto: "Avenida Kennedy, La Razón, Gabriel Barcelo, Avenida Chile, Padre Juan Corti, Código 748, Raúl Cercos, Leonardo Trevisan, René Favaloro, María Magdalena Güemes, Nicolás Chacoma, Sixto Ojeda, Rotonda Código 748, Raúl Cercos, Código 3536, Código 3111, Raúl Cercos, Ana Herrera, Armando Cistari, Lorenzo Rognetta, Código 586, Juana Azurduy, Avenida Lisandro de la Torre, Avenida Estados Unidos, Avenida Rivadavia, Belgrano, Ameghino, Almirante Brown, Carlos Pellegrini." },
           { etiqueta: "Vuelta", texto: "Pellegrini, Avenida Rivadavia, Avenida Estados Unidos, Avenida Lisandro de la Torre, Juana Azurduy, Código 586, Lorenzo Rognetta, Armando Cistari, Ana Herrera, Raúl Cercos, Código 3111, Código 3536, Nicolás Chacoma, Sixto Ojeda, María Magdalena Güemes, René Favaloro, Leonardo Trevisan, Raúl Cercos, Código 748, Padre Corti, Avenida Chile, Rotonda Chile y Avenida Kennedy." },
@@ -307,6 +325,7 @@ const AREAS: Record<string, AreaConfig> = {
       {
         numero: "15",
         resumen: "Centro – Los Tres Pinos",
+        horario: "Primer servicio 06:00 hs · Último 00:00 hs",
         tramos: [
           { etiqueta: "Ida", texto: "Pellegrini, Avenida Rivadavia, 25 de Mayo, Avenida Hipólito Yrigoyen, Avenida Polonia, Rotonda Avenida Polonia y Roque González, Doctor Eduardo Musaccio." },
           { etiqueta: "Vuelta", texto: "Eduardo Musaccio, Código 3116, Haroldo Conti, Antonio Di Benedetto, Marcos Denevi, C. Alberto Rivas, Haroldo Conti, Roberto Rajido, Roberto Payró, Concejal Alcoleas, Doctor Eduardo Musaccio, Código Ocaso, Roberto Payró, Teolindo Ramírez, Código 3219, Código 3218, Jorge Daniel Ludueña, Código 3220, C. Mazaredo, José María Moreno, Doctor Manuel Sueiro, Colectora Fray Luis Beltrán, Los Robles, Los Alerces, Los Aromos, Las Araucarias, Avenida del Pinar, El Algarrobo, Avenida 10 de Noviembre, Avenida Polonia, Avenida Hipólito Yrigoyen, Avenida Ducos, Avenida Alsina, Bahía Bustamante, Democracia, Roque Sáenz Peña, Avenida Ducos, Carlos Pellegrini." },
@@ -315,6 +334,7 @@ const AREAS: Record<string, AreaConfig> = {
       {
         numero: "16",
         resumen: "Estadio – Saavedra – Aeronáutico",
+        horario: "Primer servicio 05:30 hs · Último 22:40 hs",
         tramos: [
           { etiqueta: "Ida", texto: "Carstens, Avenida Ducos, Avenida Alsina, Bahía Bustamante, Democracia, Roque Sáenz Peña, Pellegrini, Avenida Hipólito Yrigoyen, Máximo Abásolo, Ruta Nacional N° 3, Avenida del Libertador, Los Búlgaros, Gobernador Moyano, Avenida J. M. Pueyrredón, Fray Luis Beltrán, Francisco de Viedma, Petrolero San Lorenzo, Avenida Tehuelches, Avenida Lángara, Avenida Mazaredo, José María Moreno, José Aimar, Santa Lucía, Edward Flagel, Doctor Manuel Sueiro, Colectora Fray Luis Beltrán, Los Cedros, El Algarrobo, Avenida Fray Luis Beltrán, Roque González, Código 2222, Fabián Arienti, Código 2224, Código 2226." },
           { etiqueta: "Vuelta", texto: "Código 2226, Código 2222, Roque González, Avenida Fray Luis Beltrán, Los Robles, Los Alerces, Los Aromos, Las Araucarias, Avenida del Pinar, El Algarrobo, Alberto Toussaint, Carlos Rodríguez Gallardo, Doctor Manuel Sueiro, Antonio Isaías Carrizo, Edward Flagel, Santa Lucía, José Aimar, Avenida Mazaredo, Avenida Lángara, Francisco de Viedma, Avenida Fray Luis Beltrán, José Fuchs, Marcelino Reyes, Avenida del Libertador, Ruta Nacional N° 3, Avenida Rivadavia, Belgrano, Avenida Hipólito Yrigoyen, Carstens." },
@@ -323,6 +343,7 @@ const AREAS: Record<string, AreaConfig> = {
       {
         numero: "17",
         resumen: "Estadio – Padre Corti",
+        horario: "Primer servicio 05:00 hs · Último 00:00 hs",
         tramos: [
           { etiqueta: "Ida", texto: "Carstens, Avenida Ducos, Avenida Alsina, Bahía Bustamante, Democracia, Roque Sáenz Peña, Avenida Ducos, Carlos Pellegrini, Hipólito Yrigoyen, Máximo Abásolo, Ruta Nacional N° 3, Avenida del Libertador, Los Búlgaros, Gobernador Moyano, Avenida J. M. Pueyrredón, Avenida Fray Luis Beltrán, Francisco de Viedma, Petrolero San Lorenzo, Avenida Tehuelches, Jesús Garré, Avenida del Libertador, Rotonda Universidad, Avenida del Libertador, Acceso al Barrio Castelli, Mariano Rodríguez, Dionisio Néstor Páez, Mirco Michunovich, Mariano Rodríguez, Ruta Nacional N° 3, Rotonda Ruta Nacional N° 3 y Ruta Provincial N° 39, Independencia, Fitz Roy, Los Andes, El Baqueano, El Chasqui, El Rastreador, Los Andes, Cerro La Plata, Cerro Solano." },
           { etiqueta: "Vuelta", texto: "Cerro Domuyo, Monte Pissis, Cerro Mercedario, Cerro La Plata, Los Andes, El Rastreador, El Chasqui, El Baqueano, Los Andes, Pucará, Independencia, José Hernández, Primero de Mayo, Ruta Nacional N° 3, Ingreso Rodríguez Peña, Rotonda Rodríguez Peña, ARA General Belgrano, Ruta Nacional N° 3, Mirco Michunovich, Dionisio Néstor Páez, Mariano Rodríguez, Ruta Nacional N° 3, Avenida del Libertador, Avenida Tehuelches, Avenida Lángara, Francisco de Viedma, Avenida Fray Luis Beltrán, José Fuchs, Marcelino Reyes, Avenida del Libertador, Ruta Nacional N° 3, Sarmiento, 25 de Mayo, Avenida Hipólito Yrigoyen, Carstens." },
@@ -331,6 +352,7 @@ const AREAS: Record<string, AreaConfig> = {
       {
         numero: "18",
         resumen: "Estadio Centenario – Restinga Alí",
+        horario: "Primer servicio 05:00 hs · Último 23:00 hs",
         tramos: [
           { etiqueta: "Ida", texto: "Carstens, Avenida Ducos, Carlos Pellegrini, Hipólito Yrigoyen, Máximo Abásolo, Ruta Nacional N° 3, Avenida del Libertador, Los Búlgaros, Gobernador Moyano, Avenida J. M. Pueyrredón, Francisco de Viedma, Petrolero San Lorenzo, Avenida Tehuelches, Jesús Garré, Avenida del Libertador, Ruta Provincial N° 1, Avenida José Ingenieros, Avenida del Parque, Soldado Argentino, Los Sargentos, Pedro Granzón, Mario Morejón, Avenida Nahuel Huapi, Sargento Baltazar González, Código 2438, Código 2432, Base Irízar, Base Petrel, Doña Juana Sosa Toledo, Rubén Darío, Dolores Mora." },
           { etiqueta: "Vuelta", texto: "Andrés Bello, Pablo Neruda, Doña Juana Sosa Toledo, Base Petrel, Base Irízar, Código 2432, Código 2438, Sargento Baltazar González, Avenida Nahuel Huapi, Mario Morejón, Pedro Granzón, Baldomero Terraza, Julio Cortázar, Soldado Argentino, Avenida del Parque, Avenida José Ingenieros, Ruta Provincial N° 1, Avenida del Libertador, Avenida Tehuelches, Avenida Lángara, Francisco de Viedma, Fray Luis Beltrán, José Fuchs, Marcelino Reyes, Avenida del Libertador, Ruta Nacional N° 3, Sarmiento, Belgrano, Avenida Hipólito Yrigoyen, Carstens." },
@@ -339,6 +361,7 @@ const AREAS: Record<string, AreaConfig> = {
       {
         numero: "19",
         resumen: "Estadio Centenario – Caleta Córdova",
+        horario: "Primer servicio 04:50 hs · Último 23:00 hs",
         tramos: [
           { etiqueta: "Ida", texto: "Carstens, Avenida Ducos, Carlos Pellegrini, Avenida Hipólito Yrigoyen, Máximo Abásolo, Ruta Nacional N° 3, Avenida del Libertador, Los Búlgaros, Gobernador Moyano, Avenida J. M. Pueyrredón, Avenida del Libertador, Ruta Provincial N° 1, Avenida José Ingenieros, Ruta Provincial N° 1, Avenida Alejandro Maíz, Ruta Provincial N° 1, Avenida Punta Novales, El Ancla, Código 2727." },
           { etiqueta: "Vuelta", texto: "Código 2727, Avenida Punta Novales, Ruta Provincial N° 1, Avenida Alejandro Maíz, Ruta Provincial N° 1, Avenida José Ingenieros, Ruta Provincial N° 1, Avenida del Libertador, Ruta Nacional N° 3, Sarmiento, 25 de Mayo, Avenida Hipólito Yrigoyen, Carstens." },
@@ -347,6 +370,7 @@ const AREAS: Record<string, AreaConfig> = {
       {
         numero: "20",
         resumen: "Base Sol Bus – Stella Maris – Hospital Alvear",
+        horario: "Primer servicio 05:00 hs · Último 23:15 hs",
         tramos: [
           { etiqueta: "Ida", texto: "Juan Vueguen, Juan Davies, Avenida Hipólito Yrigoyen, Ignacio Gatica, Antonio Roqueta Pratt, Saavedra Lamas, Vicente Torraca, Código 811, Ramón Castillo, Ignacio Gatica, Código 562, Lorenzo Gastaldi, Código 516, Luis Gallino, Saturnino López, Eustaquio Molina, Alfredo Llames Massini, José Dalle Mura, Avenida Hipólito Yrigoyen, Avenida Ducos, Avenida Alsina, Bahía Bustamante, Democracia, Roque Sáenz Peña, Avenida Ducos, Carlos Pellegrini, Avenida Hipólito Yrigoyen, Máximo Abásolo, Ruta Nacional N° 3, Avenida del Libertador, Los Búlgaros, Gobernador Moyano, Avenida J. M. Pueyrredón, José María Paz, Avenida Mariano de Vedia, Dolores Moscara de Medrano, Avenida Juan Ramón Balcarce." },
           { etiqueta: "Vuelta", texto: "Avenida Juan Ramón Balcarce, Avenida Mariano de Vedia, Avenida Manuel Quintana, Gobernador Moyano, Avenida J. M. Pueyrredón, Avenida del Libertador, Ruta Nacional N° 3, Sarmiento, 25 de Mayo, Avenida Hipólito Yrigoyen, Juan P. Evet, Monseñor de Andrea, Gerónimo Maliqueo, José Suazo, Avenida Portugal, José Dalle Mura, Alfredo Llames Massini, Eustaquio Molina, Saturnino López, José Liñeiro, Presidente Ramón Castillo, Código 811, Vicente Torraca, Saavedra Lamas, Antonio Roqueta Pratt, Ignacio Gatica, Avenida Hipólito Yrigoyen, Tirso López, Juan Davies, Juan Vueguen." },
@@ -355,6 +379,7 @@ const AREAS: Record<string, AreaConfig> = {
       {
         numero: "21",
         resumen: "Padre Corti – Don Bosco – Standard",
+        horario: "Primer servicio 06:15 hs · Último 20:00 hs",
         tramos: [
           { etiqueta: "Ida", texto: "Cerro Solano, Cerro Domuyo, Cerro Hermitte, Monte Pissis, Cerro Mercedario, Cerro La Plata, Los Andes, El Rastreador, Tradición, El Baqueano, Los Andes, Pucará, Independencia, Fitz Roy, 1 de Mayo, Bulevar Constitución, Los Andes, Ruta Provincial N° 39, Antártida Argentina, Avenida General Lavalle, Luro Cambaceres, Avenida Juan José Paso, Teniente Vanesia, San Lorenzo, Fuerza Aérea Argentina, Avenida Juan José Paso, Ítalo Dell'Oro, Teodoro Petroff, Wenceslao Escalante, 8 de Diciembre, Martín Comodoro Rivadavia, Teniente Daniel Jukic, Código 2404, Base Matienzo, Base Petrel, Avenida Alejandro Maíz, Ítalo Dell'Oro." },
           { etiqueta: "Vuelta", texto: "Ítalo Dell'Oro, Teniente Miguel Giménez, Avenida Alejandro Maíz, Base Petrel, Base Matienzo, Código 2404, Teniente Daniel Jukic, Aldo Juan Silvestrini, Avenida Francisco Pietrobelli, Ítalo Dell'Oro, Juan José Paso, Reconquista, Juan José Paso, Teniente Vanesia, Avenida Juan José Paso, 1 de Noviembre, General Lavalle, Antártida Argentina, Ruta Provincial N° 39, Ruta Nacional N° 3, Independencia, Pucará, Los Andes, El Baqueano, El Chasqui, El Rastreador, Los Andes, Cerro Solano." },
@@ -363,6 +388,7 @@ const AREAS: Record<string, AreaConfig> = {
       {
         numero: "22",
         resumen: "Estadio Centenario – Standard – Km. 11",
+        horario: "Primer servicio 06:00 hs · Último 22:00 hs",
         tramos: [
           { etiqueta: "Ida", texto: "Carstens, Avenida Ducos, Carlos Pellegrini, Yrigoyen, Máximo Abásolo, Ruta Nacional N° 3, Avenida del Libertador, Los Búlgaros, Gobernador Moyano, J. M. Pueyrredón, Avenida del Libertador, Ruta Provincial N° 1, Avenida José Ingenieros, Ruta Provincial N° 1, Avenida Alejandro Maíz, Teniente Miguel Giménez, Ítalo Dell'Oro, Teodoro Petroff, Wenceslao Escalante, 8 de Diciembre, Martín Comodoro Rivadavia, Los Arrayanes, Avenida Nahuel Huapi, Copihue, Enlace Rural Palazzo, Barrio Cuartel Chacabuco (RIM 28), Camino Cantera, Rotonda Km 18." },
           { etiqueta: "Vuelta", texto: "Rotonda Km 18, Camino Cantera, Enlace Rural Palazzo, Copihue, Teniente Manuel Mujica Láinez, Aldo Juan Silvestrini, Francisco Pietrobelli, Ítalo Dell'Oro, Teniente Giménez, Avenida Alejandro Maíz, Ruta Provincial N° 1, Avenida José Ingenieros, Ruta Provincial N° 1, Avenida del Libertador, Ruta Nacional N° 3, Sarmiento, 25 de Mayo, Avenida Hipólito Yrigoyen, Carstens." },
@@ -512,6 +538,24 @@ export default async function AreaFiscalizadaPage({
                   🗺️ Mapa de recorridos según la MCR →
                 </a>
               )}
+              {svc === "transporte" && (
+                <>
+                  <a
+                    href="#horarios"
+                    className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-svc-green text-white font-bold text-sm shadow-lg shadow-svc-green/30 hover:scale-105 transition"
+                  >
+                    🕒 Horarios de tu línea →
+                  </a>
+                  <a
+                    href="/horarios-lineas-sol-bus.pdf"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-5 py-3 rounded-xl border-2 border-navy-2/30 bg-paper text-navy-2 font-bold text-sm hover:bg-paper-2 transition"
+                  >
+                    📄 Descargar horarios en PDF →
+                  </a>
+                </>
+              )}
             </div>
             {area.mapaSolBusUrl && area.mapaMcrUrl && (
               <p className="text-xs text-muted mt-2 max-w-2xl">
@@ -523,10 +567,48 @@ export default async function AreaFiscalizadaPage({
               <ZorritoGuia />
             </div>
 
-            <ul className="flex flex-col gap-2 mt-4">
+            <div id="horarios" className="mt-6 scroll-mt-24">
+              <h3 className="text-sm font-extrabold text-navy uppercase tracking-wider">
+                🕒 Horarios de tu línea
+              </h3>
+              <p className="text-xs text-muted mt-1 max-w-2xl">
+                Primer y último servicio de cada línea, según datos oficiales de
+                la Municipalidad. Pueden sufrir ajustes de Sol Bus por tránsito
+                u operativos puntuales.
+              </p>
+              <div className="grid sm:grid-cols-2 gap-2 mt-3">
+                {area.lineas.map((l) => (
+                  <a
+                    key={l.numero}
+                    href={`#linea-${l.numero}`}
+                    className="flex items-start gap-3 rounded-xl border border-line bg-paper p-3 hover:border-[#7e57c2]/50 transition"
+                  >
+                    <span className="shrink-0 w-8 h-8 rounded-full bg-[#7e57c2]/15 border-2 border-[#7e57c2]/60 text-[#7e57c2] font-extrabold text-xs flex items-center justify-center">
+                      {l.numero}
+                    </span>
+                    <span className="flex-1 min-w-0">
+                      <span className="block text-xs font-semibold text-navy truncate">
+                        {l.resumen}
+                      </span>
+                      <span className="block text-[11px] text-muted mt-0.5">
+                        {l.horario}
+                      </span>
+                    </span>
+                  </a>
+                ))}
+              </div>
+            </div>
+
+            <ul className="flex flex-col gap-2 mt-6">
               {area.lineas.map((l) => (
                 <li key={l.numero}>
-                  <LineaDetalle numero={l.numero} resumen={l.resumen} tramos={l.tramos} />
+                  <LineaDetalle
+                    numero={l.numero}
+                    resumen={l.resumen}
+                    horario={l.horario}
+                    tramos={l.tramos}
+                    horariosDetalle={HORARIOS_DETALLE[l.numero]}
+                  />
                 </li>
               ))}
             </ul>
