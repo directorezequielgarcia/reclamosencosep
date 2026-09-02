@@ -1,6 +1,12 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import {
+  MCR_TRANSPORTE_BASE,
+  MCR_SNAPSHOT_BASE,
+  TODOS_LOS_CODIGOS_ARCHIVO,
+  NUMERO_POR_CODIGO_ARCHIVO,
+} from "@/lib/transporte-mcr";
 
 /**
  * "Zorrito Guía" — responde ¿dónde estoy? ¿qué paradas hay? ¿qué líneas pasan
@@ -8,12 +14,12 @@ import { useState, type FormEvent } from "react";
  * Municipalidad para su propio mapa interactivo (comodoro-mit.github.io).
  * Se consultan EN VIVO primero (CORS abierto), así nunca quedan
  * desactualizados si la Municipalidad corrige un recorrido. Si esa fuente no
- * responde (pasó el 12-22/08/2026: sitio en mantenimiento mientras cargaban
- * la Resolución 1.628/26), cae a un snapshot local en
- * public/data/transporte-mcr-snapshot/ — el último dataset publicado antes
- * del mantenimiento (commit 5b7e770 del repo comodoro-mit/transporte,
- * 04/08/2026), así la guía sigue funcionando aunque desactualizada. En ese
- * caso se avisa en pantalla — ver LEEME.md en esa carpeta.
+ * responde, cae a un snapshot local en public/data/transporte-mcr-snapshot/
+ * — el último dataset guardado, así la guía sigue funcionando aunque
+ * desactualizada (se avisa en pantalla — ver LEEME.md en esa carpeta). URLs
+ * y códigos de archivo del dataset viven en lib/transporte-mcr.ts (la
+ * Municipalidad migró la estructura el 01/09/2026, junto con la Resolución
+ * 1.628/26 — ver comentario ahí).
  *
  * El vínculo "esta parada la sirve tal línea" y "esta línea te lleva de A a
  * B" se calculan con el MISMO criterio que usa el mapa oficial de la
@@ -29,19 +35,13 @@ import { useState, type FormEvent } from "react";
  * destino, muestra qué línea conecta los dos puntos.
  */
 
-const BASE = "https://comodoro-mit.github.io/transporte/layers_transporte";
 const MAPA_MCR_URL = "https://comodoro-mit.github.io/transporte";
 
-// Códigos reales de archivo publicados por el mapa oficial (23 líneas).
-const CODIGOS_LINEA = [
-  "1", "2", "3", "4", "5", "5U", "6A", "6B", "7", "8H", "8AH", "9",
-  "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22",
-];
-
-// Mapea el código de archivo al numero usado como id en la lista de líneas
-// de esta página (linea-1, linea-8, etc.) — 5U->5, 6A/6B->6, 8H/8AH->8.
-function numeroAncla(codigo: string) {
-  return codigo.replace(/[A-Z]+$/, "");
+// Etiqueta legible para mostrarle al vecino (numero de la página de
+// Transporte) a partir del código de archivo real del dataset (ej. "9a" ->
+// "9A", "6h"/"6ah" -> "6").
+function etiquetaLinea(codigo: string): string {
+  return NUMERO_POR_CODIGO_ARCHIVO[codigo] ?? codigo.toUpperCase();
 }
 
 type Parada = {
@@ -82,29 +82,18 @@ type LineaProcesada = {
   rutas: Ruta[];
 };
 
-const SNAPSHOT_BASE = "/data/transporte-mcr-snapshot";
-
-function parseDataJs<T>(texto: string): T {
-  const idx = texto.indexOf("=");
-  const jsonTexto = texto
-    .slice(idx + 1)
-    .trim()
-    .replace(/;\s*$/, "");
-  return JSON.parse(jsonTexto) as T;
-}
-
 // snapshotFlag.usado queda en true si ALGÚN archivo tuvo que resolverse
 // desde el snapshot local (alcanza con que falle uno para que toda la
 // respuesta se considere potencialmente desactualizada).
-async function fetchDataJs<T>(url: string, snapshotFlag?: { usado: boolean }): Promise<T> {
+async function fetchJson<T>(url: string, snapshotFlag?: { usado: boolean }): Promise<T> {
   const resp = await fetch(url);
-  if (resp.ok) return parseDataJs<T>(await resp.text());
+  if (resp.ok) return (await resp.json()) as T;
 
   const nombreArchivo = url.split("/").pop()!;
-  const respSnapshot = await fetch(`${SNAPSHOT_BASE}/${nombreArchivo}`);
+  const respSnapshot = await fetch(`${MCR_SNAPSHOT_BASE}/${nombreArchivo}`);
   if (!respSnapshot.ok) throw new Error("MCR_DATASET_DOWN");
   if (snapshotFlag) snapshotFlag.usado = true;
-  return parseDataJs<T>(await respSnapshot.text());
+  return (await respSnapshot.json()) as T;
 }
 
 function distanciaMetros(lat1: number, lng1: number, lat2: number, lng2: number) {
@@ -465,7 +454,7 @@ function LineasDeParada({
           className="inline-flex items-center px-2 py-0.5 rounded-full border-2 border-[#7e57c2]/60 bg-[#7e57c2]/10 text-[#7e57c2] text-[11px] font-extrabold hover:bg-[#7e57c2]/20 transition"
           title="Ver el recorrido completo de esta línea"
         >
-          {codigo}
+          {etiquetaLinea(codigo)}
         </button>
       ))}
     </div>
@@ -480,14 +469,14 @@ export function ZorritoGuia() {
   const [errorTexto, setErrorTexto] = useState<string | null>(null);
   const [errorMantenimiento, setErrorMantenimiento] = useState(false);
   // true si la respuesta se armó con el snapshot local (mapa oficial caído) —
-  // ver fetchDataJs. Sigue siendo un resultado real, solo puede no reflejar
+  // ver fetchJson. Sigue siendo un resultado real, solo puede no reflejar
   // los últimos cambios de recorrido.
   const [datosDesactualizados, setDatosDesactualizados] = useState(false);
   const [resultado, setResultado] = useState<Resultado | null>(null);
   const [resultadoRuta, setResultadoRuta] = useState<ResultadoRuta | null>(null);
 
   function irALinea(codigo: string) {
-    const id = `linea-${numeroAncla(codigo)}`;
+    const id = `linea-${NUMERO_POR_CODIGO_ARCHIVO[codigo] ?? codigo}`;
     const el = document.getElementById(id);
     if (el instanceof HTMLDetailsElement) {
       el.open = true;
@@ -509,13 +498,17 @@ export function ZorritoGuia() {
     usoSnapshot: boolean;
   }> {
     const snapshotFlag = { usado: false };
-    const [paradas, ...lineasRaw] = await Promise.all([
-      fetchDataJs<Parada[]>(`${BASE}/paradas_data.js`, snapshotFlag),
-      ...CODIGOS_LINEA.map((c) =>
-        fetchDataJs<LineaGeoJSON>(`${BASE}/linea_${c}_data.js`, snapshotFlag),
+    const [paradasCrudas, ...lineasRaw] = await Promise.all([
+      fetchJson<Array<Omit<Parada, "id"> & { uid: number }>>(
+        `${MCR_TRANSPORTE_BASE}/paradas.json`,
+        snapshotFlag,
+      ),
+      ...TODOS_LOS_CODIGOS_ARCHIVO.map((c) =>
+        fetchJson<LineaGeoJSON>(`${MCR_TRANSPORTE_BASE}/linea-${c}.geojson`, snapshotFlag),
       ),
     ]);
-    const lineas = CODIGOS_LINEA.map((c, i) => procesarLinea(c, lineasRaw[i]));
+    const paradas: Parada[] = paradasCrudas.map(({ uid, ...resto }) => ({ id: uid, ...resto }));
+    const lineas = TODOS_LOS_CODIGOS_ARCHIVO.map((c, i) => procesarLinea(c, lineasRaw[i]));
     return { paradas, lineas, usoSnapshot: snapshotFlag.usado };
   }
 
@@ -625,7 +618,7 @@ export function ZorritoGuia() {
       setErrorMantenimiento(esMantenimiento);
       setErrorTexto(
         esMantenimiento
-          ? "El mapa oficial de la Municipalidad está en mantenimiento (probablemente actualizando los recorridos a la nueva resolución) — por ahora no podemos calcular paradas ni líneas cercanas. Mirá el detalle calle por calle más abajo mientras tanto."
+          ? "No pudimos traer el mapa en vivo de la Municipalidad — por ahora no podemos calcular paradas ni líneas cercanas. Mirá el detalle calle por calle más abajo mientras tanto."
           : "No pudimos calcular las paradas y líneas ahora. Probá de nuevo.",
       );
       setEstado("error");
@@ -761,7 +754,7 @@ export function ZorritoGuia() {
 
       {estado === "ok" && datosDesactualizados && (
         <div className="text-[11px] text-amber-800 bg-amber-100 border border-amber-300 rounded-lg px-3 py-2">
-          ⚠️ El mapa oficial de la Municipalidad está en mantenimiento — esto se calculó con el último trazado que publicaron (04/08/2026), que puede no reflejar los cambios de la Resolución 1.628/26 vigente desde el 1° de septiembre. Confirmá con el detalle calle por calle de cada línea.
+          ⚠️ No pudimos traer el mapa en vivo de la Municipalidad ahora — esto se calculó con la última copia guardada, que puede no reflejar cambios recientes de recorrido. Confirmá con el detalle calle por calle de cada línea.
         </div>
       )}
 
@@ -806,7 +799,7 @@ export function ZorritoGuia() {
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border-2 border-[#7e57c2]/60 bg-[#7e57c2]/10 text-[#7e57c2] text-xs font-extrabold hover:bg-[#7e57c2]/20 transition"
                   title="Ver el recorrido completo de esta línea"
                 >
-                  {l.codigo}
+                  {etiquetaLinea(l.codigo)}
                   <span className="font-normal text-navy">
                     · {Math.round(l.distancia)} m
                   </span>
@@ -847,7 +840,7 @@ export function ZorritoGuia() {
                       className="self-start inline-flex items-center px-2.5 py-1 rounded-full bg-[#7e57c2] text-white text-xs font-extrabold hover:opacity-90 transition"
                       title="Ver el recorrido completo de esta línea"
                     >
-                      Línea {l.codigo}
+                      Línea {etiquetaLinea(l.codigo)}
                     </button>
                     <FilaParada etiqueta="Subís en" parada={l.paradaSubida} />
                     <FilaParada etiqueta="Bajás cerca de" parada={l.paradaBajada} />
@@ -878,7 +871,7 @@ export function ZorritoGuia() {
                       className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-line text-[11px] font-semibold text-navy hover:bg-paper-2 transition"
                       title="Ver el recorrido completo de esta línea"
                     >
-                      {l.codigo} <span className="text-muted font-normal">· {Math.round(l.distancia)} m</span>
+                      {etiquetaLinea(l.codigo)} <span className="text-muted font-normal">· {Math.round(l.distancia)} m</span>
                     </button>
                   ))}
                 </div>
@@ -896,7 +889,7 @@ export function ZorritoGuia() {
                       className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-line text-[11px] font-semibold text-navy hover:bg-paper-2 transition"
                       title="Ver el recorrido completo de esta línea"
                     >
-                      {l.codigo} <span className="text-muted font-normal">· {Math.round(l.distancia)} m</span>
+                      {etiquetaLinea(l.codigo)} <span className="text-muted font-normal">· {Math.round(l.distancia)} m</span>
                     </button>
                   ))}
                 </div>

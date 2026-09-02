@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { MiniMapaLinea } from "./MiniMapaLinea";
 import type { BloqueHorario } from "@/lib/horarios-transporte";
+import { CODIGOS_ARCHIVO_POR_LINEA } from "@/lib/transporte-mcr";
 
 // Genera un link de Google Maps que encadena las calles del tramo como
 // paradas de una ruta (misma URL que usa la gente para compartir viajes
@@ -51,32 +52,6 @@ function urlsGoogleMapsRecorrido(texto: string): string[] {
   });
 }
 
-// Mapea el número mostrado en el listado al/los código(s) de archivo real(es)
-// del dataset oficial (algunas líneas tienen más de un ramal publicado por
-// separado: 5/5U, 6A/6B, 8H/8AH).
-const CODIGOS_ARCHIVO: Record<string, string[]> = {
-  "1": ["1"],
-  "2": ["2"],
-  "3": ["3"],
-  "4": ["4"],
-  "5": ["5", "5U"],
-  "6": ["6A", "6B"],
-  "7": ["7"],
-  "8": ["8H", "8AH"],
-  "9": ["9"],
-  "12": ["12"],
-  "13": ["13"],
-  "14": ["14"],
-  "15": ["15"],
-  "16": ["16"],
-  "17": ["17"],
-  "18": ["18"],
-  "19": ["19"],
-  "20": ["20"],
-  "21": ["21"],
-  "22": ["22"],
-};
-
 export function LineaDetalle({
   numero,
   resumen,
@@ -91,7 +66,7 @@ export function LineaDetalle({
   horariosDetalle?: BloqueHorario[];
 }) {
   const [abierto, setAbierto] = useState(false);
-  const codigosMapa = CODIGOS_ARCHIVO[numero] ?? [numero];
+  const codigosMapa = CODIGOS_ARCHIVO_POR_LINEA[numero] ?? [numero];
 
   return (
     <details

@@ -3,46 +3,45 @@
 Estos archivos son una copia de seguridad del dataset que publica la
 Municipalidad de Comodoro Rivadavia para su propio mapa interactivo
 (https://comodoro-mit.github.io/transporte), usado por `ZorritoGuia.tsx`
-y `MiniMapaLinea.tsx`.
+y `MiniMapaLinea.tsx`. Las URLs y códigos de archivo que usa el código
+viven en `lib/transporte-mcr.ts`.
 
 ## Por qué existen
 
 El código SIEMPRE intenta traer los datos en vivo desde el sitio de la
 Municipalidad primero (fetch client-side, CORS abierto). Este snapshot
-es solo un **fallback automático** para cuando ese sitio no responde —
-como pasó el 12/08/2026, cuando la Municipalidad sacó estos archivos de
-su sitio publicado mientras actualizaba el mapa a la Resolución
-1.628/26 (el HTML del sitio decía explícitamente: "Datos de recorridos
-y paradas: excluidos del sitio publicado por el modo mantenimiento").
+es solo un **fallback automático** para cuando ese sitio no responde.
 
-## De dónde salió
+## Migración del 01/09/2026 (Resolución 1.628/26)
 
-- Repo fuente: https://github.com/comodoro-mit/transporte
-- Commit: `5b7e7702ed1e70c7d0304d3715d20cb92d29e44e` (04/08/2026, "Optimizar
-  correcciones de precisión") — el último commit con estos archivos
-  presentes, justo antes del commit `23ee5d94` (12/08/2026, "chore:
-  remove leftover files") que los borró del repo.
-- Descargado el 24/08/2026 vía `raw.githubusercontent.com` en ese commit
-  puntual.
+La Municipalidad reestructuró su dataset junto con la entrada en
+vigencia de la Resolución 1.628/26: antes publicaba
+`layers_transporte/<archivo>_data.js` (JSON envuelto en `var x = ...;`,
+23 archivos con códigos como `6A`/`6B`/`8H`/`8AH`), ahora publica
+`data/<archivo>.geojson` y `data/paradas.json` en JSON plano, con 24
+archivos de línea (agregó `9a`, y renombró los sentidos de las
+circulares 6 y 8 a `6h`/`6ah`/`8h`/`8ah` = horario/antihorario). El
+snapshot viejo (que a su vez ya era un respaldo de la Resolución
+1.399/26 anterior, bajado el 24/08/2026) quedó doblemente
+desactualizado y con URLs que ya no existen (404) — el 02/09/2026 se
+detectó que por eso la guía SIEMPRE caía al fallback y mostraba el
+cartel de "mapa en mantenimiento" aunque el sitio oficial ya estaba
+arriba con los datos nuevos.
 
-## ⚠️ Importante: está desactualizado a propósito
+## De dónde salió este snapshot
 
-Este snapshot refleja las líneas de la **Resolución 1.399/26** (la
-vigente hasta el 31/08/2026), NO la Resolución 1.628/26 (vigente desde
-el 1° de septiembre de 2026, ver `app/(sitio)/areas-fiscalizadas/[svc]/page.tsx`).
-Para las líneas que solo cambiaron de nombre o casi no cambiaron de
-calles, el trazado sigue siendo útil de referencia. Para las que
-cambiaron de identidad (ej. líneas 3 y 4, que pasaron de "Industrial –
-Centro" a "Estadio Centenario – Abel Amaya"), este trazado va a
-mostrar la ruta VIEJA — por eso el código avisa en pantalla
-("⚠️ Mapa oficial en mantenimiento...") cada vez que termina usando este
-snapshot en lugar del dato en vivo.
+- Repo fuente: https://github.com/comodoro-mit/transporte, carpeta `data/`
+- Descargado el 02/09/2026 directo desde
+  `https://comodoro-mit.github.io/transporte/data/` (paradas.json +
+  los 24 `linea-<codigo>.geojson` vigentes), ya con los recorridos de
+  la Resolución 1.628/26.
 
-## Cuándo se puede borrar
+## Cuándo actualizarlo
 
-Cuando la Municipalidad reactive su dataset en vivo con los recorridos
-de la 1.628/26, este snapshot deja de hacer falta — el fetch en vivo
-vuelve a tener prioridad automáticamente (no hace falta tocar código),
-pero conviene igual reemplazar estos archivos por una copia nueva ya
-actualizada, o borrar la carpeta entera si se prefiere volver a "sin
-fallback" como estaba antes.
+Este snapshot solo se usa si el sitio en vivo no responde. Si en el
+futuro la Municipalidad vuelve a reestructurar el dataset (nuevos
+nombres de archivo, otro formato), el fetch en vivo va a empezar a
+fallar de nuevo y el código va a caer a esta copia desactualizada sin
+avisar que cambió la estructura — conviene revisar de tanto en tanto
+que `linea-1.geojson` (por ejemplo) siga respondiendo 200 en la URL
+de `lib/transporte-mcr.ts`, y si no, repetir esta descarga.

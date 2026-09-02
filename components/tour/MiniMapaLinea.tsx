@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import "leaflet/dist/leaflet.css";
 import type * as L from "leaflet";
+import { MCR_TRANSPORTE_BASE, MCR_SNAPSHOT_BASE } from "@/lib/transporte-mcr";
 
 /**
  * Mapa real (Leaflet + OpenStreetMap) con el trazado de una línea, a partir
@@ -15,8 +16,6 @@ import type * as L from "leaflet";
  * por eso va sobre el mapa real y no como SVG suelto.
  */
 
-const BASE = "https://comodoro-mit.github.io/transporte/layers_transporte";
-const SNAPSHOT_BASE = "/data/transporte-mcr-snapshot";
 const COMODORO: [number, number] = [-45.864, -67.4969];
 
 type Geometry =
@@ -28,24 +27,18 @@ type LineaGeoJSON = {
   features: Array<{ properties?: { sentido?: string }; geometry: Geometry }>;
 };
 
-function parseDataJs<T>(texto: string): T {
-  const idx = texto.indexOf("=");
-  const jsonTexto = texto.slice(idx + 1).trim().replace(/;\s*$/, "");
-  return JSON.parse(jsonTexto) as T;
-}
-
-// Fetch en vivo primero; si el mapa oficial está caído, cae al último
-// snapshot conocido en public/data/transporte-mcr-snapshot/ (ver LEEME.md
-// ahí) y marca snapshotFlag.usado para avisar en pantalla.
-async function fetchDataJs<T>(url: string, snapshotFlag?: { usado: boolean }): Promise<T> {
+// Fetch en vivo primero (JSON plano); si el mapa oficial está caído, cae al
+// último snapshot conocido en public/data/transporte-mcr-snapshot/ (ver
+// LEEME.md ahí) y marca snapshotFlag.usado para avisar en pantalla.
+async function fetchJson<T>(url: string, snapshotFlag?: { usado: boolean }): Promise<T> {
   const resp = await fetch(url);
-  if (resp.ok) return parseDataJs<T>(await resp.text());
+  if (resp.ok) return (await resp.json()) as T;
 
   const nombreArchivo = url.split("/").pop()!;
-  const respSnapshot = await fetch(`${SNAPSHOT_BASE}/${nombreArchivo}`);
+  const respSnapshot = await fetch(`${MCR_SNAPSHOT_BASE}/${nombreArchivo}`);
   if (!respSnapshot.ok) throw new Error("MCR_DATASET_DOWN");
   if (snapshotFlag) snapshotFlag.usado = true;
-  return parseDataJs<T>(await respSnapshot.text());
+  return (await respSnapshot.json()) as T;
 }
 
 function extraerLineas(geom: Geometry): [number, number][][] {
@@ -79,7 +72,10 @@ export function MiniMapaLinea({ codigos }: { codigos: string[] }) {
           Promise.all(
             codigos.map(async (codigo) => ({
               codigo,
-              data: await fetchDataJs<LineaGeoJSON>(`${BASE}/linea_${codigo}_data.js`, snapshotFlag),
+              data: await fetchJson<LineaGeoJSON>(
+                `${MCR_TRANSPORTE_BASE}/linea-${codigo}.geojson`,
+                snapshotFlag,
+              ),
             })),
           ),
         ]);
@@ -173,7 +169,7 @@ export function MiniMapaLinea({ codigos }: { codigos: string[] }) {
       )}
       {estado === "mantenimiento" && (
         <div className="text-xs text-muted text-center px-2">
-          El mapa oficial de la Municipalidad está en mantenimiento (probablemente actualizando los recorridos a la nueva resolución). Mientras tanto, guiate por el detalle calle por calle de abajo.
+          No pudimos traer el mapa en vivo de la Municipalidad ahora. Mientras tanto, guiate por el detalle calle por calle de abajo.
         </div>
       )}
       {estado === "ok" && (
@@ -202,7 +198,7 @@ export function MiniMapaLinea({ codigos }: { codigos: string[] }) {
           </div>
           <p className="text-[10px] text-muted text-center">
             {usoSnapshot
-              ? "⚠️ Mapa oficial en mantenimiento — trazado del último dato publicado (04/08/2026), puede no reflejar la Resolución 1.628/26."
+              ? "⚠️ No pudimos traer el mapa en vivo — este trazado es de la última copia guardada, puede no reflejar cambios recientes."
               : "Trazado real desde datos públicos del mapa oficial de transporte."}
           </p>
         </div>
