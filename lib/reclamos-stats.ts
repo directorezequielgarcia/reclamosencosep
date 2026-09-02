@@ -67,6 +67,7 @@ export type ReporteReclamoDetalle = {
   direccion: string;
   barrio: string | null;
   vecino: string;
+  createdAt: Date;
   fecha: string; // dd/mm hh:mm
   descripcion: string;
 };
@@ -158,6 +159,7 @@ export async function reporteDiarioPorTema(
       direccion: r.direccion,
       barrio: r.barrio,
       vecino: `${r.ciudadano.nombre} ${r.ciudadano.apellido}`,
+      createdAt: r.createdAt,
       fecha: fmtDetalle(r.createdAt),
       descripcion: r.descripcion,
     });
@@ -186,4 +188,43 @@ export async function reporteDiarioPorTema(
     total: reclamos.length,
     temas,
   };
+}
+
+export type ReporteFila = {
+  codigo: string;
+  createdAt: Date;
+  fecha: string;
+  tema: string;
+  problematica: string;
+  estado: ReclamoEstado;
+  direccion: string;
+  barrio: string | null;
+  vecino: string;
+  descripcion: string;
+};
+
+/** Aplana un `ReporteDiario` a filas individuales (una por reclamo) — es el
+ *  Anexo del reporte: mismos datos que la vista agrupada, en formato tabla
+ *  para imprimir/exportar a Excel y aplicar filtros por columna. */
+export function flattenReporte(reporte: ReporteDiario): ReporteFila[] {
+  const filas: ReporteFila[] = [];
+  for (const tema of reporte.temas) {
+    for (const prob of tema.problematicas) {
+      for (const r of prob.reclamos) {
+        filas.push({
+          codigo: r.codigo,
+          createdAt: r.createdAt,
+          fecha: r.fecha,
+          tema: tema.nombre,
+          problematica: prob.titulo,
+          estado: r.estado,
+          direccion: r.direccion,
+          barrio: r.barrio,
+          vecino: r.vecino,
+          descripcion: r.descripcion,
+        });
+      }
+    }
+  }
+  return filas.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 }
