@@ -517,7 +517,7 @@ export default async function AreaFiscalizadaPage({
               <p className="text-sm text-muted mt-2 max-w-2xl">{area.lineasNota}</p>
             )}
 
-            <div className="flex flex-wrap gap-3 mt-4">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-4">
               {area.mapaSolBusUrl && (
                 <a
                   href={area.mapaSolBusUrl}
@@ -533,35 +533,30 @@ export default async function AreaFiscalizadaPage({
                   href={area.mapaMcrUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-navy text-white font-bold text-sm shadow-lg shadow-navy/30 hover:scale-105 transition"
+                  className="text-sm font-semibold text-navy-2 underline underline-offset-4 hover:text-navy"
                 >
-                  🗺️ Mapa de recorridos según la MCR →
+                  🗺️ Mapa oficial de la MCR
                 </a>
               )}
               {svc === "transporte" && (
                 <>
                   <a
                     href="#horarios"
-                    className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-svc-green text-white font-bold text-sm shadow-lg shadow-svc-green/30 hover:scale-105 transition"
+                    className="text-sm font-semibold text-navy-2 underline underline-offset-4 hover:text-navy"
                   >
-                    🕒 Horarios de tu línea →
+                    🕒 Horarios de tu línea
                   </a>
                   <a
                     href="/horarios-lineas-sol-bus.pdf"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 px-5 py-3 rounded-xl border-2 border-navy-2/30 bg-paper text-navy-2 font-bold text-sm hover:bg-paper-2 transition"
+                    className="text-sm font-semibold text-navy-2 underline underline-offset-4 hover:text-navy"
                   >
-                    📄 Descargar horarios en PDF →
+                    📄 Horarios en PDF
                   </a>
                 </>
               )}
             </div>
-            {area.mapaSolBusUrl && area.mapaMcrUrl && (
-              <p className="text-xs text-muted mt-2 max-w-2xl">
-                Sol Bus muestra la ubicación en vivo de las unidades; la Municipalidad (MCR) publica el detalle oficial de recorridos y paradas.
-              </p>
-            )}
 
             <div id="zorrito-guia-widget" className="mt-4">
               <ZorritoGuia />
