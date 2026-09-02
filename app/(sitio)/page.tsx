@@ -778,6 +778,18 @@ export default async function HomeInstitucional() {
               ]
             : []),
           {
+            id: "horarios-recorridos-solbus-2026-09-01",
+            pose: "colectivo",
+            etiqueta: "Novedad Sol Bus",
+            titulo: "🕒 Horarios y recorridos",
+            texto:
+              "Ya podés ver el horario de primer y último servicio y el recorrido oficial de cada línea, para saber antes de salir a esperar el colectivo.",
+            cta: {
+              texto: "Ver horarios y recorridos",
+              href: "/areas-fiscalizadas/transporte#horarios",
+            },
+          },
+          {
             id: "invitacion-reclamos-generales-2026-08-05",
             pose: "agachado",
             etiqueta: "Tu voz cuenta",
