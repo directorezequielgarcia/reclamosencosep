@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import type { Prisma, ServicioKind } from "@prisma/client";
+import type { Prisma, ReclamoEstado, ServicioKind } from "@prisma/client";
 import { esHorarioHabil, inicioDiaLocal, fechaHoyLocal } from "@/lib/horario";
 
 export type ReclamoPorTipo = {
@@ -60,9 +60,21 @@ export async function resumenReclamos(
   };
 }
 
+export type ReporteReclamoDetalle = {
+  id: string;
+  codigo: string;
+  estado: ReclamoEstado;
+  direccion: string;
+  barrio: string | null;
+  vecino: string;
+  fecha: string; // dd/mm hh:mm
+  descripcion: string;
+};
+
 export type ReporteProblematica = {
   titulo: string; // texto libre cargado por el vecino ("¿Qué pasó?") — la problemática puntual
   cantidad: number;
+  reclamos: ReporteReclamoDetalle[];
 };
 
 export type ReporteTema = {
@@ -94,11 +106,28 @@ export async function reporteDiarioPorTema(
   const reclamos = await prisma.reclamo.findMany({
     where: { ...where, createdAt: { gte: desde, lte: hasta } },
     select: {
+      id: true,
+      codigo: true,
+      estado: true,
       titulo: true,
+      descripcion: true,
+      direccion: true,
+      barrio: true,
+      createdAt: true,
+      ciudadano: { select: { nombre: true, apellido: true } },
       servicio: { select: { id: true, nombre: true, nombreCorto: true, kind: true } },
     },
     orderBy: { createdAt: "asc" },
   });
+
+  const fmtDetalle = (d: Date) =>
+    d.toLocaleString("es-AR", {
+      timeZone: "America/Argentina/Buenos_Aires",
+      day: "2-digit",
+      month: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
 
   const temaMap = new Map<string, ReporteTema>();
   for (const r of reclamos) {
@@ -116,15 +145,30 @@ export async function reporteDiarioPorTema(
     }
     tema.cantidad += 1;
     const titulo = r.titulo.trim() || "Sin especificar";
-    const prob = tema.problematicas.find((p) => p.titulo === titulo);
-    if (prob) prob.cantidad += 1;
-    else tema.problematicas.push({ titulo, cantidad: 1 });
+    let prob = tema.problematicas.find((p) => p.titulo === titulo);
+    if (!prob) {
+      prob = { titulo, cantidad: 0, reclamos: [] };
+      tema.problematicas.push(prob);
+    }
+    prob.cantidad += 1;
+    prob.reclamos.push({
+      id: r.id,
+      codigo: r.codigo,
+      estado: r.estado,
+      direccion: r.direccion,
+      barrio: r.barrio,
+      vecino: `${r.ciudadano.nombre} ${r.ciudadano.apellido}`,
+      fecha: fmtDetalle(r.createdAt),
+      descripcion: r.descripcion,
+    });
   }
 
   const temas = [...temaMap.values()]
     .map((t) => ({
       ...t,
-      problematicas: t.problematicas.sort((a, b) => b.cantidad - a.cantidad),
+      problematicas: t.problematicas
+        .map((p) => ({ ...p, reclamos: p.reclamos.reverse() })) // más reciente primero
+        .sort((a, b) => b.cantidad - a.cantidad),
     }))
     .sort((a, b) => b.cantidad - a.cantidad);
 
