@@ -40,6 +40,10 @@ model Usuario {
   apellido      String
   email         String?  @unique
   telefono      String?
+  // wa_id que manda Meta (teléfono en formato internacional, sin "+").
+  // Identifica al vecino que escribe por WhatsApp sin que haya creado
+  // cuenta — permite reutilizar el mismo Usuario en mensajes siguientes.
+  whatsappId    String?  @unique
   passwordHash  String
   passwordResetToken   String?   @unique
   passwordResetExpires DateTime?
@@ -226,9 +230,15 @@ enum TipoEvento {
   NOTIFICACION
 }
 
+enum ReclamoOrigen {
+  WEB       // wizard del portal ciudadano
+  WHATSAPP  // triado desde la bandeja de WhatsApp por el equipo del Ente
+}
+
 model Reclamo {
   id           String        @id @default(cuid())
   codigo       String        @unique           // visible al ciudadano: A-2418
+  origen       ReclamoOrigen @default(WEB)
   ciudadanoId  String
   ciudadano    Usuario       @relation("ReclamoCiudadano", fields: [ciudadanoId], references: [id])
   // Reclamo "de oficio" generado por el Ente desde una inspección de campo.
@@ -276,6 +286,7 @@ model Reclamo {
   adjuntos     Adjunto[]
   eventos      ReclamoEvento[]
   inspecciones Inspeccion[]  @relation("InspeccionReclamos")
+  mensajeWhatsApp MensajeWhatsApp?
 
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
@@ -285,6 +296,30 @@ model Reclamo {
   @@index([ciudadanoId])
   @@index([prestadoraId, estado])
   @@index([expedienteId])
+}
+
+// ─────────────────────────────────────────────
+// Bandeja de WhatsApp: mensajes entrantes al número institucional del
+// Ente (WhatsApp Business Cloud API). Cada mensaje queda como pendiente
+// de triado hasta que un integrante del equipo (Yanina) elige el servicio
+// y lo convierte en un Reclamo formal — recién ahí se genera el código y
+// se le responde al vecino por WhatsApp con el número asignado.
+// ─────────────────────────────────────────────
+
+model MensajeWhatsApp {
+  id           String    @id @default(cuid())
+  waId         String                          // teléfono E.164 sin "+", ej "5492974..."
+  nombrePerfil String?                          // nombre de perfil que manda Meta
+  cuerpo       String                           // texto del mensaje
+  messageId    String    @unique                // wamid de Meta, evita duplicar por reintentos del webhook
+  recibidoEn   DateTime  @default(now())
+
+  procesado    Boolean   @default(false)
+  reclamoId    String?   @unique
+  reclamo      Reclamo?  @relation(fields: [reclamoId], references: [id])
+
+  @@index([waId, recibidoEn])
+  @@index([procesado, recibidoEn])
 }
 
 // ─────────────────────────────────────────────
@@ -520,6 +555,11 @@ model ReclamoEvento {
   // porque los eventos que genera el propio Ente ya los conoce; solo las
   // acciones del vecino (mis-reclamos/[codigo]/actions.ts) lo ponen en false.
   leidoEnte  Boolean      @default(true)
+  // Cuándo se le reenvió este comentario al vecino por WhatsApp (solo
+  // aplica a reclamos con origen WHATSAPP). null = no se mandó — puede ser
+  // porque el reclamo no vino de WhatsApp, o porque venció la ventana de
+  // 24hs para escribir gratis y hace falta que el vecino escriba de nuevo.
+  notificadoWhatsAppEn DateTime?
   createdAt  DateTime     @default(now())
 
   @@index([reclamoId, createdAt])
