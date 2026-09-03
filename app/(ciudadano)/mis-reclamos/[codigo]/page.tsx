@@ -6,6 +6,7 @@ import { SvcIcon } from "@/components/servicios/SvcIcon";
 import { MiniMapa } from "@/components/mapa/MiniMapa";
 import { EstadoBadge } from "@/components/ui/EstadoBadge";
 import { Galeria } from "@/components/ui/Galeria";
+import { DescargarReclamo } from "@/components/ui/DescargarReclamo";
 import { svcFromKind } from "@/lib/servicios";
 import { ESTADO_META } from "@/lib/admin";
 import {
@@ -101,6 +102,10 @@ export default async function DetalleMiReclamoPage({
             {reclamo.servicio.nombre}
           </div>
         </div>
+        <DescargarReclamo
+          docxHrefBase={`/api/mis-reclamos/${reclamo.codigo}/descargar`}
+          imprimirHref={`/mis-reclamos/${reclamo.codigo}/imprimir`}
+        />
       </header>
 
       <section className="rounded-2xl border border-line bg-paper p-4">
