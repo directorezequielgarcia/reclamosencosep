@@ -74,6 +74,23 @@ export default async function ReporteDiarioPage({
             <option value="mes">Mensual (últimos 30 días)</option>
           </select>
         </Field>
+        <span className="text-xs text-muted self-center pb-2">o elegí un rango:</span>
+        <Field label="Desde">
+          <input
+            type="date"
+            name="desde"
+            defaultValue={sp.desde ?? ""}
+            className="px-3 py-2 rounded-lg border border-line-strong bg-paper text-sm text-navy focus:outline-none focus:border-navy-2"
+          />
+        </Field>
+        <Field label="Hasta">
+          <input
+            type="date"
+            name="hasta"
+            defaultValue={sp.hasta ?? ""}
+            className="px-3 py-2 rounded-lg border border-line-strong bg-paper text-sm text-navy focus:outline-none focus:border-navy-2"
+          />
+        </Field>
         <Field label="Servicio">
           <select
             name="svc"
@@ -96,7 +113,7 @@ export default async function ReporteDiarioPage({
         </button>
         {rango.esRangoPersonalizado && (
           <span className="text-xs text-muted self-center">
-            Usando el rango filtrado en la Bandeja ({reporte.desde} al {reporte.hasta}).{" "}
+            Mostrando el rango del {reporte.desde} al {reporte.hasta}.{" "}
             <Link
               href="/admin/bandeja/reporte"
               className="text-navy-2 underline underline-offset-4"
