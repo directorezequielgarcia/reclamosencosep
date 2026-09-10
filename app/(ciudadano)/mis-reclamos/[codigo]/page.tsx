@@ -345,15 +345,18 @@ export default async function DetalleMiReclamoPage({
             placeholder="Escribí tu mensaje al ENCOSEP…"
             className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper resize-y"
           />
-          <input
-            type="file"
-            name="archivo"
-            accept="image/*,application/pdf"
-            multiple
-            className="text-xs text-navy file:mr-3 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-navy-2 file:text-white file:font-semibold"
-          />
+          <label className="text-[11px] text-muted block">
+            Adjuntar foto o PDF (opcional)
+            <input
+              type="file"
+              name="archivo"
+              accept="image/*,application/pdf"
+              multiple
+              className="block w-full mt-1 text-xs text-navy file:mr-3 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-navy-2 file:text-white file:font-semibold"
+            />
+          </label>
           <SubmitButton
-            className="self-end inline-flex items-center justify-center px-4 py-2 rounded-lg bg-navy-2 text-white font-bold text-sm"
+            className="self-end inline-flex items-center justify-center px-4 py-2 rounded-lg bg-navy-2 text-white font-bold text-sm mt-1"
             pendingText="Enviando…"
           >
             Enviar mensaje
