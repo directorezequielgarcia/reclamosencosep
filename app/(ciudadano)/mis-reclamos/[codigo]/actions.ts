@@ -115,6 +115,9 @@ const ComentarioSchema = z.object({
 
 // El vecino responde / amplía su reclamo. Queda como comentario visible
 // (ida y vuelta con el Ente). Se puede en cualquier estado del reclamo.
+// Admite adjuntar un archivo (foto o PDF) junto con el mensaje: antes no
+// había forma de mandar un archivo desde acá, y terminaba pegado como texto
+// suelto (nombre de archivo + link roto) dentro del mensaje.
 export async function responderReclamo(formData: FormData) {
   const session = await auth();
   if (!session) throw new Error("Sin sesión");
@@ -126,12 +129,42 @@ export async function responderReclamo(formData: FormData) {
     throw new Error(parsed.error.issues[0]?.message ?? "Datos inválidos");
   }
   const r = await reclamoDelUsuario(parsed.data.codigo, session.user.id);
+
+  const archivos = formData
+    .getAll("archivo")
+    .filter((f): f is File => f instanceof File && f.size > 0)
+    .slice(0, 5);
+
+  let guardados = 0;
+  for (const f of archivos) {
+    try {
+      const saved = await guardarFotoReclamo(r.id, f);
+      await prisma.adjunto.create({
+        data: {
+          reclamoId: r.id,
+          tipo: saved.mimeType === "application/pdf" ? "DOCUMENTO" : "FOTO",
+          url: saved.url,
+          mimeType: saved.mimeType,
+          bytes: saved.bytes,
+        },
+      });
+      guardados++;
+    } catch (e) {
+      console.error("adjunto de comentario rechazado:", (e as Error).message);
+    }
+  }
+
+  const mensaje =
+    guardados > 0
+      ? `${parsed.data.mensaje}\n\n📎 Se adjuntó ${guardados} archivo${guardados === 1 ? "" : "s"} — lo podés ver y descargar más arriba, en "Documentos" o "Fotos".`
+      : parsed.data.mensaje;
+
   await prisma.reclamoEvento.create({
     data: {
       reclamoId: r.id,
       tipo: "COMENTARIO",
       autorId: session.user.id,
-      mensaje: parsed.data.mensaje,
+      mensaje,
       visibleVecino: true,
       leidoEnte: false,
     },
