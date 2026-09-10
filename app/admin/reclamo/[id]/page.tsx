@@ -16,6 +16,7 @@ import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { SvcIcon } from "@/components/servicios/SvcIcon";
 import { MiniMapa } from "@/components/mapa/MiniMapa";
 import { DescargarReclamo } from "@/components/ui/DescargarReclamo";
+import { DescargarDocumentosAdjuntos } from "@/components/ui/DescargarDocumentosAdjuntos";
 import { svcFromKind } from "@/lib/servicios";
 import { EXPEDIENTE_ESTADO_META } from "@/lib/expedientes";
 import {
@@ -151,10 +152,15 @@ export default async function ReclamoDetallePage({
             </div>
           </div>
         </div>
-        <DescargarReclamo
-          docxHrefBase={`/api/reclamos/${reclamo.id}/descargar`}
-          imprimirHref={`/admin/reclamo/${reclamo.id}/imprimir`}
-        />
+        <div className="flex items-center gap-2 shrink-0">
+          {documentos.length > 0 && (
+            <DescargarDocumentosAdjuntos documentos={documentos} />
+          )}
+          <DescargarReclamo
+            docxHrefBase={`/api/reclamos/${reclamo.id}/descargar`}
+            imprimirHref={`/admin/reclamo/${reclamo.id}/imprimir`}
+          />
+        </div>
       </header>
 
       <div className="grid lg:grid-cols-[1fr_360px] gap-5 items-start">
@@ -182,7 +188,7 @@ export default async function ReclamoDetallePage({
             <Card titulo={`Documentos · ${documentos.length}`}>
               <ul className="flex flex-col gap-2">
                 {documentos.map((d, i) => (
-                  <li key={d.id} className="flex items-center gap-3">
+                  <li key={d.id}>
                     <a
                       href={d.url}
                       target="_blank"
@@ -190,12 +196,6 @@ export default async function ReclamoDetallePage({
                       className="flex items-center gap-2 text-sm text-navy font-semibold underline decoration-line-strong underline-offset-2"
                     >
                       📄 Documento {i + 1} (PDF)
-                    </a>
-                    <a
-                      href={`${d.url}?download=1`}
-                      className="text-xs text-navy font-semibold underline decoration-line-strong underline-offset-2"
-                    >
-                      ⬇️ Descargar archivo agregado por el usuario
                     </a>
                   </li>
                 ))}
