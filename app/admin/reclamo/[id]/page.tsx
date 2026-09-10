@@ -182,7 +182,7 @@ export default async function ReclamoDetallePage({
             <Card titulo={`Documentos · ${documentos.length}`}>
               <ul className="flex flex-col gap-2">
                 {documentos.map((d, i) => (
-                  <li key={d.id}>
+                  <li key={d.id} className="flex items-center gap-3">
                     <a
                       href={d.url}
                       target="_blank"
@@ -190,6 +190,12 @@ export default async function ReclamoDetallePage({
                       className="flex items-center gap-2 text-sm text-navy font-semibold underline decoration-line-strong underline-offset-2"
                     >
                       📄 Documento {i + 1} (PDF)
+                    </a>
+                    <a
+                      href={`${d.url}?download=1`}
+                      className="text-xs text-navy font-semibold underline decoration-line-strong underline-offset-2"
+                    >
+                      ⬇️ Descargar archivo agregado por el usuario
                     </a>
                   </li>
                 ))}
