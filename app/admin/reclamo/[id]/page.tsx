@@ -10,6 +10,7 @@ import {
   puedeGestionarInspecciones,
 } from "@/lib/admin";
 import { EstadoBadge } from "@/components/ui/EstadoBadge";
+import { OrigenBadge } from "@/components/ui/OrigenBadge";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Galeria } from "@/components/ui/Galeria";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
@@ -135,6 +136,7 @@ export default async function ReclamoDetallePage({
                 #{reclamo.codigo}
               </h1>
               <EstadoBadge estado={reclamo.estado} />
+              <OrigenBadge origen={reclamo.origen} />
               {reclamo.expediente && (
                 <Link
                   href={`/admin/expediente/${reclamo.expediente.id}`}
@@ -343,13 +345,27 @@ export default async function ReclamoDetallePage({
                             {ev.mensaje}
                           </div>
                         </div>
-                        <div className="text-[9px] text-muted mt-0.5">
+                        <div className="text-[9px] text-muted mt-0.5 flex items-center gap-1.5">
                           {ev.createdAt.toLocaleString("es-AR", {
                             day: "2-digit",
                             month: "short",
                             hour: "2-digit",
                             minute: "2-digit",
                           })}
+                          {delEnte && reclamo.origen === "WHATSAPP" && (
+                            ev.notificadoWhatsAppEn ? (
+                              <span className="text-svc-green font-semibold">
+                                · 📱 enviado por WhatsApp
+                              </span>
+                            ) : (
+                              <span
+                                className="text-svc-red font-semibold"
+                                title="No se pudo mandar por WhatsApp — probablemente venció la ventana de 24hs desde el último mensaje del vecino. Solo quedó guardado acá."
+                              >
+                                · ⚠️ no llegó por WhatsApp
+                              </span>
+                            )
+                          )}
                         </div>
                       </div>
                     );
@@ -365,6 +381,12 @@ export default async function ReclamoDetallePage({
               >
                 <input type="hidden" name="reclamoId" value={reclamo.id} />
                 <input type="hidden" name="visibleVecino" value="on" />
+                {reclamo.origen === "WHATSAPP" && (
+                  <p className="text-[11px] text-muted -mb-1">
+                    📱 Esto se le manda también por WhatsApp, si todavía está
+                    dentro de las 24hs desde que escribió.
+                  </p>
+                )}
                 <textarea
                   name="mensaje"
                   required

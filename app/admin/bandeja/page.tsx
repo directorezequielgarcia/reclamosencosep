@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ESTADO_META, whereReclamosByRol } from "@/lib/admin";
 import { EstadoBadge } from "@/components/ui/EstadoBadge";
+import { OrigenBadge } from "@/components/ui/OrigenBadge";
 import { SvcIcon } from "@/components/servicios/SvcIcon";
 import { svcFromKind, SVC_META, SVC_ORDER } from "@/lib/servicios";
 import type { Prisma, ReclamoEstado, ServicioKind } from "@prisma/client";
@@ -216,12 +217,15 @@ export default async function BandejaPage({
                     className="border-t border-line hover:bg-paper-2 cursor-pointer"
                   >
                     <td className="py-2.5 px-4">
-                      <Link
-                        href={`/admin/reclamo/${r.id}`}
-                        className="font-mono font-bold text-navy hover:underline"
-                      >
-                        #{r.codigo}
-                      </Link>
+                      <div className="flex items-center gap-1.5">
+                        <Link
+                          href={`/admin/reclamo/${r.id}`}
+                          className="font-mono font-bold text-navy hover:underline"
+                        >
+                          #{r.codigo}
+                        </Link>
+                        <OrigenBadge origen={r.origen} size="sm" />
+                      </div>
                     </td>
                     <td className="py-2.5 px-2">
                       <div className="flex items-center gap-2">

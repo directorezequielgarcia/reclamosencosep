@@ -13,6 +13,7 @@ import {
   puedeGestionarTarifas,
   puedeGestionarUsuarios,
   puedeGestionarVencimientos,
+  puedeVerBandejaWhatsApp,
   puedeVerDocumentos,
   puedeVerInspecciones,
 } from "@/lib/admin";
@@ -57,6 +58,9 @@ export default async function AdminLayout({
                 <NavLink href="/admin/mesa-de-trabajo">Mesa de trabajo</NavLink>
                 <NavLink href="/admin/servicio-residuos">Residuos y Barrido</NavLink>
               </>
+            )}
+            {puedeVerBandejaWhatsApp(rol) && (
+              <NavLink href="/admin/whatsapp">WhatsApp</NavLink>
             )}
             {puedeGestionarExpedientes(rol) && (
               <NavLink href="/admin/expedientes">Expedientes</NavLink>
