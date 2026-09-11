@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { SVC_META, SVC_ORDER } from "@/lib/servicios";
+import { SVC_META, SVC_ORDER, SVC_COLOR_HEX } from "@/lib/servicios";
 import type { Prisma, ReclamoEstado, ServicioKind } from "@prisma/client";
 
 export type FiltroIndicadores = {
@@ -9,7 +9,8 @@ export type FiltroIndicadores = {
 };
 
 // Único lugar donde se resuelven los filtros de fecha/servicio de /indicadores
-// (página, export a Word y vista de impresión usan exactamente los mismos números).
+// (página pública, panel de consulta, export a Word/Excel y vista de
+// impresión usan exactamente los mismos números).
 export function resolverFiltroIndicadores(sp: FiltroIndicadores) {
   const ahora = new Date();
   const anoActual = ahora.getFullYear();
@@ -27,8 +28,19 @@ export function resolverFiltroIndicadores(sp: FiltroIndicadores) {
   return { ahora, anoActual, desde, hasta, svcFiltro, svcLabel, whereFiltro };
 }
 
+const mesLabel = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+
+export type PuntoIndicador = {
+  lat: number;
+  lng: number;
+  estado: ReclamoEstado;
+  codigo: string;
+  titulo: string;
+  servicio: ServicioKind;
+};
+
 export async function getIndicadoresStats(sp: FiltroIndicadores) {
-  const { desde, hasta, svcLabel, whereFiltro } = resolverFiltroIndicadores(sp);
+  const { ahora, desde, hasta, svcLabel, whereFiltro } = resolverFiltroIndicadores(sp);
 
   const [
     total,
@@ -38,6 +50,8 @@ export async function getIndicadoresStats(sp: FiltroIndicadores) {
     porPrestadora,
     reclamosCerrados,
     todosReclamos,
+    encuesta,
+    encuestaCierre,
   ] = await Promise.all([
     prisma.reclamo.count(),
     prisma.reclamo.count({ where: whereFiltro }),
@@ -55,12 +69,34 @@ export async function getIndicadoresStats(sp: FiltroIndicadores) {
     prisma.reclamo.findMany({
       where: whereFiltro,
       select: {
+        codigo: true,
+        titulo: true,
         barrio: true,
         lat: true,
         lng: true,
+        estado: true,
+        createdAt: true,
         servicio: { select: { kind: true } },
         adjuntos: { select: { id: true }, take: 1 },
       },
+    }),
+    // Satisfacción general (encuesta pública /encuesta) — no depende del
+    // servicio filtrado, es una encuesta libre no ligada a un reclamo puntual.
+    prisma.encuestaServicios.aggregate({
+      where: { createdAt: { gte: desde, lte: hasta } },
+      _avg: {
+        puntajeAgua: true,
+        puntajeEnergia: true,
+        puntajeResiduos: true,
+        puntajeTransporte: true,
+      },
+      _count: { _all: true },
+    }),
+    // Satisfacción post-cierre de reclamo (Ente vs Prestadora).
+    prisma.reclamo.aggregate({
+      where: { ...whereFiltro, encuestaEn: { not: null } },
+      _avg: { puntajeEnte: true, puntajePrestadora: true },
+      _count: { _all: true },
     }),
   ]);
 
@@ -73,7 +109,13 @@ export async function getIndicadoresStats(sp: FiltroIndicadores) {
     const svc = servicios.find((s) => s.kind === meta.kind);
     const grupo = svc ? porServicio.find((g) => g.servicioId === svc.id) : null;
     const n = grupo?._count._all ?? 0;
-    return { key: k, label: meta.short, total: n, pct: Math.round((n / totalPeriodoNonZero) * 100) };
+    return {
+      key: k,
+      label: meta.short,
+      total: n,
+      pct: Math.round((n / totalPeriodoNonZero) * 100),
+      color: SVC_COLOR_HEX[meta.kind],
+    };
   }).sort((a, b) => b.total - a.total);
 
   const estadoMap = new Map(porEstado.map((p) => [p.estado, p._count._all]));
@@ -119,21 +161,78 @@ export async function getIndicadoresStats(sp: FiltroIndicadores) {
     .filter((p) => p.total > 0)
     .sort((a, b) => (b.pct ?? 0) - (a.pct ?? 0));
 
+  // ==== ZONIFICACIÓN, TIPIFICACIÓN, MAPA, TENDENCIA — una sola pasada sobre todosReclamos ====
   const porBarrio = new Map<string, number>();
+  const porTitulo = new Map<string, { count: number; svc: ServicioKind }>();
+  const barrioPorSvc = new Map<string, Map<ServicioKind, number>>();
+  const ultimos6Meses: string[] = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(ahora.getFullYear(), ahora.getMonth() - i, 1);
+    ultimos6Meses.push(mesLabel(d));
+  }
+  const porMes = new Map<string, number>(ultimos6Meses.map((m) => [m, 0]));
+  const porDiaSem: number[] = [0, 0, 0, 0, 0, 0, 0];
+  const puntos: PuntoIndicador[] = [];
   let conFoto = 0;
   let conGps = 0;
   let conBarrio = 0;
+
   for (const r of todosReclamos) {
+    const kind = r.servicio.kind;
     const b = (r.barrio ?? "").trim() || "Sin barrio especificado";
     porBarrio.set(b, (porBarrio.get(b) ?? 0) + 1);
     if (b !== "Sin barrio especificado") conBarrio++;
+
+    const t = (r.titulo ?? "").trim();
+    if (t) {
+      const cur = porTitulo.get(t);
+      if (cur) cur.count++;
+      else porTitulo.set(t, { count: 1, svc: kind });
+    }
+
+    if (b !== "Sin barrio especificado") {
+      if (!barrioPorSvc.has(b)) barrioPorSvc.set(b, new Map());
+      const sm = barrioPorSvc.get(b)!;
+      sm.set(kind, (sm.get(kind) ?? 0) + 1);
+    }
+
+    const mes = mesLabel(r.createdAt);
+    if (porMes.has(mes)) porMes.set(mes, (porMes.get(mes) ?? 0) + 1);
+
+    porDiaSem[r.createdAt.getDay()]++;
+
     if (r.adjuntos.length > 0) conFoto++;
-    if (r.lat !== null && r.lng !== null) conGps++;
+    if (r.lat !== null && r.lng !== null) {
+      conGps++;
+      puntos.push({
+        lat: r.lat,
+        lng: r.lng,
+        estado: r.estado,
+        codigo: r.codigo,
+        titulo: r.titulo,
+        servicio: kind,
+      });
+    }
   }
+
   const topBarrios = [...porBarrio.entries()]
     .filter(([nombre]) => nombre !== "Sin barrio especificado")
     .sort((a, b) => b[1] - a[1])
     .slice(0, 10);
+
+  const topTitulos = [...porTitulo.entries()]
+    .sort((a, b) => b[1].count - a[1].count)
+    .slice(0, 10);
+
+  const topBarriosConSvc = topBarrios.slice(0, 5).map(([nombre, count]) => {
+    const sm = barrioPorSvc.get(nombre);
+    if (!sm) return { nombre, count, top: [] as Array<{ svc: ServicioKind; n: number }> };
+    const top = [...sm.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 4)
+      .map(([svc, n]) => ({ svc, n }));
+    return { nombre, count, top };
+  });
 
   const totalRec = Math.max(1, todosReclamos.length);
   const pctFoto = Math.round((conFoto / totalRec) * 100);
@@ -152,10 +251,63 @@ export async function getIndicadoresStats(sp: FiltroIndicadores) {
     tiempoMedioHoras,
     cumplimiento,
     topBarrios,
+    topTitulos,
+    topBarriosConSvc,
+    porMes,
+    porDiaSem,
+    puntos,
     pctFoto,
     pctGps,
     pctBarrio,
+    encuesta: {
+      count: encuesta._count._all,
+      avgAgua: encuesta._avg.puntajeAgua,
+      avgEnergia: encuesta._avg.puntajeEnergia,
+      avgResiduos: encuesta._avg.puntajeResiduos,
+      avgTransporte: encuesta._avg.puntajeTransporte,
+    },
+    encuestaCierre: {
+      count: encuestaCierre._count._all,
+      avgEnte: encuestaCierre._avg.puntajeEnte,
+      avgPrestadora: encuestaCierre._avg.puntajePrestadora,
+    },
   };
 }
 
 export type IndicadoresStats = Awaited<ReturnType<typeof getIndicadoresStats>>;
+
+export type EncuestaFila = {
+  id: string;
+  createdAt: Date;
+  barrio: string | null;
+  puntajeAgua: number | null;
+  puntajeEnergia: number | null;
+  puntajeResiduos: number | null;
+  puntajeTransporte: number | null;
+  responsabilidad: string | null;
+  comentario: string | null;
+};
+
+// Filas individuales de la encuesta de satisfacción, filtradas por fecha.
+// Excluye explícitamente dniHash (identificador del vecino, aunque hasheado).
+export async function getEncuestaFilas(
+  filtro: Pick<FiltroIndicadores, "desde" | "hasta">,
+): Promise<{ desde: Date; hasta: Date; filas: EncuestaFila[] }> {
+  const { desde, hasta } = resolverFiltroIndicadores(filtro);
+  const filas = await prisma.encuestaServicios.findMany({
+    where: { createdAt: { gte: desde, lte: hasta } },
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      createdAt: true,
+      barrio: true,
+      puntajeAgua: true,
+      puntajeEnergia: true,
+      puntajeResiduos: true,
+      puntajeTransporte: true,
+      responsabilidad: true,
+      comentario: true,
+    },
+  });
+  return { desde, hasta, filas };
+}

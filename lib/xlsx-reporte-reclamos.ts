@@ -30,7 +30,7 @@ const fmtDiaLargo = (d: Date) =>
  *  Empresa declarada: Sol Bus\n<descripción>". La separamos para que el
  *  Excel tenga su propia columna en vez de repetirla en el texto. Reclamos
  *  de otros servicios (o sin ese encabezado) simplemente no matchean. */
-function parseLineaTransporte(descripcion: string): { linea: string; descripcionLimpia: string } {
+export function parseLineaTransporte(descripcion: string): { linea: string; descripcionLimpia: string } {
   const lines = descripcion.split("\n");
   const primera = (lines[0] ?? "").trim();
   if (/^(Línea:|Empresa declarada:)/.test(primera)) {

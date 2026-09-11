@@ -67,7 +67,7 @@ El enum `Rol` tiene 13 valores. Se define en `prisma/schema.prisma` y su etiquet
 |---|---|---|
 | `PEM` | Poder Ejecutivo Municipal | Acceso de lectura a indicadores, reportes y agenda. |
 | `CONCEJO_DELIBERANTE` | Concejo Deliberante | Acceso de lectura a indicadores, problemas por barrio, audiencias y notas. |
-| `AUTORIDAD_APLICACION` | Autoridad de Aplicación | Acceso a expedientes, recomendaciones y normativa. Es quien aplica sanciones. |
+| `AUTORIDAD_APLICACION` | Autoridad de Aplicación | Acceso a expedientes, recomendaciones y normativa. Es quien aplica sanciones. Tiene además el panel de consulta `/consulta` (ver más abajo). |
 
 ---
 
@@ -80,7 +80,23 @@ GESTOR_ENTE | OPERADOR_PRESTADORA | SUPER_ADMIN | AUDITOR
 DIRECTOR | COOPERATIVA_DOCS | EXPEDIENTES | INSPECCIONES | AUDIENCIAS_MEDIOS
 ```
 
-`CIUDADANO`, `PEM`, `CONCEJO_DELIBERANTE` y `AUTORIDAD_APLICACION` no están en esta lista. Los tres últimos tienen un acceso institucional separado (pendiente de implementar como módulo de consulta).
+`CIUDADANO`, `PEM`, `CONCEJO_DELIBERANTE` y `AUTORIDAD_APLICACION` no están en esta lista. `PEM` y `CONCEJO_DELIBERANTE` siguen sin panel (pendiente); `AUTORIDAD_APLICACION` tiene su propio panel separado en `/consulta` (ver siguiente sección).
+
+---
+
+## Acceso al panel `/consulta`
+
+Panel de solo lectura para roles institucionales externos al Ente, separado de `/admin` a propósito: expone datos agregados/anonimizados (indicadores, mapa, encuesta) y una bandeja de reclamos resumida **sin datos personales del vecino** (sin nombre, DNI, teléfono ni dirección — solo N° de ticket, título, línea si es colectivo de Transporte, barrio, estado y fecha). Nunca debe ganar acceso a `/admin/bandeja`, `/admin/mesa-de-trabajo` ni `/admin/whatsapp`, que sí traen datos personales completos.
+
+La constante `ROLES_CONSULTA` (en `lib/admin.ts`) lista los roles con acceso, verificado por `puedeVerConsulta(rol)` en `app/consulta/layout.tsx`:
+
+```
+AUTORIDAD_APLICACION
+```
+
+`DIRECTOR` y `SUPER_ADMIN` también pueden entrar (previsualización), vía el mismo helper `esDireccion`. Sumar `PEM` o `CONCEJO_DELIBERANTE` a este panel es agregarlos a `ROLES_CONSULTA` — no hace falta tocar rutas ni el layout.
+
+Secciones: `/consulta/indicadores` (mismos datos que la página pública `/indicadores`, con export a Word, Excel y captura del mapa filtrada por servicio), `/consulta/encuesta` (resultados de la encuesta de satisfacción filtrables por fecha y exportables a Excel — sin opción de votar) y `/consulta/reclamos` ("Reclamos ingresados", la bandeja resumida descripta arriba).
 
 ---
 

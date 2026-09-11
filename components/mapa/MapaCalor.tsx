@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import "leaflet/dist/leaflet.css";
 import type * as L from "leaflet";
+import { SVC_COLOR_HEX } from "@/lib/servicios";
 
 export type PuntoCalor = {
   lat: number;
@@ -113,12 +114,6 @@ export function MapaCalor({
       }).addTo(map);
 
       // Markers por servicio: pin circular con icono SVG adentro
-      const COLOR_SVC: Record<string, string> = {
-        AGUA: "#4ba8c2",
-        ENERGIA: "#f0bc40",
-        RESIDUOS: "#4a8b3a",
-        TRANSPORTE: "#7e57c2",
-      };
       const SVC_LABEL: Record<string, string> = {
         AGUA: "Agua y Saneamiento",
         ENERGIA: "Energía y Alumbrado",
@@ -133,7 +128,7 @@ export function MapaCalor({
         TRANSPORTE: '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M6 3a3 3 0 0 0-3 3v10c0 1.3.8 2.4 2 2.8V21a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-2h8v2a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-2.2c1.2-.4 2-1.5 2-2.8V6a3 3 0 0 0-3-3H6zm0 2h12c.6 0 1 .4 1 1v4H5V6c0-.6.4-1 1-1zm.5 8a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zm11 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z"/></svg>',
       };
       for (const p of puntos) {
-        const color = COLOR_SVC[p.servicio] ?? "#1d3550";
+        const color = SVC_COLOR_HEX[p.servicio] ?? "#1d3550";
         const svg = SVG_SVC[p.servicio] ?? "";
         const html = `<div style="display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;background:${color};color:#fff;border:2.5px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.35);">${svg}</div>`;
         const icon = leaflet.divIcon({

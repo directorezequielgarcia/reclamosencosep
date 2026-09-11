@@ -1,14 +1,18 @@
 /**
- * Mapa estático de un punto GPS, para embeber en documentos exportables
- * (.docx) y vistas imprimibles sin depender de un servicio externo de
- * "static maps" (la mayoría requiere API key o no está disponible): se arma
- * un mosaico 3×3 de teselas ráster de OpenStreetMap como SVG autocontenido
- * (teselas embebidas en base64) con un marcador dibujado en el punto exacto.
+ * Mapas estáticos armados con teselas ráster de OpenStreetMap como SVG
+ * autocontenido (teselas embebidas en base64), sin depender de un servicio
+ * externo de "static maps" (la mayoría requiere API key o no está
+ * disponible). Dos variantes:
  *
- * El mismo SVG sirve para el HTML imprimible (el navegador lo renderiza
- * nativo) y, con el PNG de la tesela central como `fallbackPng`, para el
- * ImageRun tipo "svg" de la librería `docx` (Word < 2016 no renderiza SVG).
+ * - `construirMapaEstatico`: un solo punto, para embeber en documentos
+ *   exportables (.docx) y vistas imprimibles de un reclamo individual.
+ * - `construirMapaMultiPunto` + `rasterizarSvgAPng`: varios puntos (la
+ *   "captura" descargable del mapa de calor de /indicadores, filtrada por
+ *   fecha/servicio), rasterizada a PNG con `sharp` porque ahí sí hace falta
+ *   entregar una imagen real, no un SVG.
  */
+import type { ServicioKind } from "@prisma/client";
+import { SVC_COLOR_HEX } from "@/lib/servicios";
 
 const TILE_SIZE = 256;
 
@@ -116,4 +120,105 @@ export async function construirMapaEstatico(
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vx} ${vy} ${anchoPx} ${altoPx}" width="${anchoPx}" height="${altoPx}">${images}${pin}${atribucion}</svg>`;
 
   return { svg, fallbackPng: central ?? cualquiera };
+}
+
+export type PuntoMapa = { lat: number; lng: number; servicio: ServicioKind };
+
+// Zoom más alto (más detalle) tal que el bounding box de todos los puntos,
+// con margen, todavía entra en el lienzo anchoPx×altoPx. A mayor zoom, más
+// píxeles por grado — por eso se prueba de mayor a menor y se toma el primero
+// que entra.
+function elegirZoom(
+  minLat: number,
+  maxLat: number,
+  minLng: number,
+  maxLng: number,
+  anchoPx: number,
+  altoPx: number,
+): number {
+  const PADDING = 80;
+  for (let z = 17; z >= 3; z--) {
+    const w = lonToPixelX(maxLng, z) - lonToPixelX(minLng, z);
+    const h = latToPixelY(minLat, z) - latToPixelY(maxLat, z);
+    if (w + PADDING <= anchoPx && h + PADDING <= altoPx) return z;
+  }
+  return 3;
+}
+
+/**
+ * Mosaico de tamaño variable (no fijo 3×3) que cubre el bounding box de
+ * todos los puntos, con un pin de color por servicio en cada uno. Pensado
+ * para rasterizar después con `rasterizarSvgAPng` y ofrecerlo como descarga.
+ * Devuelve null si no hay puntos o si ninguna tesela pudo descargarse.
+ */
+export async function construirMapaMultiPunto(
+  puntos: PuntoMapa[],
+  { anchoPx = 900, altoPx = 600 }: { anchoPx?: number; altoPx?: number } = {},
+): Promise<{ svg: string } | null> {
+  if (puntos.length === 0) return null;
+
+  const lats = puntos.map((p) => p.lat);
+  const lngs = puntos.map((p) => p.lng);
+  const minLat = Math.min(...lats);
+  const maxLat = Math.max(...lats);
+  const minLng = Math.min(...lngs);
+  const maxLng = Math.max(...lngs);
+
+  const zoom = elegirZoom(minLat, maxLat, minLng, maxLng, anchoPx, altoPx);
+
+  const pxCenterX = (lonToPixelX(minLng, zoom) + lonToPixelX(maxLng, zoom)) / 2;
+  const pxCenterY = (latToPixelY(maxLat, zoom) + latToPixelY(minLat, zoom)) / 2;
+
+  const tileMinX = Math.floor((pxCenterX - anchoPx / 2) / TILE_SIZE);
+  const tileMaxX = Math.floor((pxCenterX + anchoPx / 2) / TILE_SIZE);
+  const tileMinY = Math.floor((pxCenterY - altoPx / 2) / TILE_SIZE);
+  const tileMaxY = Math.floor((pxCenterY + altoPx / 2) / TILE_SIZE);
+
+  const coords: Array<{ x: number; y: number }> = [];
+  for (let y = tileMinY; y <= tileMaxY; y++) {
+    for (let x = tileMinX; x <= tileMaxX; x++) coords.push({ x, y });
+  }
+  const tiles = await Promise.all(
+    coords.map(async ({ x, y }) => ({ x, y, png: await fetchTilePng(x, y, zoom) })),
+  );
+  if (!tiles.some((t) => t.png)) return null;
+
+  const mosaicOriginX = tileMinX * TILE_SIZE;
+  const mosaicOriginY = tileMinY * TILE_SIZE;
+
+  const images = tiles
+    .map(({ x, y, png }) => {
+      const lx = (x - tileMinX) * TILE_SIZE;
+      const ly = (y - tileMinY) * TILE_SIZE;
+      if (!png) {
+        return `<rect x="${lx}" y="${ly}" width="${TILE_SIZE}" height="${TILE_SIZE}" fill="#e5e7eb"/>`;
+      }
+      return `<image x="${lx}" y="${ly}" width="${TILE_SIZE}" height="${TILE_SIZE}" href="data:image/png;base64,${png.toString("base64")}" />`;
+    })
+    .join("");
+
+  const pines = puntos
+    .map((p) => {
+      const lx = lonToPixelX(p.lng, zoom) - mosaicOriginX;
+      const ly = latToPixelY(p.lat, zoom) - mosaicOriginY;
+      const color = SVC_COLOR_HEX[p.servicio] ?? "#1d3550";
+      return `<circle cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="5.5" fill="${color}" fill-opacity="0.88" stroke="#ffffff" stroke-width="1.4"/>`;
+    })
+    .join("");
+
+  const vx = pxCenterX - mosaicOriginX - anchoPx / 2;
+  const vy = pxCenterY - mosaicOriginY - altoPx / 2;
+
+  const atribucion = `<rect x="${vx}" y="${vy + altoPx - 15}" width="172" height="15" fill="#ffffff" fill-opacity="0.78"/>
+  <text x="${vx + 4}" y="${vy + altoPx - 4}" font-family="Arial, sans-serif" font-size="9" fill="#333333">© OpenStreetMap contributors</text>`;
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vx} ${vy} ${anchoPx} ${altoPx}" width="${anchoPx}" height="${altoPx}">${images}${pines}${atribucion}</svg>`;
+
+  return { svg };
+}
+
+/** Rasteriza un SVG autocontenido (con width/height propios) a PNG. */
+export async function rasterizarSvgAPng(svg: string): Promise<Buffer> {
+  const sharp = (await import("sharp")).default;
+  return sharp(Buffer.from(svg)).png().toBuffer();
 }

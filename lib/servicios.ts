@@ -119,6 +119,16 @@ export const SVC_META: Record<
 
 export const SVC_ORDER: SvcKey[] = ["residuos", "energia", "agua", "transporte"];
 
+// Color hex por servicio (mapa de calor, leyendas, gráficos de indicadores).
+// Única fuente — antes vivía duplicado (e inconsistente) en
+// components/mapa/MapaCalor.tsx y app/(sitio)/indicadores/page.tsx.
+export const SVC_COLOR_HEX: Record<ServicioKind, string> = {
+  AGUA: "#4ba8c2",
+  ENERGIA: "#f0bc40",
+  RESIDUOS: "#4a8b3a",
+  TRANSPORTE: "#7e57c2",
+};
+
 export function svcFromKind(kind: ServicioKind): SvcKey {
   return kind.toLowerCase() as SvcKey;
 }

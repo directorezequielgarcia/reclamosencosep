@@ -58,6 +58,12 @@ export const ROLES_EDIT: Rol[] = [
   "DIRECTOR",
 ];
 
+// Roles institucionales externos con acceso al panel de solo lectura
+// `/consulta` (indicadores, encuesta, reclamos ingresados resumidos — sin
+// datos personales). Hoy solo Autoridad de Aplicación; PEM y Concejo
+// Deliberante quedan pendientes de sumar acá cuando se definan sus paneles.
+export const ROLES_CONSULTA: Rol[] = ["AUTORIDAD_APLICACION"];
+
 // ─────────────────────────────────────────────
 // Helpers de permisos por dominio
 // Modelo: los DIRECTOR y SUPER_ADMIN ven y hacen todo dentro del Ente.
@@ -130,6 +136,23 @@ export function puedeGestionarReclamos(rol: Rol): boolean {
   return esDireccion(rol) || rol === "GESTOR_ENTE" || rol === "EXPEDIENTES";
 }
 
+/**
+ * Puede ver y triar la bandeja de WhatsApp (convertir mensajes en reclamos).
+ * A pedido de Ezequiel (02/09/2026): todo el equipo interno del Ente, no
+ * solo quienes gestionan la Bandeja de reclamos — pero sin los roles
+ * externos al Ente (prestadoras, Autoridad de Aplicación, PEM, Concejo),
+ * que no deben ver el teléfono ni el texto crudo de un vecino sin triar.
+ */
+export function puedeVerBandejaWhatsApp(rol: Rol): boolean {
+  return (
+    puedeGestionarReclamos(rol) ||
+    rol === "COOPERATIVA_DOCS" ||
+    rol === "INSPECCIONES" ||
+    rol === "AUDIENCIAS_MEDIOS" ||
+    rol === "AUDITOR"
+  );
+}
+
 /** Puede gestionar vencimientos de documentación. */
 export function puedeGestionarVencimientos(rol: Rol): boolean {
   return esDireccion(rol) || rol === "COOPERATIVA_DOCS" || rol === "GESTOR_ENTE";
@@ -138,6 +161,11 @@ export function puedeGestionarVencimientos(rol: Rol): boolean {
 /** Puede gestionar los cuadros tarifarios de la Calculadora ENCOSEP. */
 export function puedeGestionarTarifas(rol: Rol): boolean {
   return esDireccion(rol) || rol === "GESTOR_ENTE";
+}
+
+/** Puede ver el panel de consulta `/consulta` (roles institucionales externos + Dirección, que puede previsualizarlo). */
+export function puedeVerConsulta(rol: Rol): boolean {
+  return ROLES_CONSULTA.includes(rol) || esDireccion(rol);
 }
 
 /** Puede gestionar la fórmula de costo/km del contrato de Transporte (Grupo MR). */
