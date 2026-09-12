@@ -10,7 +10,6 @@ export function SubmitButton({
   pendingText = "Enviando…",
   disabled = false,
   title,
-  formAction,
 }: {
   children: React.ReactNode;
   className?: string;
@@ -19,15 +18,11 @@ export function SubmitButton({
   // además del bloqueo automático mientras el server action está en vuelo.
   disabled?: boolean;
   title?: string;
-  // Para botones secundarios en el mismo <form> que disparan otra action
-  // (ej: "Descartar" junto a "Convertir en reclamo").
-  formAction?: (formData: FormData) => void | Promise<void>;
 }) {
   const { pending } = useFormStatus();
   return (
     <button
       type="submit"
-      formAction={formAction}
       disabled={pending || disabled}
       title={title}
       className={`${className ?? ""} disabled:opacity-60 disabled:cursor-not-allowed`}

@@ -8,7 +8,6 @@ import { prisma } from "@/lib/prisma";
 import { ROLES_EDIT, TRANSICIONES } from "@/lib/admin";
 import { siguienteNumero } from "@/lib/expedientes";
 import { guardarFotoReclamo, validarUrlBlobDeVideo } from "@/lib/uploads";
-import { enviarMensajeWhatsApp } from "@/lib/whatsapp";
 import type { ReclamoEstado } from "@prisma/client";
 
 const CambiarEstadoSchema = z.object({
@@ -107,7 +106,6 @@ export async function agregarComentario(formData: FormData) {
 
   const reclamo = await prisma.reclamo.findUnique({
     where: { id: parsed.data.reclamoId },
-    include: { ciudadano: true },
   });
   if (!reclamo) throw new Error("Reclamo inexistente");
 
@@ -122,7 +120,7 @@ export async function agregarComentario(formData: FormData) {
   // para el vecino; si no, queda como nota interna del equipo.
   const visibleVecino = formData.get("visibleVecino") === "on";
 
-  const evento = await prisma.reclamoEvento.create({
+  await prisma.reclamoEvento.create({
     data: {
       reclamoId: parsed.data.reclamoId,
       tipo: "COMENTARIO",
@@ -131,22 +129,6 @@ export async function agregarComentario(formData: FormData) {
       visibleVecino,
     },
   });
-
-  // Si el reclamo vino de la bandeja de WhatsApp, la respuesta visible para
-  // el vecino se le reenvía también por WhatsApp — así el equipo sigue la
-  // conversación desde acá sin escribirle dos veces. No bloquea el guardado
-  // del comentario si el envío falla (p.ej. venció la ventana de 24hs).
-  if (visibleVecino && reclamo.origen === "WHATSAPP" && reclamo.ciudadano.whatsappId) {
-    try {
-      await enviarMensajeWhatsApp(reclamo.ciudadano.whatsappId, parsed.data.mensaje);
-      await prisma.reclamoEvento.update({
-        where: { id: evento.id },
-        data: { notificadoWhatsAppEn: new Date() },
-      });
-    } catch (e) {
-      console.error("no se pudo reenviar el comentario por WhatsApp:", (e as Error).message);
-    }
-  }
 
   revalidatePath(`/admin/reclamo/${parsed.data.reclamoId}`);
   // Si es visible, también refrescamos la vista del vecino.
