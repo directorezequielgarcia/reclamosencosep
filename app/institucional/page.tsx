@@ -27,9 +27,9 @@ type Acceso = {
 };
 
 const REPORTES: Acceso[] = [
-  { emoji: "📊", titulo: "Indicadores", detalle: "Estado de los servicios y métricas de reclamos.", href: "/indicadores" },
-  { emoji: "📝", titulo: "Encuestas de satisfacción", detalle: "Cómo evalúan los vecinos cada servicio público.", href: "/encuesta" },
-  { emoji: "📍", titulo: "Problemas por barrio y servicio", detalle: "Reclamos agregados por zona y por servicio.", href: "/indicadores" },
+  { emoji: "📊", titulo: "Indicadores", detalle: "Estado de los servicios y métricas de reclamos.", href: "/consulta/indicadores" },
+  { emoji: "📝", titulo: "Encuestas de satisfacción", detalle: "Cómo evalúan los vecinos cada servicio público.", href: "/consulta/encuesta" },
+  { emoji: "📍", titulo: "Problemas por barrio y servicio", detalle: "Reclamos agregados por zona y por servicio.", href: "/consulta/indicadores" },
   { emoji: "📣", titulo: "Agenda y audiencias públicas", detalle: "Calendario de audiencias y actividades del Ente.", href: "/audiencias" },
 ];
 
@@ -42,6 +42,7 @@ const NORMATIVA: Acceso[] = [
 
 // Específico de la Autoridad de Aplicación: fiscalización.
 const FISCALIZACION: Acceso[] = [
+  { emoji: "📥", titulo: "Reclamos ingresados", detalle: "Bandeja resumida por N° de ticket, servicio y barrio — sin datos personales del vecino.", href: "/consulta/reclamos" },
   { emoji: "📁", titulo: "Expedientes del Ente", detalle: "Actuaciones administrativas que arma el ENCOSEP.", href: "#", proximamente: true },
   { emoji: "⚖️", titulo: "Recomendaciones de sanción", detalle: "Recomendaciones de aplicación de sanciones a las prestadoras.", href: "#", proximamente: true },
 ];

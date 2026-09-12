@@ -5,13 +5,13 @@
  */
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { puedeVerConsulta } from "@/lib/admin";
+import { puedeVerConsultaReclamos } from "@/lib/admin";
 import { obtenerReclamosConsulta } from "@/lib/reclamos-consulta";
 import { generarXlsxReclamosConsulta } from "@/lib/xlsx-reclamos-consulta";
 
 export async function GET(req: Request) {
   const session = await auth();
-  if (!session || !puedeVerConsulta(session.user.rol)) {
+  if (!session || !puedeVerConsultaReclamos(session.user.rol)) {
     return new NextResponse("No autorizado", { status: 403 });
   }
 

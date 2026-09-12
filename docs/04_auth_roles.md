@@ -65,9 +65,9 @@ El enum `Rol` tiene 13 valores. Se define en `prisma/schema.prisma` y su etiquet
 
 | Rol | Etiqueta | Descripción |
 |---|---|---|
-| `PEM` | Poder Ejecutivo Municipal | Acceso de lectura a indicadores, reportes y agenda. |
-| `CONCEJO_DELIBERANTE` | Concejo Deliberante | Acceso de lectura a indicadores, problemas por barrio, audiencias y notas. |
-| `AUTORIDAD_APLICACION` | Autoridad de Aplicación | Acceso a expedientes, recomendaciones y normativa. Es quien aplica sanciones. Tiene además el panel de consulta `/consulta` (ver más abajo). |
+| `PEM` | Poder Ejecutivo Municipal | Acceso de lectura a indicadores, reportes y agenda vía `/institucional`. |
+| `CONCEJO_DELIBERANTE` | Concejo Deliberante | Acceso de lectura a indicadores, problemas por barrio, audiencias y notas vía `/institucional`. |
+| `AUTORIDAD_APLICACION` | Autoridad de Aplicación | Ídem + expedientes, recomendaciones, normativa y "Reclamos ingresados" (sección Fiscalización). Es quien aplica sanciones. |
 
 ---
 
@@ -80,23 +80,22 @@ GESTOR_ENTE | OPERADOR_PRESTADORA | SUPER_ADMIN | AUDITOR
 DIRECTOR | COOPERATIVA_DOCS | EXPEDIENTES | INSPECCIONES | AUDIENCIAS_MEDIOS
 ```
 
-`CIUDADANO`, `PEM`, `CONCEJO_DELIBERANTE` y `AUTORIDAD_APLICACION` no están en esta lista. `PEM` y `CONCEJO_DELIBERANTE` siguen sin panel (pendiente); `AUTORIDAD_APLICACION` tiene su propio panel separado en `/consulta` (ver siguiente sección).
+`CIUDADANO`, `PEM`, `CONCEJO_DELIBERANTE` y `AUTORIDAD_APLICACION` no están en esta lista — tienen su propio panel en `/institucional` (ver siguiente sección), no acceden a `/admin`.
 
 ---
 
-## Acceso al panel `/consulta`
+## Panel `/institucional` y secciones `/consulta/*`
 
-Panel de solo lectura para roles institucionales externos al Ente, separado de `/admin` a propósito: expone datos agregados/anonimizados (indicadores, mapa, encuesta) y una bandeja de reclamos resumida **sin datos personales del vecino** (sin nombre, DNI, teléfono ni dirección — solo N° de ticket, título, línea si es colectivo de Transporte, barrio, estado y fecha). Nunca debe ganar acceso a `/admin/bandeja`, `/admin/mesa-de-trabajo` ni `/admin/whatsapp`, que sí traen datos personales completos.
+`/institucional` (`app/institucional/page.tsx`) es el panel de estos 3 roles (más Dirección/Gestor del Ente/Súper admin, que también pueden entrar): tarjetas agrupadas en Reportes, Fiscalización (solo Autoridad de Aplicación + Ente), Notas, Capacitación y Normativa por servicio concesionado. El guard de acceso está hardcodeado en ese mismo archivo (`ROLES_INSTITUCIONALES`), no en `lib/admin.ts`.
 
-La constante `ROLES_CONSULTA` (en `lib/admin.ts`) lista los roles con acceso, verificado por `puedeVerConsulta(rol)` en `app/consulta/layout.tsx`:
+Las tarjetas de "Indicadores", "Problemas por barrio y servicio" y "Encuestas de satisfacción" NO deben apuntar a las páginas públicas `/indicadores` y `/encuesta` — apuntan a `/consulta/indicadores` y `/consulta/encuesta`, que muestran los mismos datos pero embebidos en el panel (sin voto en la encuesta) con export a Word, Excel y captura del mapa. La tarjeta "Reclamos ingresados" (sección Fiscalización) apunta a `/consulta/reclamos`, la bandeja resumida **sin datos personales del vecino** (sin nombre, DNI, teléfono ni dirección — solo N° de ticket, título, línea si es colectivo de Transporte, barrio, estado y fecha), también exportable a Excel.
 
-```
-AUTORIDAD_APLICACION
-```
+Estas secciones viven bajo `app/consulta/*` con su propio `layout.tsx`, separado de `/admin` a propósito — nunca debe ganar acceso a `/admin/bandeja`, `/admin/mesa-de-trabajo` ni `/admin/whatsapp`, que sí traen datos personales completos. Dos guards en `lib/admin.ts`:
 
-`DIRECTOR` y `SUPER_ADMIN` también pueden entrar (previsualización), vía el mismo helper `esDireccion`. Sumar `PEM` o `CONCEJO_DELIBERANTE` a este panel es agregarlos a `ROLES_CONSULTA` — no hace falta tocar rutas ni el layout.
+- `puedeVerConsulta(rol)` — indicadores y encuesta: `ROLES_CONSULTA` (`PEM`, `CONCEJO_DELIBERANTE`, `AUTORIDAD_APLICACION`, `GESTOR_ENTE`) + `esDireccion`. Mismo público que las tarjetas de Reportes en `/institucional`.
+- `puedeVerConsultaReclamos(rol)` — reclamos ingresados: solo `AUTORIDAD_APLICACION`, `GESTOR_ENTE` y `esDireccion`, igual que la sección Fiscalización (PEM y Concejo Deliberante no tienen tile ni pasan este check).
 
-Secciones: `/consulta/indicadores` (mismos datos que la página pública `/indicadores`, con export a Word, Excel y captura del mapa filtrada por servicio), `/consulta/encuesta` (resultados de la encuesta de satisfacción filtrables por fecha y exportables a Excel — sin opción de votar) y `/consulta/reclamos` ("Reclamos ingresados", la bandeja resumida descripta arriba).
+La ruta `/consulta` (sin sufijo) es un simple redirect a `/institucional` — el hub real es ese, no un panel aparte.
 
 ---
 

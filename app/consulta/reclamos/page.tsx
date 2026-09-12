@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ESTADO_META } from "@/lib/admin";
+import { redirect } from "next/navigation";
+import { ESTADO_META, puedeVerConsultaReclamos } from "@/lib/admin";
 import { EstadoBadge } from "@/components/ui/EstadoBadge";
 import { SvcIcon } from "@/components/servicios/SvcIcon";
 import { svcFromKind, SVC_META, SVC_ORDER } from "@/lib/servicios";
@@ -18,6 +19,9 @@ export default async function ConsultaReclamosPage({
 }) {
   const sp = await searchParams;
   const session = await auth();
+  // Más restringido que el resto de /consulta: PEM y Concejo Deliberante
+  // pasan el guard del layout pero no tienen tile para esto ni acceso acá.
+  if (!puedeVerConsultaReclamos(session!.user.rol)) redirect("/institucional");
 
   // AUTORIDAD_APLICACION (y Dirección, que también entra a este panel) no
   // tienen prestadoraId propio: whereReclamosByRol devuelve {} → ven todos

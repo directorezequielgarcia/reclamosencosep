@@ -58,11 +58,17 @@ export const ROLES_EDIT: Rol[] = [
   "DIRECTOR",
 ];
 
-// Roles institucionales externos con acceso al panel de solo lectura
-// `/consulta` (indicadores, encuesta, reclamos ingresados resumidos — sin
-// datos personales). Hoy solo Autoridad de Aplicación; PEM y Concejo
-// Deliberante quedan pendientes de sumar acá cuando se definan sus paneles.
-export const ROLES_CONSULTA: Rol[] = ["AUTORIDAD_APLICACION"];
+// Roles con acceso a las secciones de solo lectura `/consulta/indicadores`
+// y `/consulta/encuesta`, embebidas dentro de `/institucional` (Reportes) en
+// vez de remitir a las páginas públicas /indicadores y /encuesta. Mismo
+// conjunto que ROLES_INSTITUCIONALES en app/institucional/page.tsx (menos
+// Dirección/Súper admin, que ya entran por esDireccion).
+export const ROLES_CONSULTA: Rol[] = [
+  "PEM",
+  "CONCEJO_DELIBERANTE",
+  "AUTORIDAD_APLICACION",
+  "GESTOR_ENTE",
+];
 
 // ─────────────────────────────────────────────
 // Helpers de permisos por dominio
@@ -163,9 +169,20 @@ export function puedeGestionarTarifas(rol: Rol): boolean {
   return esDireccion(rol) || rol === "GESTOR_ENTE";
 }
 
-/** Puede ver el panel de consulta `/consulta` (roles institucionales externos + Dirección, que puede previsualizarlo). */
+/** Puede ver las secciones de indicadores/encuesta del panel de consulta (mismo público que /institucional). */
 export function puedeVerConsulta(rol: Rol): boolean {
   return ROLES_CONSULTA.includes(rol) || esDireccion(rol);
+}
+
+/**
+ * Puede ver "Reclamos ingresados" (`/consulta/reclamos`), la bandeja
+ * resumida sin datos personales — más restringido que el resto de
+ * `/consulta`: solo Autoridad de Aplicación (a quien se le pidió) y el Ente,
+ * igual que la sección "Fiscalización" de /institucional. PEM y Concejo
+ * Deliberante no tienen tile para esto y tampoco pasan este check.
+ */
+export function puedeVerConsultaReclamos(rol: Rol): boolean {
+  return rol === "AUTORIDAD_APLICACION" || rol === "GESTOR_ENTE" || esDireccion(rol);
 }
 
 /** Puede gestionar la fórmula de costo/km del contrato de Transporte (Grupo MR). */
