@@ -7,7 +7,7 @@ const ACCESOS = [
     href: "/consulta/indicadores",
     titulo: "Indicadores",
     descripcion:
-      "Cifras de gestión, mapa de reclamos, problemas por barrio y tipo de reclamo, cumplimiento por prestadora. Descargable en Word y Excel.",
+      "Cifras de gestión, mapa de reclamos, problemas por barrio y tipo de reclamo, cumplimiento por prestadora — en formato de trabajo, con Word, Excel y captura del mapa para bajar.",
   },
   {
     href: "/consulta/encuesta",

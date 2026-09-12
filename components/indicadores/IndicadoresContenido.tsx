@@ -54,43 +54,89 @@ export function IndicadoresContenido({ stats, tituloPeriodo, variante }: Props) 
 
   return (
     <>
-      {/* CIFRAS DE INTERÉS */}
-      <section className="rounded-3xl overflow-hidden shadow-xl">
-        <div className="bg-gradient-to-br from-svc-red via-[#9b2b2e] to-navy text-white p-8 md:p-10">
-          <div className="text-[11px] font-bold tracking-[0.2em] uppercase opacity-80">
-            {tituloPeriodo}
-          </div>
-          <h2 className="text-3xl md:text-4xl font-extrabold mt-1">
-            Cifras de interés
-          </h2>
-          <div className="text-sm opacity-80 mt-1">
-            {totalPeriodo} reclamo{totalPeriodo === 1 ? "" : "s"} registrado
-            {totalPeriodo === 1 ? "" : "s"} en el período seleccionado.
-          </div>
+      {/* CIFRAS DE INTERÉS — estilo "vidriera pública" en /indicadores; en el
+          panel de consulta se reemplaza por una tabla lisa tipo planilla,
+          para que el rol de trabajo no vea el mismo diseño de marketing. */}
+      {variante === "publico" ? (
+        <section className="rounded-3xl overflow-hidden shadow-xl">
+          <div className="bg-gradient-to-br from-svc-red via-[#9b2b2e] to-navy text-white p-8 md:p-10">
+            <div className="text-[11px] font-bold tracking-[0.2em] uppercase opacity-80">
+              {tituloPeriodo}
+            </div>
+            <h2 className="text-3xl md:text-4xl font-extrabold mt-1">
+              Cifras de interés
+            </h2>
+            <div className="text-sm opacity-80 mt-1">
+              {totalPeriodo} reclamo{totalPeriodo === 1 ? "" : "s"} registrado
+              {totalPeriodo === 1 ? "" : "s"} en el período seleccionado.
+            </div>
 
-          <div className="mt-8 flex flex-col gap-5">
-            {distribServicios.map((d) => (
-              <div key={d.key} className="grid grid-cols-[140px_1fr_50px] items-center gap-4">
-                <div className="text-sm font-bold uppercase tracking-wider">
-                  {d.label}
+            <div className="mt-8 flex flex-col gap-5">
+              {distribServicios.map((d) => (
+                <div key={d.key} className="grid grid-cols-[140px_1fr_50px] items-center gap-4">
+                  <div className="text-sm font-bold uppercase tracking-wider">
+                    {d.label}
+                  </div>
+                  <div className="h-7 bg-white/15 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all"
+                      style={{
+                        width: `${Math.max(d.pct, 1)}%`,
+                        background: d.color,
+                      }}
+                    />
+                  </div>
+                  <div className="text-right font-extrabold text-base">
+                    {d.pct}%
+                  </div>
                 </div>
-                <div className="h-7 bg-white/15 rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all"
-                    style={{
-                      width: `${Math.max(d.pct, 1)}%`,
-                      background: d.color,
-                    }}
-                  />
-                </div>
-                <div className="text-right font-extrabold text-base">
-                  {d.pct}%
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      ) : (
+        <section className="rounded-xl border border-line-strong bg-paper overflow-hidden">
+          <div className="bg-navy text-white px-5 py-3 flex items-baseline justify-between flex-wrap gap-1">
+            <div>
+              <div className="text-[10px] font-bold tracking-[0.15em] uppercase opacity-70">
+                {tituloPeriodo}
+              </div>
+              <h2 className="text-base font-extrabold">Distribución por servicio</h2>
+            </div>
+            <div className="text-xs opacity-80">
+              {totalPeriodo} reclamo{totalPeriodo === 1 ? "" : "s"} en el período
+            </div>
+          </div>
+          <table className="w-full text-sm">
+            <thead className="text-[11px] uppercase tracking-wider text-muted bg-paper-2">
+              <tr>
+                <th className="text-left font-semibold py-2 px-4">Servicio</th>
+                <th className="text-right font-semibold py-2 px-4">Cantidad</th>
+                <th className="text-right font-semibold py-2 px-4">% del período</th>
+              </tr>
+            </thead>
+            <tbody>
+              {distribServicios.map((d) => (
+                <tr key={d.key} className="border-t border-line">
+                  <td className="py-2 px-4">
+                    <span className="inline-flex items-center gap-2 text-navy font-semibold">
+                      <span
+                        className="inline-block w-2.5 h-2.5 rounded-full"
+                        style={{ background: d.color }}
+                      />
+                      {d.label}
+                    </span>
+                  </td>
+                  <td className="py-2 px-4 text-right font-mono font-bold text-navy">
+                    {d.total}
+                  </td>
+                  <td className="py-2 px-4 text-right font-mono text-muted">{d.pct}%</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      )}
 
       {/* KPIs GENERALES */}
       <section className="grid grid-cols-2 md:grid-cols-4 gap-3">

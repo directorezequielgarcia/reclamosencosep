@@ -38,15 +38,18 @@ export default async function ConsultaIndicadoresPage({
       <div>
         <h1 className="text-2xl font-extrabold text-navy">Indicadores</h1>
         <p className="text-sm text-muted mt-1">
-          Misma información que los indicadores públicos, con opciones de descarga pensadas para trabajar con los datos.
+          Panel de trabajo del Ente: los mismos datos de gestión, en un formato pensado para filtrar y bajar — no la vidriera pública.
         </p>
       </div>
 
       {/* FILTROS + DESCARGAS */}
       <form
         method="GET"
-        className="flex flex-wrap gap-2 items-end p-3 rounded-xl border border-line bg-paper"
+        className="flex flex-wrap gap-2 items-end p-4 rounded-xl border-2 border-navy-2/30 bg-navy-2/5"
       >
+        <div className="w-full text-[10px] font-bold uppercase tracking-widest text-navy-2 -mb-1">
+          ⬇ Filtrar y descargar
+        </div>
         <Field label="Desde">
           <input
             type="date"
