@@ -1,22 +1,15 @@
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
-import { ESTADO_META, whereReclamosByRol } from "@/lib/admin";
+import { ESTADO_META } from "@/lib/admin";
 import { EstadoBadge } from "@/components/ui/EstadoBadge";
 import { SvcIcon } from "@/components/servicios/SvcIcon";
 import { svcFromKind, SVC_META, SVC_ORDER } from "@/lib/servicios";
-import { parseLineaTransporte } from "@/lib/xlsx-reporte-reclamos";
+import { obtenerReclamosConsulta, type FiltroReclamosConsulta } from "@/lib/reclamos-consulta";
 import { auth } from "@/lib/auth";
-import type { Prisma, ReclamoEstado } from "@prisma/client";
+import type { ReclamoEstado } from "@prisma/client";
 
 export const metadata = { title: "Reclamos ingresados · Panel de consulta ENCOSEP" };
 
-type SP = {
-  estado?: string;
-  svc?: string;
-  q?: string;
-  desde?: string;
-  hasta?: string;
-};
+type SP = FiltroReclamosConsulta;
 
 export default async function ConsultaReclamosPage({
   searchParams,
@@ -29,58 +22,36 @@ export default async function ConsultaReclamosPage({
   // AUTORIDAD_APLICACION (y Dirección, que también entra a este panel) no
   // tienen prestadoraId propio: whereReclamosByRol devuelve {} → ven todos
   // los reclamos, correcto para un rol de supervisión.
-  const where: Prisma.ReclamoWhereInput = {
-    ...whereReclamosByRol(session!.user.rol, session!.user.prestadoraId),
-  };
-  if (sp.estado && sp.estado in ESTADO_META) {
-    where.estado = sp.estado as ReclamoEstado;
-  }
-  if (sp.svc && sp.svc in SVC_META) {
-    where.servicio = { kind: SVC_META[sp.svc as keyof typeof SVC_META].kind };
-  }
-  if (sp.q && sp.q.trim()) {
-    const q = sp.q.trim();
-    where.OR = [{ codigo: { contains: q } }, { titulo: { contains: q } }];
-  }
-  if (sp.desde || sp.hasta) {
-    where.createdAt = {};
-    if (sp.desde) where.createdAt.gte = new Date(`${sp.desde}T00:00:00`);
-    if (sp.hasta) where.createdAt.lte = new Date(`${sp.hasta}T23:59:59`);
-  }
-
-  const reclamos = await prisma.reclamo.findMany({
-    where,
-    orderBy: [{ createdAt: "desc" }],
-    take: 100,
-    select: {
-      id: true,
-      codigo: true,
-      titulo: true,
-      barrio: true,
-      estado: true,
-      createdAt: true,
-      descripcion: true,
-      servicio: { select: { kind: true, nombreCorto: true } },
-    },
-  });
+  const reclamos = await obtenerReclamosConsulta(
+    sp,
+    session!.user.rol,
+    session!.user.prestadoraId,
+    100,
+  );
 
   const hayFiltros = Boolean(sp.estado || sp.svc || sp.q || sp.desde || sp.hasta);
+  const qs = new URLSearchParams(
+    Object.entries(sp).filter((e): e is [string, string] => Boolean(e[1])),
+  ).toString();
 
   return (
     <>
       <div>
         <h1 className="text-2xl font-extrabold text-navy">Reclamos ingresados</h1>
         <p className="text-sm text-muted mt-1">
-          {reclamos.length} {reclamos.length === 1 ? "reclamo" : "reclamos"}{" "}
-          {hayFiltros ? "según filtros" : "en total"} — vista resumida, sin
-          datos personales del vecino.
+          Mostrando los últimos {reclamos.length} {reclamos.length === 1 ? "reclamo" : "reclamos"}{" "}
+          {hayFiltros ? "según filtros" : "en total"} — vista resumida, sin datos
+          personales del vecino. La descarga trae todo el período filtrado.
         </p>
       </div>
 
       <form
         method="GET"
-        className="flex flex-wrap gap-2 items-end p-3 rounded-xl border border-line bg-paper"
+        className="flex flex-wrap gap-2 items-end p-4 rounded-xl border-2 border-navy-2/30 bg-navy-2/5"
       >
+        <div className="w-full text-[10px] font-bold uppercase tracking-widest text-navy-2 -mb-1">
+          ⬇ Filtrar y descargar
+        </div>
         <Field label="Buscar">
           <input
             name="q"
@@ -147,6 +118,14 @@ export default async function ConsultaReclamosPage({
             Limpiar
           </Link>
         )}
+        <div className="ml-auto">
+          <Link
+            href={`/api/consulta/reclamos/exportar-excel${qs ? `?${qs}` : ""}`}
+            className="px-4 py-2 rounded-lg border border-line-strong text-sm text-navy font-semibold bg-paper"
+          >
+            ⬇ Excel
+          </Link>
+        </div>
       </form>
 
       <div className="rounded-2xl border border-line bg-paper overflow-hidden overflow-x-auto">
@@ -169,8 +148,7 @@ export default async function ConsultaReclamosPage({
             </thead>
             <tbody>
               {reclamos.map((r) => {
-                const svc = svcFromKind(r.servicio.kind);
-                const { linea } = parseLineaTransporte(r.descripcion);
+                const svc = svcFromKind(r.servicioKind);
                 const fecha = r.createdAt.toLocaleDateString("es-AR", {
                   day: "2-digit",
                   month: "short",
@@ -184,15 +162,13 @@ export default async function ConsultaReclamosPage({
                     <td className="py-2.5 px-2">
                       <div className="flex items-center gap-2">
                         <SvcIcon kind={svc} size={26} />
-                        <span className="text-navy text-xs">{r.servicio.nombreCorto}</span>
+                        <span className="text-navy text-xs">{r.servicioNombreCorto}</span>
                       </div>
                     </td>
                     <td className="py-2.5 px-2 text-navy max-w-[260px] truncate">
                       {r.titulo}
                     </td>
-                    <td className="py-2.5 px-2 text-navy">
-                      {r.servicio.kind === "TRANSPORTE" && linea ? linea : "—"}
-                    </td>
+                    <td className="py-2.5 px-2 text-navy">{r.linea || "—"}</td>
                     <td className="py-2.5 px-2 text-muted max-w-[160px] truncate">
                       {r.barrio ?? "—"}
                     </td>
