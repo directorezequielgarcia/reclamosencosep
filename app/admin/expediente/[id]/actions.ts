@@ -709,3 +709,59 @@ export async function cambiarEstadoExpediente(formData: FormData) {
   revalidatePath(`/admin/expediente/${parsed.data.expedienteId}`);
   revalidatePath(`/admin/expedientes`);
 }
+
+const DesvincularReclamoSchema = z.object({
+  reclamoId: z.string().min(1),
+});
+
+/** Saca un reclamo del expediente al que fue elevado (`elevarAExpediente`),
+ *  restaurando el estado que tenía justo antes de derivarlo — no un estado
+ *  fijo — para que quede "como estaba antes". No toca los actos ni mensajes
+ *  ya generados en el expediente, que quedan como historial. */
+export async function desvincularReclamo(formData: FormData) {
+  const session = await auth();
+  if (
+    !session ||
+    (session.user.rol !== "GESTOR_ENTE" && session.user.rol !== "SUPER_ADMIN")
+  ) {
+    throw new Error("Sin permiso");
+  }
+
+  const parsed = DesvincularReclamoSchema.safeParse({
+    reclamoId: formData.get("reclamoId"),
+  });
+  if (!parsed.success) throw new Error("Datos inválidos");
+
+  const reclamo = await prisma.reclamo.findUnique({
+    where: { id: parsed.data.reclamoId },
+    include: { expediente: { select: { id: true, numero: true } } },
+  });
+  if (!reclamo) throw new Error("Reclamo inexistente");
+  if (!reclamo.expediente) {
+    throw new Error("Este reclamo no está en ningún expediente");
+  }
+
+  const expediente = reclamo.expediente;
+
+  await prisma.reclamo.update({
+    where: { id: reclamo.id },
+    data: {
+      expedienteId: null,
+      estado: reclamo.estadoPreDerivacion ?? "EN_REVISION",
+      estadoPreDerivacion: null,
+    },
+  });
+
+  await prisma.reclamoEvento.create({
+    data: {
+      reclamoId: reclamo.id,
+      tipo: "NOTIFICACION",
+      autorId: session.user.id,
+      mensaje: `Sacado del expediente ${expediente.numero}`,
+    },
+  });
+
+  revalidatePath(`/admin/expediente/${expediente.id}`);
+  revalidatePath(`/admin/expedientes`);
+  revalidatePath(`/admin/reclamo/${reclamo.id}`);
+}

@@ -272,6 +272,10 @@ model Reclamo {
 
   expedienteId String?
   expediente   Expediente?   @relation(fields: [expedienteId], references: [id])
+  // Estado que tenía el reclamo justo antes de elevarlo a expediente (que lo
+  // pasa a DERIVADO). Permite que "Sacar del expediente" lo restaure tal como
+  // estaba, en vez de dejarlo en un estado fijo arbitrario.
+  estadoPreDerivacion ReclamoEstado?
 
   recursoDirecto         Boolean  @default(false)
   recursoDirectoEn       DateTime?

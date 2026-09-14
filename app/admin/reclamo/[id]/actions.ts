@@ -392,11 +392,12 @@ export async function elevarAExpediente(formData: FormData) {
   });
 
   // Estado automático al elevar: el reclamo pasa a DERIVADO (igual se puede
-  // cambiar a mano después).
+  // cambiar a mano después). Guardamos el estado previo para poder
+  // restaurarlo tal cual si más adelante se lo saca del expediente.
   if (reclamo.estado !== "DERIVADO") {
     await prisma.reclamo.update({
       where: { id: reclamo.id },
-      data: { estado: "DERIVADO" },
+      data: { estado: "DERIVADO", estadoPreDerivacion: reclamo.estado },
     });
   }
 

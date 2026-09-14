@@ -16,6 +16,7 @@ import {
   importarReclamoAntecedente,
   importarExpedienteReferencia,
   importarEstadistica,
+  desvincularReclamo,
 } from "./actions";
 import { Workspace, type ActoView, type MensajeView } from "./Workspace";
 
@@ -469,10 +470,10 @@ export default async function ExpedienteDetallePage({
             {exp.reclamos.map((r) => {
               const svc = svcFromKind(r.servicio.kind);
               return (
-                <li key={r.id}>
+                <li key={r.id} className="rounded-lg border border-line overflow-hidden">
                   <Link
                     href={`/admin/reclamo/${r.id}`}
-                    className="flex items-start gap-2 p-2 rounded-lg border border-line hover:bg-paper-2"
+                    className="flex items-start gap-2 p-2 hover:bg-paper-2"
                   >
                     <SvcIcon kind={svc} size={32} />
                     <div className="flex-1 min-w-0">
@@ -488,6 +489,20 @@ export default async function ExpedienteDetallePage({
                     </div>
                     <EstadoBadge estado={r.estado} size="sm" />
                   </Link>
+                  {esEnte && (
+                    <form
+                      action={desvincularReclamo}
+                      className="border-t border-line px-2 py-1.5 flex justify-end"
+                    >
+                      <input type="hidden" name="reclamoId" value={r.id} />
+                      <SubmitButton
+                        className="text-[10px] px-2 py-1 rounded-md border border-line-strong text-muted hover:text-navy hover:border-navy-2 font-semibold whitespace-nowrap"
+                        pendingText="Sacando…"
+                      >
+                        ↩️ Sacar del expediente
+                      </SubmitButton>
+                    </form>
+                  )}
                 </li>
               );
             })}
