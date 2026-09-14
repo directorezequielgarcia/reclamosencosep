@@ -66,6 +66,8 @@ export type ReporteReclamoDetalle = {
   estado: ReclamoEstado;
   direccion: string;
   barrio: string | null;
+  lat: number | null;
+  lng: number | null;
   vecino: string;
   createdAt: Date;
   fecha: string; // dd/mm hh:mm
@@ -114,6 +116,8 @@ export async function reporteDiarioPorTema(
       descripcion: true,
       direccion: true,
       barrio: true,
+      lat: true,
+      lng: true,
       createdAt: true,
       ciudadano: { select: { nombre: true, apellido: true } },
       servicio: { select: { id: true, nombre: true, nombreCorto: true, kind: true } },
@@ -158,6 +162,8 @@ export async function reporteDiarioPorTema(
       estado: r.estado,
       direccion: r.direccion,
       barrio: r.barrio,
+      lat: r.lat,
+      lng: r.lng,
       vecino: `${r.ciudadano.nombre} ${r.ciudadano.apellido}`,
       createdAt: r.createdAt,
       fecha: fmtDetalle(r.createdAt),
@@ -199,6 +205,8 @@ export type ReporteFila = {
   estado: ReclamoEstado;
   direccion: string;
   barrio: string | null;
+  lat: number | null;
+  lng: number | null;
   vecino: string;
   descripcion: string;
 };
@@ -220,6 +228,8 @@ export function flattenReporte(reporte: ReporteDiario): ReporteFila[] {
           estado: r.estado,
           direccion: r.direccion,
           barrio: r.barrio,
+          lat: r.lat,
+          lng: r.lng,
           vecino: r.vecino,
           descripcion: r.descripcion,
         });
