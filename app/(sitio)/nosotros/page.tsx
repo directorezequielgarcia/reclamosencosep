@@ -117,34 +117,51 @@ export default function Nosotros() {
           </p>
         </div>
 
-        <aside className="rounded-2xl border border-line bg-paper-2 p-5">
-          <div className="text-xs font-bold tracking-widest uppercase text-muted">
-            Marco normativo
+        <div className="flex flex-col gap-5">
+          {/* Spot institucional del Ente — se movió acá desde la home para
+              no competir con los botones de "Hacé tu reclamo" en el Hero. */}
+          <div className="rounded-2xl overflow-hidden border border-line bg-black shadow-lg">
+            <video
+              className="w-full h-auto block"
+              controls
+              preload="none"
+              poster="/imagenes/hero-encosep-zorritos.png"
+              playsInline
+            >
+              <source src="/videos/hace-tu-reclamo.mp4" type="video/mp4" />
+              Tu navegador no puede reproducir este video.
+            </video>
           </div>
-          <ul className="mt-3 space-y-2 text-sm text-navy">
-            <li>
-              <strong>Ord. 13189/17</strong> · Creación del ENCOSEP
-            </li>
-            <li>
-              <strong>Ord. 14995/19</strong> · Reglamento del Usuario de
-              electricidad
-            </li>
-            <li>
-              <strong>Ord. 14996/19</strong> · Reglamento del Usuario de agua
-              y cloacas
-            </li>
-            <li>
-              <strong>Ord. 11638/14</strong> · Régimen de Residuos Sólidos
-              Urbanos
-            </li>
-          </ul>
-          <Link
-            href="/control-prestadoras"
-            className="inline-block mt-4 text-xs text-navy-2 underline underline-offset-4 font-semibold"
-          >
-            Ver normativa completa →
-          </Link>
-        </aside>
+
+          <aside className="rounded-2xl border border-line bg-paper-2 p-5">
+            <div className="text-xs font-bold tracking-widest uppercase text-muted">
+              Marco normativo
+            </div>
+            <ul className="mt-3 space-y-2 text-sm text-navy">
+              <li>
+                <strong>Ord. 13189/17</strong> · Creación del ENCOSEP
+              </li>
+              <li>
+                <strong>Ord. 14995/19</strong> · Reglamento del Usuario de
+                electricidad
+              </li>
+              <li>
+                <strong>Ord. 14996/19</strong> · Reglamento del Usuario de agua
+                y cloacas
+              </li>
+              <li>
+                <strong>Ord. 11638/14</strong> · Régimen de Residuos Sólidos
+                Urbanos
+              </li>
+            </ul>
+            <Link
+              href="/control-prestadoras"
+              className="inline-block mt-4 text-xs text-navy-2 underline underline-offset-4 font-semibold"
+            >
+              Ver normativa completa →
+            </Link>
+          </aside>
+        </div>
       </section>
 
       {/* ORGANIGRAMA */}

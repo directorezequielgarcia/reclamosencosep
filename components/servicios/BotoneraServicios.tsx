@@ -62,7 +62,7 @@ export function BotoneraServicios() {
           "prestadora controlada", para no confundirla con las de arriba. */}
       <Link
         href="/gas"
-        className="group flex flex-col items-center text-center p-4 rounded-2xl bg-paper border border-svc-orange/40 hover:border-svc-orange hover:shadow-xl hover:-translate-y-1 transition"
+        className="group col-span-2 md:col-span-1 flex flex-col items-center text-center p-4 rounded-2xl bg-paper border border-svc-orange/40 hover:border-svc-orange hover:shadow-xl hover:-translate-y-1 transition"
       >
         <IconoHornallaGas />
         <div className="mt-3 text-sm font-extrabold text-navy leading-tight">

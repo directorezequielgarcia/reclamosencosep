@@ -187,39 +187,41 @@ export default async function HomeInstitucional() {
             Rivadavia: residuos, electricidad, agua y transporte.
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center gap-3">
+          <div className="flex flex-col items-center gap-3">
+            <div className="flex flex-col sm:flex-row items-center gap-3">
+              <Link
+                id="hero-reclamo"
+                href="/reclamos"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-svc-red text-white font-bold text-sm uppercase tracking-wider shadow-lg shadow-svc-red/40 hover:scale-105 transition"
+              >
+                Hacé tu reclamo <span aria-hidden>›</span>
+              </Link>
+              <a
+                href={WSP_HREF}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-svc-green text-white font-bold text-sm uppercase tracking-wider shadow-lg shadow-svc-green/40 hover:scale-105 transition"
+              >
+                <IconoWsp />
+                Asistencia por WhatsApp
+              </a>
+            </div>
+
             <Link
-              id="hero-reclamo"
-              href="/reclamos"
-              className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-svc-red text-white font-bold text-sm uppercase tracking-wider shadow-lg shadow-svc-red/40 hover:scale-105 transition"
+              id="hero-gas"
+              href="/gas"
+              className="inline-flex items-center justify-center gap-2 px-5 py-2 rounded-xl border border-white/50 text-white font-bold text-xs uppercase tracking-wider hover:bg-white/10 transition whitespace-nowrap"
             >
-              Hacé tu reclamo <span aria-hidden>›</span>
+              🔥 Reclamos de Gas <span aria-hidden>›</span>
             </Link>
-            <a
-              href={WSP_HREF}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-svc-green text-white font-bold text-sm uppercase tracking-wider shadow-lg shadow-svc-green/40 hover:scale-105 transition"
+
+            <Link
+              href="/acciones"
+              className="text-white/90 font-semibold text-sm underline underline-offset-4 hover:text-white drop-shadow"
             >
-              <IconoWsp />
-              Asistencia por WhatsApp
-            </a>
+              Conocé nuestras acciones ›
+            </Link>
           </div>
-
-          <Link
-            id="hero-gas"
-            href="/gas"
-            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl border border-white/50 text-white font-bold text-xs uppercase tracking-wider hover:bg-white/10 transition"
-          >
-            🔥 Reclamos de Gas — no es competencia del Ente ›
-          </Link>
-
-          <Link
-            href="/acciones"
-            className="text-white/90 font-semibold text-sm underline underline-offset-4 hover:text-white drop-shadow"
-          >
-            Conocé nuestras acciones ›
-          </Link>
         </div>
 
         {/* Insignias octogonales de las áreas fiscalizadas, flotando a los
@@ -250,29 +252,6 @@ export default async function HomeInstitucional() {
             />
           </Link>
         ))}
-      </section>
-
-      {/* ===================== SPOT INSTITUCIONAL (Zorritos) ===================== */}
-      {/* Justo debajo del Hero: lo primero que se ve al entrar, después del
-          bloque de logo + CTA. Video corto, no compite con los botones de
-          reclamo porque va después de ellos, pero antes de cualquier otra
-          sección. */}
-      <section className="bg-black py-10 px-6">
-        <div className="max-w-2xl mx-auto">
-          <div className="rounded-2xl overflow-hidden border border-line shadow-xl bg-black">
-            {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-            <video
-              className="w-full h-auto block"
-              controls
-              preload="none"
-              poster="/imagenes/hero-encosep-zorritos.png"
-              playsInline
-            >
-              <source src="/videos/hace-tu-reclamo.mp4" type="video/mp4" />
-              Tu navegador no puede reproducir este video.
-            </video>
-          </div>
-        </div>
       </section>
 
       {/* ===================== ÁREAS FISCALIZADAS ===================== */}
