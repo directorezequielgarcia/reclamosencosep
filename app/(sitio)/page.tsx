@@ -207,6 +207,14 @@ export default async function HomeInstitucional() {
           </div>
 
           <Link
+            id="hero-gas"
+            href="/gas"
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl border border-white/50 text-white font-bold text-xs uppercase tracking-wider hover:bg-white/10 transition"
+          >
+            🔥 Reclamos de Gas — no es competencia del Ente ›
+          </Link>
+
+          <Link
             href="/acciones"
             className="text-white/90 font-semibold text-sm underline underline-offset-4 hover:text-white drop-shadow"
           >

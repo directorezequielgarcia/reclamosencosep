@@ -57,7 +57,8 @@ export function BotoneraServicios() {
       ))}
 
       {/* GAS no es un área fiscalizada por el Ente (competencia nacional,
-          ENReGE) — misma tarjeta visual pero acento naranja y sin
+          ENReGE), pero se muestra igual acá para que el vecino sepa a dónde
+          reclamar: misma tarjeta visual con acento naranja y sin
           "prestadora controlada", para no confundirla con las de arriba. */}
       <Link
         href="/gas"
