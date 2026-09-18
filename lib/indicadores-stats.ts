@@ -128,6 +128,7 @@ export async function getIndicadoresStats(sp: FiltroIndicadores) {
     "RESUELTO",
     "CERRADO_SIN_SOLUCION",
     "RECHAZADO",
+    "ARCHIVADO",
   ];
   for (const e of ESTADOS) {
     const n = estadoMap.get(e) ?? 0;

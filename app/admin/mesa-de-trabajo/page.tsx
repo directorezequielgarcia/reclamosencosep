@@ -86,6 +86,14 @@ const COLUMNAS: {
     orderBy: { cerradoEn: "desc" },
     bandejaParams: "estado=RESUELTO",
   },
+  {
+    key: "archivados",
+    titulo: "Archivados",
+    icono: "🗄️",
+    where: (base) => ({ ...base, estado: "ARCHIVADO" }),
+    orderBy: { updatedAt: "desc" },
+    bandejaParams: "estado=ARCHIVADO",
+  },
 ];
 
 export default async function MesaDeTrabajoPage({

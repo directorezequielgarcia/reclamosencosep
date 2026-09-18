@@ -65,6 +65,7 @@ model Usuario {
   informesAnualesEmitidos   InformeAnual[]    @relation("InformeAnualEmisor")
   anotacionesRecibidas AnotacionUsuario[] @relation("AnotacionUsuarioDestino")
   anotacionesEscritas  AnotacionUsuario[] @relation("AnotacionUsuarioAutor")
+  agendaItems     AgendaItem[]         @relation("AgendaAutor")
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   activo          Boolean  @default(true)
@@ -219,6 +220,7 @@ enum ReclamoEstado {
   RESUELTO
   CERRADO_SIN_SOLUCION
   RECHAZADO
+  ARCHIVADO
 }
 
 enum TipoEvento {
@@ -465,6 +467,27 @@ model NotaAdjunto {
   createdAt DateTime    @default(now())
 
   @@index([mensajeId])
+}
+
+// ─────────────────────────────────────────────
+// Agenda interna del equipo del Ente
+// Anotador rápido de pendientes/memos (llamar a tal secretaría, escribirle a
+// tal prestadora, etc.) — texto libre, sin campos ni pasos de carga. La ve y
+// la edita todo el equipo interno del Ente, sin asignación a una persona.
+// ─────────────────────────────────────────────
+
+model AgendaItem {
+  id           String    @id @default(cuid())
+  texto        String
+  fechaLimite  DateTime?
+  completado   Boolean   @default(false)
+  completadoEn DateTime?
+  autorId      String
+  autor        Usuario   @relation("AgendaAutor", fields: [autorId], references: [id])
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([completado, fechaLimite])
 }
 
 // ─────────────────────────────────────────────

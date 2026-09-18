@@ -11,6 +11,7 @@ export const ESTADO_META: Record<
   RESUELTO: { label: "Resuelto", tone: "success" },
   CERRADO_SIN_SOLUCION: { label: "Cerrado sin solución", tone: "neutral" },
   RECHAZADO: { label: "Rechazado", tone: "danger" },
+  ARCHIVADO: { label: "Archivado", tone: "neutral" },
 };
 
 export const TONE_CLASS: Record<string, string> = {
@@ -159,6 +160,24 @@ export function puedeVerBandejaWhatsApp(rol: Rol): boolean {
   );
 }
 
+/**
+ * Puede ver y usar la Agenda interna del equipo (recordatorios/pendientes de
+ * gestión con secretarías, prestadoras, etc.). Todo el equipo interno del
+ * Ente, sin los roles externos (prestadoras, Autoridad de Aplicación, PEM,
+ * Concejo) — mismo criterio que la bandeja de WhatsApp.
+ */
+export function puedeVerAgenda(rol: Rol): boolean {
+  return (
+    esDireccion(rol) ||
+    rol === "GESTOR_ENTE" ||
+    rol === "EXPEDIENTES" ||
+    rol === "COOPERATIVA_DOCS" ||
+    rol === "INSPECCIONES" ||
+    rol === "AUDIENCIAS_MEDIOS" ||
+    rol === "AUDITOR"
+  );
+}
+
 /** Puede gestionar vencimientos de documentación. */
 export function puedeGestionarVencimientos(rol: Rol): boolean {
   return esDireccion(rol) || rol === "COOPERATIVA_DOCS" || rol === "GESTOR_ENTE";
@@ -199,16 +218,15 @@ export function whereReclamosByRol(rol: Rol, prestadoraId: string | null) {
   return {};
 }
 
-// Transiciones de estado permitidas según el estado actual.
-// Los estados "definitivos" (RESUELTO, CERRADO_SIN_SOLUCION, RECHAZADO) admiten
-// corregirse a RESUELTO o reabrirse a EN_PROCESO; EN_PROCESO admite retroceder
-// a un estado anterior si hace falta revisar o derivar de nuevo.
-export const TRANSICIONES: Record<ReclamoEstado, ReclamoEstado[]> = {
-  RECIBIDO: ["EN_REVISION", "DERIVADO", "RECHAZADO"],
-  EN_REVISION: ["DERIVADO", "EN_PROCESO", "RESUELTO", "RECHAZADO"],
-  DERIVADO: ["EN_REVISION", "EN_PROCESO", "RESUELTO", "CERRADO_SIN_SOLUCION"],
-  EN_PROCESO: ["EN_REVISION", "DERIVADO", "RESUELTO", "CERRADO_SIN_SOLUCION"],
-  RESUELTO: ["EN_PROCESO", "CERRADO_SIN_SOLUCION"],
-  CERRADO_SIN_SOLUCION: ["EN_PROCESO", "RESUELTO"],
-  RECHAZADO: ["EN_PROCESO", "RESUELTO"],
-};
+// Estado de un reclamo: se puede reclasificar a cualquier otro estado desde
+// cualquier estado actual, sin pasos obligatorios ni estados "definitivos"
+// que bloqueen el cambio (a pedido de Ezequiel, 18/09/2026 — ej: un reclamo
+// recién RECIBIDO se puede archivar directo, sin pasar antes por RESUELTO).
+const TODOS_LOS_ESTADOS = Object.keys(ESTADO_META) as ReclamoEstado[];
+export const TRANSICIONES: Record<ReclamoEstado, ReclamoEstado[]> =
+  Object.fromEntries(
+    TODOS_LOS_ESTADOS.map((e) => [
+      e,
+      TODOS_LOS_ESTADOS.filter((otro) => otro !== e),
+    ]),
+  ) as Record<ReclamoEstado, ReclamoEstado[]>;

@@ -20,6 +20,7 @@ const CambiarEstadoSchema = z.object({
     "RESUELTO",
     "CERRADO_SIN_SOLUCION",
     "RECHAZADO",
+    "ARCHIVADO",
   ]),
   mensaje: z.string().max(2000).optional(),
 });
@@ -60,7 +61,8 @@ export async function cambiarEstado(formData: FormData) {
   const esCierre =
     estado === "RESUELTO" ||
     estado === "CERRADO_SIN_SOLUCION" ||
-    estado === "RECHAZADO";
+    estado === "RECHAZADO" ||
+    estado === "ARCHIVADO";
 
   await prisma.$transaction([
     prisma.reclamo.update({

@@ -33,6 +33,10 @@ export default async function BandejaPage({
   const where: Prisma.ReclamoWhereInput = { ...baseWhere };
   if (sp.estado && sp.estado in ESTADO_META) {
     where.estado = sp.estado as ReclamoEstado;
+  } else {
+    // Sin filtro de estado, la Bandeja muestra los reclamos activos: los
+    // archivados quedan afuera salvo que se los busque explícitamente.
+    where.estado = { not: "ARCHIVADO" };
   }
   if (sp.svc && sp.svc in SVC_META) {
     where.servicio = { kind: SVC_META[sp.svc as keyof typeof SVC_META].kind };

@@ -657,7 +657,7 @@ export default async function ReclamoDetallePage({
             )}
           </Card>
 
-          {puedeEditar && transiciones.length > 0 && (
+          {puedeEditar && (
             <Card titulo="Cambiar estado">
               <form action={cambiarEstado} className="flex flex-col gap-2">
                 <input type="hidden" name="reclamoId" value={reclamo.id} />
@@ -689,14 +689,6 @@ export default async function ReclamoDetallePage({
                   Aplicar cambio
                 </SubmitButton>
               </form>
-            </Card>
-          )}
-
-          {puedeEditar && transiciones.length === 0 && (
-            <Card titulo="Cambiar estado">
-              <div className="text-xs text-muted">
-                Este reclamo está cerrado. No hay transiciones disponibles.
-              </div>
             </Card>
           )}
         </aside>

@@ -13,6 +13,7 @@ import {
   puedeGestionarTarifas,
   puedeGestionarUsuarios,
   puedeGestionarVencimientos,
+  puedeVerAgenda,
   puedeVerDocumentos,
   puedeVerInspecciones,
 } from "@/lib/admin";
@@ -62,6 +63,9 @@ export default async function AdminLayout({
               <NavLink href="/admin/expedientes">Expedientes</NavLink>
             )}
             <NavLink href="/notas">Notas</NavLink>
+            {puedeVerAgenda(rol) && (
+              <NavLink href="/admin/agenda">Agenda</NavLink>
+            )}
             <NavLink href="/capacitacion">Capacitación</NavLink>
             {puedeVerDocumentos(rol) && (
               <NavLink href="/admin/documentacion">Documentación</NavLink>
