@@ -1,11 +1,31 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { puedeVerAgenda } from "@/lib/admin";
+import { puedeVerAgenda, TONE_CLASS } from "@/lib/admin";
+import { diasHasta } from "@/lib/vencimientos";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { alternarCompletado, borrarAgendaItem, crearAgendaItem } from "./actions";
 
 export const metadata = { title: "Agenda · Panel ENCOSEP" };
+
+// Etiqueta de estado de cada pendiente (independiente de ESTADO_VENC_META,
+// que es de otro dominio) — mismo estilo visual (TONE_CLASS) que el resto.
+const AGENDA_ESTADO_META = {
+  PENDIENTE: { label: "Pendiente", tone: "warning" as const },
+  CUMPLIDO: { label: "Cumplido", tone: "success" as const },
+};
+
+function fechaLimiteInfo(fechaLimite: Date) {
+  const dias = diasHasta(fechaLimite);
+  const texto =
+    dias < 0
+      ? `venció hace ${Math.abs(dias)} día${Math.abs(dias) === 1 ? "" : "s"}`
+      : dias === 0
+        ? "vence hoy"
+        : `vence en ${dias} día${dias === 1 ? "" : "s"}`;
+  const clase = dias < 0 ? "text-svc-red font-bold" : dias <= 7 ? "text-svc-orange font-semibold" : "text-muted";
+  return { texto, clase, vencido: dias < 0 };
+}
 
 export default async function AgendaPage() {
   const session = await auth();
@@ -27,9 +47,6 @@ export default async function AgendaPage() {
       include: { autor: true },
     }),
   ]);
-
-  const hoy = new Date();
-  hoy.setHours(0, 0, 0, 0);
 
   return (
     <div className="flex flex-col gap-5">
@@ -75,15 +92,15 @@ export default async function AgendaPage() {
           </div>
         ) : (
           pendientes.map((it) => {
-            const vencido = it.fechaLimite ? it.fechaLimite < hoy : false;
+            const lim = it.fechaLimite ? fechaLimiteInfo(it.fechaLimite) : null;
             return (
               <div
                 key={it.id}
-                className={`flex items-center gap-3 rounded-lg border bg-paper px-3 py-2 ${
-                  vencido ? "border-svc-red/40" : "border-line"
+                className={`flex items-start gap-3 rounded-lg border bg-paper px-3 py-2 ${
+                  lim?.vencido ? "border-svc-red/40" : "border-line"
                 }`}
               >
-                <form action={alternarCompletado}>
+                <form action={alternarCompletado} className="pt-0.5">
                   <input type="hidden" name="id" value={it.id} />
                   <SubmitButton
                     title="Marcar como hecho"
@@ -93,19 +110,26 @@ export default async function AgendaPage() {
                     {" "}
                   </SubmitButton>
                 </form>
-                <span className="flex-1 text-sm text-navy min-w-0 break-words">
-                  {it.texto}
-                </span>
-                {it.fechaLimite && (
-                  <span
-                    className={`text-xs whitespace-nowrap ${
-                      vencido ? "text-svc-red font-bold" : "text-muted"
-                    }`}
-                  >
-                    {it.fechaLimite.toLocaleDateString("es-AR")}
-                  </span>
-                )}
-                <form action={borrarAgendaItem}>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm text-navy break-words">{it.texto}</div>
+                  <div className="text-[11px] text-muted mt-1 flex items-center gap-2 flex-wrap">
+                    <span
+                      className={`inline-flex items-center uppercase tracking-wider font-bold rounded-full border text-[10px] px-1.5 py-0.5 ${TONE_CLASS[AGENDA_ESTADO_META.PENDIENTE.tone]}`}
+                    >
+                      {AGENDA_ESTADO_META.PENDIENTE.label}
+                    </span>
+                    <span>
+                      {it.autor.nombre} {it.autor.apellido} ·{" "}
+                      {it.createdAt.toLocaleDateString("es-AR")}
+                    </span>
+                    {lim && (
+                      <span className={lim.clase}>
+                        · {lim.texto} ({it.fechaLimite!.toLocaleDateString("es-AR")})
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <form action={borrarAgendaItem} className="shrink-0">
                   <input type="hidden" name="id" value={it.id} />
                   <SubmitButton
                     className="text-xs text-muted hover:text-svc-red"
@@ -129,9 +153,9 @@ export default async function AgendaPage() {
             {completados.map((it) => (
               <div
                 key={it.id}
-                className="flex items-center gap-3 rounded-lg border border-line bg-paper px-3 py-2 opacity-60"
+                className="flex items-start gap-3 rounded-lg border border-line bg-paper px-3 py-2 opacity-60"
               >
-                <form action={alternarCompletado}>
+                <form action={alternarCompletado} className="pt-0.5">
                   <input type="hidden" name="id" value={it.id} />
                   <SubmitButton
                     title="Reabrir"
@@ -141,10 +165,24 @@ export default async function AgendaPage() {
                     ✓
                   </SubmitButton>
                 </form>
-                <span className="flex-1 text-sm text-navy line-through min-w-0 break-words">
-                  {it.texto}
-                </span>
-                <form action={borrarAgendaItem}>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm text-navy line-through break-words">
+                    {it.texto}
+                  </div>
+                  <div className="text-[11px] text-muted mt-1 flex items-center gap-2 flex-wrap">
+                    <span
+                      className={`inline-flex items-center uppercase tracking-wider font-bold rounded-full border text-[10px] px-1.5 py-0.5 ${TONE_CLASS[AGENDA_ESTADO_META.CUMPLIDO.tone]}`}
+                    >
+                      {AGENDA_ESTADO_META.CUMPLIDO.label}
+                    </span>
+                    <span>
+                      {it.autor.nombre} {it.autor.apellido} · anotado el{" "}
+                      {it.createdAt.toLocaleDateString("es-AR")}, cumplido el{" "}
+                      {it.completadoEn?.toLocaleDateString("es-AR") ?? "—"}
+                    </span>
+                  </div>
+                </div>
+                <form action={borrarAgendaItem} className="shrink-0">
                   <input type="hidden" name="id" value={it.id} />
                   <SubmitButton
                     className="text-xs text-muted hover:text-svc-red"
