@@ -319,3 +319,62 @@ export async function marcarSolucionado(formData: FormData) {
   revalidatePath(`/admin/reclamo/${r.id}`);
   revalidatePath(`/admin/bandeja`);
 }
+
+const EdicionSchema = z.object({
+  codigo: z.string().min(1),
+  titulo: z.string().trim().min(3, "El título es muy corto").max(60, "El título admite hasta 60 caracteres"),
+  descripcion: z.string().trim().min(5, "Contanos un poco más").max(5000, "El relato admite hasta 5000 caracteres"),
+});
+
+// El vecino corrige el título o el relato de su reclamo mientras no esté
+// cerrado. Se conserva la versión anterior en una nota interna para el Ente
+// (el vecino ve solo un aviso corto en el historial) y el reclamo vuelve a
+// aparecer como novedad en la bandeja.
+export async function editarReclamo(formData: FormData) {
+  const session = await auth();
+  if (!session) throw new Error("Sin sesión");
+  const parsed = EdicionSchema.safeParse({
+    codigo: formData.get("codigo"),
+    titulo: formData.get("titulo"),
+    descripcion: formData.get("descripcion"),
+  });
+  if (!parsed.success) {
+    throw new Error(parsed.error.issues[0]?.message ?? "Datos inválidos");
+  }
+  const r = await reclamoDelUsuario(parsed.data.codigo, session.user.id);
+  if (["RESUELTO", "CERRADO_SIN_SOLUCION", "RECHAZADO"].includes(r.estado)) {
+    throw new Error("Un reclamo cerrado ya no se puede editar. Escribí un mensaje en la conversación.");
+  }
+  if (r.titulo === parsed.data.titulo && r.descripcion === parsed.data.descripcion) {
+    redirect(`/mis-reclamos/${parsed.data.codigo}`);
+  }
+
+  await prisma.$transaction([
+    prisma.reclamo.update({
+      where: { id: r.id },
+      data: { titulo: parsed.data.titulo, descripcion: parsed.data.descripcion },
+    }),
+    prisma.reclamoEvento.create({
+      data: {
+        reclamoId: r.id,
+        tipo: "NOTIFICACION",
+        autorId: session.user.id,
+        mensaje: "El vecino editó el título o el relato de su reclamo.",
+        leidoEnte: false,
+      },
+    }),
+    prisma.reclamoEvento.create({
+      data: {
+        reclamoId: r.id,
+        tipo: "COMENTARIO",
+        autorId: session.user.id,
+        visibleVecino: false,
+        mensaje: `Versión anterior del reclamo (antes de la edición del vecino)\nTítulo: ${r.titulo}\n\n${r.descripcion}`,
+      },
+    }),
+  ]);
+  revalidatePath(`/mis-reclamos/${parsed.data.codigo}`);
+  revalidatePath(`/admin/reclamo/${r.id}`);
+  revalidatePath(`/admin/bandeja`);
+  redirect(`/mis-reclamos/${parsed.data.codigo}`);
+}

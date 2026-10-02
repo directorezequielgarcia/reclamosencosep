@@ -26,6 +26,7 @@ import {
 // que el ejemplo predefinido más largo (TRANSPORTE_CAMBIO_PARADA_TITULO,
 // 53 caracteres) para no cortarlo si se reusa como valor inicial.
 const TITULO_MAX = 60;
+const DESCRIPCION_MAX = 5000;
 
 // Líneas disponibles para el desplegable según la empresa elegida — nunca
 // mezcladas (elegir DIADEMA no debe dejar ver las líneas de Sol Bus, y
@@ -218,7 +219,12 @@ export function WizardReclamo({ svcInicial }: { svcInicial?: SvcKey }) {
       }
 
       const res = await fetch("/api/reclamos", { method: "POST", body: fd });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 413) {
+        setError("Las fotos son demasiado pesadas. Sacá algunas o usá fotos más livianas.");
+        setEnviando(false);
+        return;
+      }
       if (!res.ok || !data.ok) {
         setError(explicarError(data));
         setEnviando(false);
@@ -770,11 +776,15 @@ function PasoDetalle({
           </span>
           <textarea
             value={state.descripcion}
-            onChange={(e) => setField("descripcion", e.target.value)}
+            onChange={(e) => setField("descripcion", e.target.value.slice(0, DESCRIPCION_MAX))}
+            maxLength={DESCRIPCION_MAX}
             rows={4}
             placeholder="Hace cuánto está el problema, en qué horario, si afecta a más vecinos…"
             className="w-full px-3 py-3 rounded-xl border border-line-strong bg-paper text-navy text-sm focus:outline-none focus:border-navy-2 focus:ring-2 focus:ring-navy-2/20 resize-none"
           />
+          <span className="text-[11px] text-muted self-end">
+            {state.descripcion.length}/{DESCRIPCION_MAX}
+          </span>
         </label>
         </>
       )}

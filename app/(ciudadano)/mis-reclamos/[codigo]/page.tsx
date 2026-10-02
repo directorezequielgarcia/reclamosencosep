@@ -16,6 +16,7 @@ import {
   agregarDocumental,
 } from "./actions";
 import { BorrarReclamo } from "./BorrarReclamo";
+import { EditarReclamo } from "./EditarReclamo";
 import { Solucionado } from "./Solucionado";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { AgregarVideo } from "./AgregarVideo";
@@ -119,6 +120,14 @@ export default async function DetalleMiReclamoPage({
           Cargado el {fechaLarga}
         </div>
       </section>
+
+      {!["RESUELTO", "CERRADO_SIN_SOLUCION", "RECHAZADO"].includes(reclamo.estado) && (
+        <EditarReclamo
+          codigo={reclamo.codigo}
+          titulo={reclamo.titulo}
+          descripcion={reclamo.descripcion}
+        />
+      )}
 
       {fotos.length > 0 && (
         <section className="rounded-2xl border border-line bg-paper p-4">

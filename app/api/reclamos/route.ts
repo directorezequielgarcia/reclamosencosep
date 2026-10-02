@@ -22,7 +22,7 @@ const BodySchema = z
   .object({
     svc: z.enum(["residuos", "energia", "agua", "transporte"]),
     titulo: z.string().min(3).max(60),
-    descripcion: z.string().min(5).max(2000),
+    descripcion: z.string().min(5).max(5000),
     direccion: z.string().max(200).optional().nullable(),
     barrio: z.string().max(80).optional().nullable(),
     lat: z.number().min(-90).max(90).optional().nullable(),
