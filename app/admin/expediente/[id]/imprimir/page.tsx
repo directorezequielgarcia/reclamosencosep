@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { TIPO_ACTO_META } from "@/lib/expedientes";
 import { LogoEncosep } from "@/components/ui/LogoEncosep";
 import { BotonImprimir } from "./BotonImprimir";
+import { NumeroManual } from "./NumeroManual";
 
 export const metadata = { title: "Emitir expediente · ENCOSEP" };
 
@@ -18,19 +19,31 @@ function fmt(d: Date): string {
   });
 }
 
-// Parsea "EXP-2026-001" → { nro: "001", anio: "2026" }
+// Parsea "EXP-2026-001" o "07/2026" → { nro: "001", anio: "2026" }
 function parseNumero(numero: string): { nro: string; anio: string } {
   const m = numero.match(/(\d{4})-(\d+)/);
   if (m) return { anio: m[1], nro: m[2] };
-  return { anio: String(new Date().getFullYear()), nro: numero };
+  const barra = numero.match(/^\s*(\d+)\s*\/\s*(\d{4})\s*$/);
+  if (barra) return { nro: barra[1].padStart(2, "0"), anio: barra[2] };
+  return { anio: String(new Date().getFullYear()), nro: numero.trim() };
 }
+
+const esImagen = (adj: { tipo: string; mimeType: string | null; url: string }) =>
+  adj.tipo === "FOTO" ||
+  adj.mimeType?.startsWith("image/") ||
+  /\.(png|jpe?g|webp|gif)(\?|$)/i.test(adj.url);
 
 export default async function ImprimirExpedientePage({
   params,
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ hasta?: string; solo?: string; hoja?: string }>;
+  searchParams: Promise<{
+    hasta?: string;
+    solo?: string;
+    hoja?: string;
+    nro?: string;
+  }>;
 }) {
   const { id } = await params;
   const sp = await searchParams;
@@ -46,7 +59,12 @@ export default async function ImprimirExpedientePage({
     include: {
       prestadora: true,
       iniciador: true,
-      reclamos: { include: { ciudadano: true } },
+      reclamos: {
+        include: {
+          ciudadano: true,
+          adjuntos: { orderBy: { createdAt: "asc" } },
+        },
+      },
       actos: {
         include: { autor: true, adjuntos: true },
         orderBy: { createdAt: "asc" },
@@ -78,9 +96,22 @@ export default async function ImprimirExpedientePage({
     }
   }
 
+  const manual = sp.nro?.trim();
+
+  // Con número manual, también se reemplaza el del sistema dentro de los textos.
+  if (manual) {
+    const reemplazar = (t: string) => t.split(exp.numero).join(`${manual}`);
+    actos = actos.map((a) => ({
+      ...a,
+      titulo: reemplazar(a.titulo),
+      cuerpo: reemplazar(a.cuerpo),
+    }));
+  }
+
   const hoja = sp.hoja === "oficio" ? "oficio" : "a4";
   const sizeCss = hoja === "oficio" ? "21.6cm 35.6cm" : "A4";
-  const { nro, anio } = parseNumero(exp.numero);
+  const numeroSistema = parseNumero(exp.numero);
+  const { nro, anio } = manual ? parseNumero(manual) : numeroSistema;
   const reclamante =
     exp.reclamos[0]?.ciudadano
       ? `${exp.reclamos[0].ciudadano.nombre} ${exp.reclamos[0].ciudadano.apellido}`
@@ -97,12 +128,24 @@ export default async function ImprimirExpedientePage({
         nombre: adj.nombre,
       })),
   );
-  const fojaAnexo = actos.length + 2;
 
-  // Conserva el alcance al cambiar de hoja.
+  // Anexo del reclamante: lo que subió el vecino al reclamo (no aplica a "etapa puntual").
+  const adjuntosReclamante = sp.solo
+    ? []
+    : exp.reclamos.flatMap((r) =>
+        r.adjuntos.map((adj) => ({ ...adj, reclamo: r.codigo })),
+      );
+  const imagenesReclamante = adjuntosReclamante.filter(esImagen);
+  const otrosReclamante = adjuntosReclamante.filter((a) => !esImagen(a));
+  const hayAnexoReclamante = adjuntosReclamante.length > 0;
+  const fojaAnexoReclamante = actos.length + 2;
+  const fojaAnexo = fojaAnexoReclamante + (hayAnexoReclamante ? 1 : 0);
+
+  // Conserva el alcance y el número manual al cambiar de hoja.
   const baseQuery: Record<string, string> = {};
   if (sp.solo) baseQuery.solo = sp.solo;
   if (sp.hasta) baseQuery.hasta = sp.hasta;
+  if (manual) baseQuery.nro = manual;
   const linkHoja = (h: string) =>
     `?${new URLSearchParams({ ...baseQuery, hoja: h }).toString()}`;
 
@@ -129,7 +172,10 @@ export default async function ImprimirExpedientePage({
             Emitir: {subtitulo}
           </span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <NumeroManual
+            actual={`${numeroSistema.nro}/${numeroSistema.anio}`}
+          />
           <span className="text-xs opacity-80">Hoja:</span>
           <Link
             href={linkHoja("a4")}
@@ -254,6 +300,59 @@ export default async function ImprimirExpedientePage({
             </div>
           );
         })}
+
+        {/* Anexo del reclamante: documental que subió el vecino al reclamo */}
+        {hayAnexoReclamante && (
+          <div className="foja pt-4">
+            <FojaHeader nro={nro} anio={anio} foja={fojaAnexoReclamante} />
+            <h2 className="text-lg font-bold mt-6 mb-1">
+              Anexo — Documental aportada por el reclamante
+            </h2>
+            <p className="text-xs text-gray-600 mb-4">
+              Material adjuntado por el reclamante al presentar el reclamo.
+            </p>
+            <div className="flex flex-col gap-6">
+              {imagenesReclamante.map((img, idx) => (
+                <figure
+                  key={img.id}
+                  className="text-center"
+                  style={{ breakInside: "avoid" }}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={img.url}
+                    alt={`Documental del reclamante ${idx + 1}`}
+                    className="mx-auto max-w-full border border-gray-300"
+                    style={{ maxHeight: "20cm", objectFit: "contain" }}
+                  />
+                  <figcaption className="text-xs text-gray-600 mt-1">
+                    Imagen {idx + 1} — Reclamo {img.reclamo}
+                  </figcaption>
+                </figure>
+              ))}
+            </div>
+            {otrosReclamante.length > 0 && (
+              <div className="mt-6 text-sm">
+                <strong>Otros archivos aportados:</strong>
+                <ul className="list-disc ml-6 mt-1">
+                  {otrosReclamante.map((adj) => (
+                    <li key={adj.id} className="break-all">
+                      {adj.tipo === "VIDEO"
+                        ? "Video"
+                        : adj.tipo === "AUDIO"
+                          ? "Audio"
+                          : "Documento"}{" "}
+                      — Reclamo {adj.reclamo}:{" "}
+                      <a href={adj.url} className="underline">
+                        {adj.url}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Anexo: las imágenes se agregan al final del documento */}
         {imagenesAnexo.length > 0 && (
