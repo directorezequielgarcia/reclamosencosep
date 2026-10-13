@@ -20,7 +20,6 @@ import {
 } from "docx";
 import { readFile } from "fs/promises";
 import { join } from "path";
-import sharp from "sharp";
 import { cargarLogoBuffer } from "@/lib/docx-logo";
 import { construirMapaEstatico } from "@/lib/mapa-estatico";
 
@@ -133,6 +132,7 @@ async function imagenParaDocx(url: string): Promise<{
     const buf = url.startsWith("/")
       ? await readFile(join(process.cwd(), "public", url))
       : Buffer.from(await (await fetch(url)).arrayBuffer());
+    const sharp = (await import("sharp")).default;
     const { data, info } = await sharp(buf, { failOn: "none" })
       .rotate()
       .resize({ width: 1400, withoutEnlargement: true })
