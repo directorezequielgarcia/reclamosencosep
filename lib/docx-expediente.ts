@@ -122,34 +122,86 @@ function cuerpoParrafos(texto: string): Paragraph[] {
     .map((l) => p(l));
 }
 
-/** Lee la imagen (disco o URL), la normaliza a JPG y calcula su tamaño en el documento. */
-async function imagenParaDocx(url: string): Promise<{
-  data: Uint8Array;
-  width: number;
-  height: number;
-} | null> {
+type ImagenDocx =
+  | { ok: true; data: Uint8Array; type: "jpg" | "png"; width: number; height: number }
+  | { ok: false; motivo: string };
+
+/** Tamaño en píxeles leyendo la cabecera de un PNG o JPEG (sin dependencias). */
+function medirImagen(buf: Buffer): { type: "jpg" | "png"; w: number; h: number } | null {
+  if (buf.length > 24 && buf.readUInt32BE(0) === 0x89504e47) {
+    return { type: "png", w: buf.readUInt32BE(16), h: buf.readUInt32BE(20) };
+  }
+  if (buf.length > 4 && buf[0] === 0xff && buf[1] === 0xd8) {
+    let i = 2;
+    while (i + 9 < buf.length) {
+      if (buf[i] !== 0xff) {
+        i++;
+        continue;
+      }
+      const m = buf[i + 1];
+      if (m >= 0xc0 && m <= 0xcf && ![0xc4, 0xc8, 0xcc].includes(m)) {
+        return { type: "jpg", h: buf.readUInt16BE(i + 5), w: buf.readUInt16BE(i + 7) };
+      }
+      i += 2 + buf.readUInt16BE(i + 2);
+    }
+  }
+  return null;
+}
+
+const MAX_W = 430;
+const MAX_H = 520;
+
+/** Lee la imagen (disco o URL). Intenta reducirla con sharp; si no puede, usa el original. */
+async function imagenParaDocx(url: string): Promise<ImagenDocx> {
+  let buf: Buffer;
   try {
-    const buf = url.startsWith("/")
-      ? await readFile(join(process.cwd(), "public", url))
-      : Buffer.from(await (await fetch(url)).arrayBuffer());
+    if (url.startsWith("/")) {
+      buf = await readFile(join(process.cwd(), "public", url));
+    } else {
+      const res = await fetch(url);
+      if (!res.ok) return { ok: false, motivo: `descarga HTTP ${res.status}` };
+      buf = Buffer.from(await res.arrayBuffer());
+    }
+  } catch (err) {
+    return { ok: false, motivo: `descarga: ${err instanceof Error ? err.message : err}` };
+  }
+
+  let motivoSharp = "";
+  try {
     const sharp = (await import("sharp")).default;
     const { data, info } = await sharp(buf, { failOn: "none" })
       .rotate()
       .resize({ width: 1400, withoutEnlargement: true })
       .jpeg({ quality: 82 })
       .toBuffer({ resolveWithObject: true });
-    const esc = Math.min(430 / info.width, 520 / info.height, 1);
+    const esc = Math.min(MAX_W / info.width, MAX_H / info.height, 1);
     return {
+      ok: true,
       data: new Uint8Array(data),
+      type: "jpg",
       width: Math.round(info.width * esc),
       height: Math.round(info.height * esc),
     };
-  } catch {
-    return null;
+  } catch (err) {
+    motivoSharp = err instanceof Error ? err.message : String(err);
   }
+
+  // Respaldo: el original, solo si es PNG/JPEG y no es pesado (límite de respuesta de Vercel).
+  const dim = medirImagen(buf);
+  if (dim && buf.length <= 900_000) {
+    const esc = Math.min(MAX_W / dim.w, MAX_H / dim.h, 1);
+    return {
+      ok: true,
+      data: new Uint8Array(buf),
+      type: dim.type,
+      width: Math.round(dim.w * esc),
+      height: Math.round(dim.h * esc),
+    };
+  }
+  return { ok: false, motivo: `sharp: ${motivoSharp}` };
 }
 
-type CacheImg = Map<string, ReturnType<typeof imagenParaDocx>>;
+type CacheImg = Map<string, Promise<ImagenDocx>>;
 
 async function figura(
   url: string,
@@ -157,9 +209,9 @@ async function figura(
   cache: CacheImg,
 ): Promise<Paragraph[]> {
   const im = await (cache.get(url) ?? imagenParaDocx(url));
-  if (!im) {
+  if (!im.ok) {
     return [
-      p(`[imagen no disponible — ${url}] ${leyenda}`, {
+      p(`[imagen no disponible (${im.motivo}) — ${url}] ${leyenda}`, {
         italic: true,
         size: SMALL,
         align: AlignmentType.LEFT,
@@ -174,7 +226,7 @@ async function figura(
       children: [
         new ImageRun({
           data: im.data,
-          type: "jpg",
+          type: im.type,
           transformation: { width: im.width, height: im.height },
         }),
       ],
