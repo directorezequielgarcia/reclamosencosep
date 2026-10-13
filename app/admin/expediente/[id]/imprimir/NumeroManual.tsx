@@ -30,7 +30,7 @@ export function NumeroManual({ actual }: { actual: string }) {
         value={valor}
         onChange={(e) => setValor(e.target.value)}
         placeholder={actual}
-        className="w-28 text-xs px-2 py-1 rounded text-black"
+        className="w-28 text-xs px-2 py-1 rounded bg-white text-black placeholder:text-gray-500"
       />
       <button
         type="submit"

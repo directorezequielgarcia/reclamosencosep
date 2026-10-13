@@ -1,8 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { TIPO_ACTO_META } from "@/lib/expedientes";
+import {
+  cargarEmisionExpediente,
+  ubicacionReclamo,
+} from "@/lib/expediente-emision";
 import { LogoEncosep } from "@/components/ui/LogoEncosep";
 import { BotonImprimir } from "./BotonImprimir";
 import { NumeroManual } from "./NumeroManual";
@@ -17,15 +20,6 @@ function fmt(d: Date): string {
     hour: "2-digit",
     minute: "2-digit",
   });
-}
-
-// Parsea "EXP-2026-001" o "07/2026" → { nro: "001", anio: "2026" }
-function parseNumero(numero: string): { nro: string; anio: string } {
-  const m = numero.match(/(\d{4})-(\d+)/);
-  if (m) return { anio: m[1], nro: m[2] };
-  const barra = numero.match(/^\s*(\d+)\s*\/\s*(\d{4})\s*$/);
-  if (barra) return { nro: barra[1].padStart(2, "0"), anio: barra[2] };
-  return { anio: String(new Date().getFullYear()), nro: numero.trim() };
 }
 
 const esImagen = (adj: { tipo: string; mimeType: string | null; url: string }) =>
@@ -49,73 +43,13 @@ export default async function ImprimirExpedientePage({
   const sp = await searchParams;
   const session = await auth();
 
-  const where: { id: string; prestadoraId?: string } = { id };
-  if (session!.user.rol === "OPERADOR_PRESTADORA") {
-    where.prestadoraId = session!.user.prestadoraId ?? "__none__";
-  }
-
-  const exp = await prisma.expediente.findFirst({
-    where,
-    include: {
-      prestadora: true,
-      iniciador: true,
-      reclamos: {
-        include: {
-          ciudadano: true,
-          adjuntos: { orderBy: { createdAt: "asc" } },
-        },
-      },
-      actos: {
-        include: { autor: true, adjuntos: true },
-        orderBy: { createdAt: "asc" },
-      },
-    },
-  });
-  if (!exp) notFound();
-
-  const esEnte =
-    session!.user.rol === "GESTOR_ENTE" || session!.user.rol === "SUPER_ADMIN";
-
-  // Visibilidad: la prestadora solo imprime lo que tiene visible.
-  let actos = esEnte
-    ? exp.actos
-    : exp.actos.filter(
-        (a) => a.visiblePrestadora || a.tipo === "DESCARGO_PRESTADORA",
-      );
-
-  // Alcance de la emisión.
-  let subtitulo = "Expediente completo";
-  if (sp.solo) {
-    actos = actos.filter((a) => a.id === sp.solo);
-    subtitulo = "Etapa puntual";
-  } else if (sp.hasta) {
-    const corte = exp.actos.find((a) => a.id === sp.hasta);
-    if (corte) {
-      actos = actos.filter((a) => a.createdAt <= corte.createdAt);
-      subtitulo = "Hasta la foja indicada";
-    }
-  }
-
-  const manual = sp.nro?.trim();
-
-  // Con número manual, también se reemplaza el del sistema dentro de los textos.
-  if (manual) {
-    const reemplazar = (t: string) => t.split(exp.numero).join(`${manual}`);
-    actos = actos.map((a) => ({
-      ...a,
-      titulo: reemplazar(a.titulo),
-      cuerpo: reemplazar(a.cuerpo),
-    }));
-  }
+  const datos = await cargarEmisionExpediente(id, sp, session!);
+  if (!datos) notFound();
+  const { exp, actos, subtitulo, manual, numeroSistema, nro, anio, reclamante } =
+    datos;
 
   const hoja = sp.hoja === "oficio" ? "oficio" : "a4";
   const sizeCss = hoja === "oficio" ? "21.6cm 35.6cm" : "A4";
-  const numeroSistema = parseNumero(exp.numero);
-  const { nro, anio } = manual ? parseNumero(manual) : numeroSistema;
-  const reclamante =
-    exp.reclamos[0]?.ciudadano
-      ? `${exp.reclamos[0].ciudadano.nombre} ${exp.reclamos[0].ciudadano.apellido}`
-      : exp.intervinientes ?? "—";
 
   // Anexo de imágenes: todas las fotos adjuntas se agregan al final del documento.
   const imagenesAnexo = actos.flatMap((a, i) =>
@@ -190,6 +124,12 @@ export default async function ImprimirExpedientePage({
             Oficio
           </Link>
           <BotonImprimir />
+          <a
+            href={`/api/admin/expediente/${exp.id}/docx?${new URLSearchParams({ ...baseQuery, hoja }).toString()}`}
+            className="px-4 py-2 rounded-lg bg-white text-navy font-bold text-sm"
+          >
+            📄 Exportar Word
+          </a>
         </div>
       </div>
 
@@ -239,6 +179,25 @@ export default async function ImprimirExpedientePage({
               </p>
             )}
           </div>
+
+          {exp.reclamos.length > 0 && (
+            <div className="mt-8 mx-auto max-w-xl text-left text-[15px] space-y-5">
+              {exp.reclamos.map((r) => (
+                <div key={r.id} style={{ breakInside: "avoid" }}>
+                  <div className="text-xs uppercase tracking-widest text-gray-600">
+                    Reclamo {r.codigo}
+                  </div>
+                  <p className="font-bold">{r.titulo}</p>
+                  <p className="whitespace-pre-wrap text-justify mt-1">
+                    {r.descripcion}
+                  </p>
+                  <p className="mt-1">
+                    <strong>Ubicación:</strong> {ubicacionReclamo(r)}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
 
           <div className="mt-10 text-xs text-gray-600">
             Iniciado el{" "}
