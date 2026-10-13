@@ -13,6 +13,15 @@ import {
 } from "@/lib/expediente-emision";
 import { generarExpedienteDocx } from "@/lib/docx-expediente";
 
+const esImagen = (adj: {
+  tipo: string;
+  mimeType: string | null;
+  url: string;
+}) =>
+  adj.tipo === "FOTO" ||
+  !!adj.mimeType?.startsWith("image/") ||
+  /\.(png|jpe?g|webp|gif)(\?|$)/i.test(adj.url);
+
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -60,18 +69,48 @@ export async function GET(
       reclamante,
       intervinientes: exp.intervinientes,
       iniciadoEn: exp.createdAt,
-      reclamos: exp.reclamos.map((r) => ({
-        codigo: r.codigo,
-        titulo: r.titulo,
-        descripcion: r.descripcion,
-        ubicacion: ubicacionReclamo(r),
-      })),
+      reclamos: exp.reclamos.map((r) => {
+        const adj = q.get("solo") ? [] : r.adjuntos;
+        return {
+          codigo: r.codigo,
+          origen: r.origen,
+          ingresoEn: r.createdAt,
+          servicio: r.servicio.nombre,
+          titulo: r.titulo,
+          descripcion: r.descripcion,
+          ubicacion: ubicacionReclamo(r),
+          lat: r.lat,
+          lng: r.lng,
+          ciudadano: {
+            nombre: `${r.ciudadano.nombre} ${r.ciudadano.apellido}`,
+            dni: r.ciudadano.dni,
+            email: r.ciudadano.email,
+            telefono: r.ciudadano.telefono,
+          },
+          fotos: adj.filter(esImagen).map((x) => x.url),
+          otros: adj
+            .filter((x) => !esImagen(x))
+            .map((x) => ({
+              tipo:
+                x.tipo === "VIDEO"
+                  ? "Video"
+                  : x.tipo === "AUDIO"
+                    ? "Audio"
+                    : "Documento",
+              url: x.url,
+            })),
+        };
+      }),
       actos: actos.map((a) => ({
         tipoLabel: TIPO_ACTO_META[a.tipo].label,
         titulo: a.titulo,
         cuerpo: a.cuerpo,
         creadoEn: a.createdAt,
-        adjuntos: a.adjuntos.map((x) => x.nombre ?? "Archivo"),
+        adjuntos: a.adjuntos.map((x) => ({
+          nombre: x.nombre ?? "Archivo",
+          url: x.url,
+          esImagen: esImagen(x),
+        })),
         firmas: a.tipo === "RESOLUCION",
         notificado: a.notificadoEn
           ? `Notificado a ${a.notificadoA} el ${fmt(a.notificadoEn)}.`

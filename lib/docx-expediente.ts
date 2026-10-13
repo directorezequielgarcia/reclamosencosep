@@ -18,7 +18,11 @@ import {
   TabStopType,
   TextRun,
 } from "docx";
+import { readFile } from "fs/promises";
+import { join } from "path";
+import sharp from "sharp";
 import { cargarLogoBuffer } from "@/lib/docx-logo";
+import { construirMapaEstatico } from "@/lib/mapa-estatico";
 
 export type ExpedienteParaDocx = {
   nro: string;
@@ -32,16 +36,29 @@ export type ExpedienteParaDocx = {
   iniciadoEn: Date;
   reclamos: {
     codigo: string;
+    origen: string;
+    ingresoEn: Date;
+    servicio: string;
     titulo: string;
     descripcion: string;
     ubicacion: string;
+    lat: number | null;
+    lng: number | null;
+    ciudadano: {
+      nombre: string;
+      dni: string;
+      email: string | null;
+      telefono: string | null;
+    };
+    fotos: string[];
+    otros: { tipo: string; url: string }[];
   }[];
   actos: {
     tipoLabel: string;
     titulo: string;
     cuerpo: string;
     creadoEn: Date;
-    adjuntos: string[];
+    adjuntos: { nombre: string; url: string; esImagen: boolean }[];
     firmas: boolean;
     notificado: string | null;
   }[];
@@ -106,6 +123,65 @@ function cuerpoParrafos(texto: string): Paragraph[] {
     .map((l) => p(l));
 }
 
+/** Lee la imagen (disco o URL), la normaliza a JPG y calcula su tamaño en el documento. */
+async function imagenParaDocx(url: string): Promise<{
+  data: Uint8Array;
+  width: number;
+  height: number;
+} | null> {
+  try {
+    const buf = url.startsWith("/")
+      ? await readFile(join(process.cwd(), "public", url))
+      : Buffer.from(await (await fetch(url)).arrayBuffer());
+    const { data, info } = await sharp(buf, { failOn: "none" })
+      .rotate()
+      .resize({ width: 1400, withoutEnlargement: true })
+      .jpeg({ quality: 82 })
+      .toBuffer({ resolveWithObject: true });
+    const esc = Math.min(430 / info.width, 520 / info.height, 1);
+    return {
+      data: new Uint8Array(data),
+      width: Math.round(info.width * esc),
+      height: Math.round(info.height * esc),
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function figura(url: string, leyenda: string): Promise<Paragraph[]> {
+  const im = await imagenParaDocx(url);
+  if (!im) {
+    return [
+      p(`[imagen no disponible — ${url}] ${leyenda}`, {
+        italic: true,
+        size: SMALL,
+        align: AlignmentType.LEFT,
+      }),
+    ];
+  }
+  return [
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      keepNext: true,
+      spacing: { before: 160, after: 40 },
+      children: [
+        new ImageRun({
+          data: im.data,
+          type: "jpg",
+          transformation: { width: im.width, height: im.height },
+        }),
+      ],
+    }),
+    p(leyenda, {
+      align: AlignmentType.CENTER,
+      italic: true,
+      size: SMALL,
+      after: 200,
+    }),
+  ];
+}
+
 export async function generarExpedienteDocx(
   e: ExpedienteParaDocx,
   hoja: "a4" | "oficio",
@@ -159,20 +235,62 @@ export async function generarExpedienteDocx(
   );
   if (e.intervinientes) children.push(campo("Intervinientes", e.intervinientes));
 
-  // Reclamo origen: título, descripción y ubicación
+  // Reclamo inicial del vecino: datos, descripción y ubicación con mapa
   for (const r of e.reclamos) {
     children.push(
-      p(`RECLAMO ${r.codigo}`, {
+      p(`RECLAMO INICIAL ${r.codigo}`, {
         bold: true,
         size: SMALL,
         align: AlignmentType.LEFT,
-        before: 280,
+        before: 320,
         after: 40,
       }),
       p(r.titulo, { bold: true, align: AlignmentType.LEFT, after: 80 }),
-      ...cuerpoParrafos(r.descripcion),
+      campo(
+        "Ingreso",
+        `${fechaLarga(r.ingresoEn, true)} (${r.origen === "WHATSAPP" ? "WhatsApp" : "portal web"})`,
+      ),
+      campo("Servicio", r.servicio),
+      campo(
+        "Vecino reclamante",
+        `${r.ciudadano.nombre} (DNI ${r.ciudadano.dni})`,
+      ),
+      campo(
+        "Contacto",
+        [r.ciudadano.email, r.ciudadano.telefono].filter(Boolean).join(" · "),
+      ),
       campo("Ubicación", r.ubicacion),
+      p("Descripción del vecino:", {
+        bold: true,
+        align: AlignmentType.LEFT,
+        before: 80,
+        after: 60,
+      }),
+      ...cuerpoParrafos(r.descripcion),
     );
+    if (r.lat != null && r.lng != null) {
+      const mapa = await construirMapaEstatico(r.lat, r.lng);
+      if (mapa) {
+        children.push(
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            spacing: { before: 120, after: 40 },
+            children: [
+              new ImageRun({
+                type: "svg",
+                data: Buffer.from(mapa.svg, "utf-8"),
+                fallback: { type: "png", data: new Uint8Array(mapa.fallbackPng) },
+                transformation: { width: 420, height: 280 },
+              }),
+            ],
+          }),
+          p(
+            `Coordenadas GPS: ${r.lat.toFixed(5)}, ${r.lng.toFixed(5)} · Mapa: © OpenStreetMap contributors`,
+            { align: AlignmentType.CENTER, italic: true, size: SMALL },
+          ),
+        );
+      }
+    }
   }
 
   children.push(
@@ -203,11 +321,22 @@ export async function generarExpedienteDocx(
     );
     if (a.adjuntos.length > 0) {
       children.push(
-        p(`Documental adjunta: ${a.adjuntos.join("; ")}.`, {
+        p(`Documental adjunta: ${a.adjuntos.map((x) => x.nombre).join("; ")}.`, {
           size: SMALL,
           before: 120,
         }),
       );
+      for (const adj of a.adjuntos.filter((x) => x.esImagen)) {
+        children.push(...(await figura(adj.url, adj.nombre)));
+      }
+      for (const adj of a.adjuntos.filter((x) => !x.esImagen)) {
+        children.push(
+          p(`${adj.nombre}: ${adj.url}`, {
+            size: SMALL,
+            align: AlignmentType.LEFT,
+          }),
+        );
+      }
     }
     if (a.firmas) {
       children.push(
@@ -243,6 +372,41 @@ export async function generarExpedienteDocx(
           ],
         }),
       );
+    }
+  }
+
+  // Anexo: documental aportada por el vecino al presentar el reclamo
+  const conAnexo = e.reclamos.filter((r) => r.fotos.length || r.otros.length);
+  if (conAnexo.length > 0) {
+    children.push(
+      new Paragraph({ children: [new PageBreak()] }),
+      p("Anexo — Documental aportada por el reclamante", {
+        bold: true,
+        size: 28,
+        align: AlignmentType.LEFT,
+        after: 80,
+      }),
+      p("Material adjuntado por el reclamante al presentar el reclamo.", {
+        italic: true,
+        size: SMALL,
+        align: AlignmentType.LEFT,
+        after: 200,
+      }),
+    );
+    for (const r of conAnexo) {
+      for (let i = 0; i < r.fotos.length; i++) {
+        children.push(
+          ...(await figura(r.fotos[i], `Imagen ${i + 1} — Reclamo ${r.codigo}`)),
+        );
+      }
+      for (const o of r.otros) {
+        children.push(
+          p(`${o.tipo} — Reclamo ${r.codigo}: ${o.url}`, {
+            size: SMALL,
+            align: AlignmentType.LEFT,
+          }),
+        );
+      }
     }
   }
 

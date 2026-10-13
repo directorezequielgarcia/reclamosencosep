@@ -38,6 +38,7 @@ export async function cargarEmisionExpediente(
       reclamos: {
         include: {
           ciudadano: true,
+          servicio: true,
           adjuntos: { orderBy: { createdAt: "asc" } },
         },
       },
