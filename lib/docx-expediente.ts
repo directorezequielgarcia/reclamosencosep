@@ -149,8 +149,14 @@ async function imagenParaDocx(url: string): Promise<{
   }
 }
 
-async function figura(url: string, leyenda: string): Promise<Paragraph[]> {
-  const im = await imagenParaDocx(url);
+type CacheImg = Map<string, ReturnType<typeof imagenParaDocx>>;
+
+async function figura(
+  url: string,
+  leyenda: string,
+  cache: CacheImg,
+): Promise<Paragraph[]> {
+  const im = await (cache.get(url) ?? imagenParaDocx(url));
   if (!im) {
     return [
       p(`[imagen no disponible — ${url}] ${leyenda}`, {
@@ -187,6 +193,13 @@ export async function generarExpedienteDocx(
   hoja: "a4" | "oficio",
 ): Promise<Buffer> {
   const size = hoja === "oficio" ? PAGE_OFICIO : PAGE_A4;
+  // Las imágenes se descargan y procesan todas en paralelo (el límite de la función serverless es corto).
+  const cache: CacheImg = new Map();
+  const urls = [
+    ...e.actos.flatMap((a) => a.adjuntos.filter((x) => x.esImagen).map((x) => x.url)),
+    ...e.reclamos.flatMap((r) => r.fotos),
+  ];
+  for (const u of urls) if (!cache.has(u)) cache.set(u, imagenParaDocx(u));
   const children: Paragraph[] = [];
 
   const logo = await cargarLogoBuffer();
@@ -327,7 +340,7 @@ export async function generarExpedienteDocx(
         }),
       );
       for (const adj of a.adjuntos.filter((x) => x.esImagen)) {
-        children.push(...(await figura(adj.url, adj.nombre)));
+        children.push(...(await figura(adj.url, adj.nombre, cache)));
       }
       for (const adj of a.adjuntos.filter((x) => !x.esImagen)) {
         children.push(
@@ -396,7 +409,7 @@ export async function generarExpedienteDocx(
     for (const r of conAnexo) {
       for (let i = 0; i < r.fotos.length; i++) {
         children.push(
-          ...(await figura(r.fotos[i], `Imagen ${i + 1} — Reclamo ${r.codigo}`)),
+          ...(await figura(r.fotos[i], `Imagen ${i + 1} — Reclamo ${r.codigo}`, cache)),
         );
       }
       for (const o of r.otros) {

@@ -22,7 +22,11 @@ const esImagen = (adj: {
   !!adj.mimeType?.startsWith("image/") ||
   /\.(png|jpe?g|webp|gif)(\?|$)/i.test(adj.url);
 
-export async function GET(
+// Descargar y procesar fotos puede tardar más que el límite por defecto.
+export const maxDuration = 60;
+export const runtime = "nodejs";
+
+async function generar(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
@@ -133,4 +137,19 @@ export async function GET(
       "Cache-Control": "no-store",
     },
   });
+}
+
+export async function GET(
+  req: Request,
+  ctx: { params: Promise<{ id: string }> },
+) {
+  try {
+    return await generar(req, ctx);
+  } catch (err) {
+    console.error("Error exportando expediente a Word:", err);
+    const msg = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+    return new NextResponse(`No se pudo generar el Word. ${msg}`, {
+      status: 500,
+    });
+  }
 }
