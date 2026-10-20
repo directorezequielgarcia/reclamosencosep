@@ -593,6 +593,47 @@ export default async function AreaFiscalizadaPage({
               <ZorritoGuia />
             </div>
 
+            {svc === "transporte" && (
+              <div id="taxi-comodoro" className="mt-6 rounded-2xl border border-line bg-paper p-5">
+                <div className="flex items-start gap-3">
+                  <div className="text-3xl" aria-hidden>🚕</div>
+                  <div className="flex-1">
+                    <h3 className="text-base font-extrabold text-navy">
+                      ¿No llegás en colectivo? Podés moverte en taxi
+                    </h3>
+                    <p className="text-sm text-muted mt-1 leading-relaxed">
+                      Taxi Comodoro tiene una aplicación y una web para pedir tu taxi desde el celular, ahora o
+                      programado para más tarde. Indicás de dónde salís y adónde vas, podés sumar paradas y
+                      dejar notas para el conductor, y no hace falta crear una cuenta para reservar. Se paga
+                      con tarjeta de crédito, de débito o en efectivo.
+                    </p>
+                    <div className="flex flex-wrap gap-3 mt-4">
+                      <a
+                        href="https://play.google.com/store/apps/details?id=com.autocab.comodoro"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-navy-2 text-white font-bold text-sm"
+                      >
+                        📲 Descargá la app
+                      </a>
+                      <a
+                        href="https://taxicomodoro.com.ar/pedir-taxi/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 border-navy-2 text-navy font-bold text-sm"
+                      >
+                        🌐 Pedí un taxi desde la web
+                      </a>
+                    </div>
+                    <p className="text-xs text-muted mt-3 leading-relaxed">
+                      Servicio de terceros, informado según su propio sitio. Antes de viajar, confirmá la tarifa
+                      y los datos del taxi en la app.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div id="horarios" className="mt-6 scroll-mt-24">
               <h3 className="text-sm font-extrabold text-navy uppercase tracking-wider">
                 🕒 Horarios de tu línea
