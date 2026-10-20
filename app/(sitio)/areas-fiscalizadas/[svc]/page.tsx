@@ -554,6 +554,12 @@ export default async function AreaFiscalizadaPage({
                   >
                     📄 Horarios en PDF
                   </a>
+                  <a
+                    href="/boleto-combinado"
+                    className="text-sm font-bold text-navy underline underline-offset-4 hover:text-navy-2"
+                  >
+                    🎟️ Consultá tu boleto combinado
+                  </a>
                 </>
               )}
             </div>

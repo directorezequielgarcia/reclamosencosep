@@ -11,6 +11,9 @@ import {
   parDudoso,
 } from "@/lib/boleto-combinado";
 
+// La Resolución 1.628/26 (Etapa Inicial) no incluye las líneas 10 y 11.
+const SIN_SERVICIO = new Set([10, 11]);
+
 const campo =
   "w-full rounded-xl border border-line bg-white px-3 py-2.5 text-sm text-navy";
 
@@ -35,7 +38,9 @@ export function ConsultaBoletoCombinado() {
             <select className={campo} value={a} onChange={(e) => setA(e.target.value)}>
               <option value="">Elegí…</option>
               {LINEAS_COMBINADO.map((l) => (
-                <option key={l} value={l}>Línea {l}</option>
+                <option key={l} value={l} disabled={SIN_SERVICIO.has(l)}>
+                  Línea {l}{SIN_SERVICIO.has(l) ? " (no opera en la Etapa Inicial)" : ""}
+                </option>
               ))}
             </select>
           </label>
@@ -44,7 +49,9 @@ export function ConsultaBoletoCombinado() {
             <select className={campo} value={b} onChange={(e) => setB(e.target.value)}>
               <option value="">Elegí…</option>
               {LINEAS_COMBINADO.map((l) => (
-                <option key={l} value={l}>Línea {l}</option>
+                <option key={l} value={l} disabled={SIN_SERVICIO.has(l)}>
+                  Línea {l}{SIN_SERVICIO.has(l) ? " (no opera en la Etapa Inicial)" : ""}
+                </option>
               ))}
             </select>
           </label>
