@@ -1154,6 +1154,8 @@ model Norma {
   digestoId          Int? // null = documento propio, sin ficha en el Digesto
   archivoLocal       String? // ruta en la PC del Ente (referencia, no se sube)
   notas              String?
+  texto              String? // texto completo por OCR del PDF oficial (puede tener errores)
+  textoBusqueda      String? // mismo texto en minúsculas, sin acentos y con espacios normalizados
   createdAt          DateTime    @default(now())
   updatedAt          DateTime    @updatedAt
 
