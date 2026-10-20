@@ -1156,6 +1156,11 @@ model Norma {
   notas              String?
   texto              String? // texto completo por OCR del PDF oficial (puede tener errores)
   textoBusqueda      String? // mismo texto en minúsculas, sin acentos y con espacios normalizados
+  resumen            String? // resumen en lenguaje llano (generado y revisado)
+  puntosClave        String[] @default([]) // puntos clave de la norma
+  aplicaAlEnte       String? // para qué le sirve al ENCOSEP
+  temas              String[] @default([]) // etiquetas temáticas
+  calidadTexto       String? // buena | regular | mala (calidad del OCR)
   createdAt          DateTime    @default(now())
   updatedAt          DateTime    @updatedAt
 

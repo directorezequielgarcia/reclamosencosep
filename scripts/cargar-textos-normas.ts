@@ -6,7 +6,7 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { prisma } from "../lib/prisma";
-import { limpiarTextoOcr, normalizarTexto } from "../lib/normativa";
+import { limpiarTextoOcr, normalizarParaBusqueda } from "../lib/normativa";
 
 const RUTA_DEFECTO =
   "C:/Users/gje_9/AppData/Local/Temp/claude/c--Users-gje-9-OneDrive-Documentos-Claude-md/1d3bad91-d003-4b14-a03f-6888fd18a82a/scratchpad/agua/textos_normas.json";
@@ -37,7 +37,7 @@ async function main() {
     }
     await prisma.norma.update({
       where: { id: norma.id },
-      data: { texto: texto || null, textoBusqueda: texto ? normalizarTexto(texto) : null },
+      data: { texto: texto || null, textoBusqueda: texto ? normalizarParaBusqueda(texto) : null },
     });
     bytes += texto.length * 2; // texto + textoBusqueda
     actualizadas++;

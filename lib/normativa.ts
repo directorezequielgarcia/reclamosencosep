@@ -16,6 +16,33 @@ export function normalizarTexto(s: string): string {
   return out;
 }
 
+/**
+ * Normalización para el texto de búsqueda (textoBusqueda): lo mismo que
+ * `normalizarTexto` más una corrección tolerante de errores típicos del OCR.
+ * El OCR lee la "ó" como "6" ("resoluci6n", "micromedici6n"), y a veces la
+ * "o" como "0" o la "i" como "1". Se corrige SOLO cuando el dígito (6, 0 o 1)
+ * está entre dos letras minúsculas dentro de una palabra: así "art. 17",
+ * "16600", "1a" o "2018" no se tocan. Mide lo mismo que el original, por lo que
+ * las posiciones siguen coincidiendo con el texto mostrado.
+ */
+export function normalizarParaBusqueda(s: string): string {
+  return normalizarTexto(s).replace(/(?<=[a-z])[601](?=[a-z])/g, (d) => (d === "1" ? "i" : "o"));
+}
+
+/** Escapa los metacaracteres de regex de una entrada (JS y Postgres). */
+export function escaparRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\/-]/g, "\\$&");
+}
+
+/**
+ * Regex global sobre texto ya normalizado que encuentra cada palabra
+ * COMPLETA (no como parte de otra) y su plural simple (s / es).
+ */
+export function regexPalabras(palabras: string[]): RegExp {
+  const alt = palabras.map(escaparRegex).join("|");
+  return new RegExp(`(?<![a-z0-9])(?:${alt})(?:e?s)?(?![a-z0-9])`, "g");
+}
+
 /** Limpieza mínima del texto sacado por OCR: sin caracteres de control y con espacios y saltos colapsados. */
 export function limpiarTextoOcr(s: string): string {
   return s
@@ -24,50 +51,53 @@ export function limpiarTextoOcr(s: string): string {
     .trim();
 }
 
+// Servicios con los que se clasifica la normativa (claves guardadas en
+// Norma.servicios, ver scripts/cargar-normas.ts).
+export const SERVICIO_LABEL: Record<string, string> = {
+  marco: "Marco general y ENCOSEP",
+  agua: "Agua y cloacas",
+  energia: "Energía y alumbrado",
+  transporte: "Transporte colectivo",
+  taxis: "Taxis y remises",
+  higiene: "Higiene urbana",
+  convenios_scpl: "Convenios SCPL",
+};
+
 export type Fragmento = { texto: string; marcado: boolean };
+
+/** Posiciones [inicio, fin) de todas las coincidencias (palabra completa) en el texto. */
+export function posicionesCoincidencias(texto: string, palabras: string[]): [number, number][] {
+  if (palabras.length === 0) return [];
+  const norm = normalizarParaBusqueda(texto);
+  return [...norm.matchAll(regexPalabras(palabras))].map((m) => [m.index, m.index + m[0].length]);
+}
+
+/** Parte `texto` en fragmentos marcados / no marcados según los rangos (ordenados, sin solaparse). */
+export function fragmentar(texto: string, rangos: [number, number][], desde = 0, hasta = texto.length): Fragmento[] {
+  const frags: Fragmento[] = [];
+  let pos = desde;
+  for (const [a, b] of rangos) {
+    if (b <= desde || a >= hasta) continue;
+    const ra = Math.max(a, desde);
+    const rb = Math.min(b, hasta);
+    if (ra > pos) frags.push({ texto: texto.slice(pos, ra), marcado: false });
+    frags.push({ texto: texto.slice(ra, rb), marcado: true });
+    pos = rb;
+  }
+  if (pos < hasta) frags.push({ texto: texto.slice(pos, hasta), marcado: false });
+  return frags;
+}
 
 /**
  * Arma un extracto de unos `largo` caracteres alrededor de la primera
- * coincidencia de cualquiera de las palabras (ya normalizadas), partido en
- * fragmentos para renderizar con <mark> sin HTML crudo.
+ * coincidencia, partido en fragmentos para renderizar con <mark> sin HTML crudo.
  */
 export function armarExtracto(texto: string, palabras: string[], largo = 200): Fragmento[] | null {
-  const norm = normalizarTexto(texto);
-  let primera = -1;
-  for (const p of palabras) {
-    const i = norm.indexOf(p);
-    if (i >= 0 && (primera < 0 || i < primera)) primera = i;
-  }
-  if (primera < 0) return null;
-
-  const ini = Math.max(0, primera - Math.floor(largo / 2));
+  const rangos = posicionesCoincidencias(texto, palabras);
+  if (rangos.length === 0) return null;
+  const ini = Math.max(0, rangos[0][0] - Math.floor(largo / 2));
   const fin = Math.min(texto.length, ini + largo);
-
-  // Rangos marcados dentro de [ini, fin)
-  const rangos: [number, number][] = [];
-  for (const p of palabras) {
-    let i = norm.indexOf(p, ini);
-    while (i >= 0 && i < fin) {
-      rangos.push([i, Math.min(i + p.length, fin)]);
-      i = norm.indexOf(p, i + p.length);
-    }
-  }
-  rangos.sort((a, b) => a[0] - b[0]);
-  const unidos: [number, number][] = [];
-  for (const r of rangos) {
-    const ult = unidos[unidos.length - 1];
-    if (ult && r[0] <= ult[1]) ult[1] = Math.max(ult[1], r[1]);
-    else unidos.push([r[0], r[1]]);
-  }
-
-  const frags: Fragmento[] = [];
-  let pos = ini;
-  for (const [a, b] of unidos) {
-    if (a > pos) frags.push({ texto: texto.slice(pos, a), marcado: false });
-    frags.push({ texto: texto.slice(a, b), marcado: true });
-    pos = b;
-  }
-  if (pos < fin) frags.push({ texto: texto.slice(pos, fin), marcado: false });
+  const frags = fragmentar(texto, rangos, ini, fin);
   if (ini > 0) frags.unshift({ texto: "… ", marcado: false });
   if (fin < texto.length) frags.push({ texto: " …", marcado: false });
   return frags;

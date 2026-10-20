@@ -1,24 +1,14 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { puedeVerNormativa } from "@/lib/admin";
-import { armarExtracto, normalizarTexto } from "@/lib/normativa";
+import { CopiarBoton } from "@/components/ui/CopiarBoton";
+import { SERVICIO_LABEL, armarExtracto } from "@/lib/normativa";
+import { buscarNormas } from "@/lib/normativa-busqueda";
+import { prisma } from "@/lib/prisma";
 import type { EstadoNorma, Prisma, TipoNorma } from "@prisma/client";
 
 export const metadata = { title: "Normativa · Panel ENCOSEP" };
-
-// Servicios con los que se clasifica la normativa (claves guardadas en
-// Norma.servicios, ver scripts/cargar-normas.ts).
-const SERVICIO_LABEL: Record<string, string> = {
-  marco: "Marco general y ENCOSEP",
-  agua: "Agua y cloacas",
-  energia: "Energía y alumbrado",
-  transporte: "Transporte colectivo",
-  taxis: "Taxis y remises",
-  higiene: "Higiene urbana",
-  convenios_scpl: "Convenios SCPL",
-};
 
 type SP = {
   q?: string;
@@ -60,68 +50,29 @@ export default async function NormativaPage({
   }
   if (desde || hasta) where.anio = { gte: desde, lte: hasta };
 
-  // Livianas: sin el texto completo (omit), que puede pesar bastante.
-  const OMITIR_TEXTO = { texto: true, textoBusqueda: true } as const;
-  const [total, candidatas] = await Promise.all([
-    prisma.norma.count(),
-    prisma.norma.findMany({ where, omit: OMITIR_TEXTO }),
-  ]);
-
-  // Buscador: cada palabra (sin importar mayúsculas, acentos ni orden) tiene
-  // que aparecer en el número, el año, el tema o el texto completo. Para el
-  // texto se le pregunta a la base cuántas veces aparece cada palabra en
-  // textoBusqueda, así no se trae el texto de todas las normas.
-  const palabras = normalizarTexto(sp.q ?? "").split(/\s+/).filter(Boolean);
-  const coincidenciasTexto = new Map<string, number>(); // id → total de apariciones
-  const enTextoPorPalabra: Map<string, number>[] = [];
-  for (const p of palabras) {
-    const filas = await prisma.$queryRaw<{ id: string; n: number }[]>`
-      SELECT "id", ((length("textoBusqueda") - length(replace("textoBusqueda", ${p}, ''))) / length(${p}))::int AS n
-      FROM "Norma"
-      WHERE "textoBusqueda" IS NOT NULL AND position(${p} in "textoBusqueda") > 0`;
-    const m = new Map(filas.map((f) => [f.id, Number(f.n)]));
-    enTextoPorPalabra.push(m);
-    for (const [id, n] of m) coincidenciasTexto.set(id, (coincidenciasTexto.get(id) ?? 0) + n);
-  }
-
-  const relevancia = new Map<string, number>();
-  const filtradas = candidatas.filter((n) => {
-    if (palabras.length === 0) return true;
-    const pajar = normalizarTexto(
-      `${n.tipo === "ORD" ? "ordenanza ord" : "resolucion res"} ${n.numero} ${n.anio} ${n.tema}`,
-    );
-    let puntos = 0;
-    const ok = palabras.every((p, i) => {
-      const enMeta = pajar.includes(p);
-      const enTexto = enTextoPorPalabra[i].get(n.id) ?? 0;
-      puntos += enTexto + (enMeta ? 5 : 0); // coincidir en el tema pesa más
-      return enMeta || enTexto > 0;
-    });
-    relevancia.set(n.id, puntos);
-    return ok;
-  });
-  const porAnio = (a: (typeof filtradas)[number], b: (typeof filtradas)[number]) =>
-    b.anio - a.anio || (parseInt(b.numero, 10) || 0) - (parseInt(a.numero, 10) || 0);
-  filtradas.sort((a, b) =>
-    palabras.length > 0
-      ? (relevancia.get(b.id) ?? 0) - (relevancia.get(a.id) ?? 0) || porAnio(a, b)
-      : porAnio(a, b),
-  );
+  // Búsqueda por palabra completa con relevancia (ver lib/normativa-busqueda.ts)
+  const { total, resultados, palabras } = await buscarNormas(where, sp.q);
+  const filtradas = resultados;
 
   // Paginación
   const totalPaginas = Math.max(1, Math.ceil(filtradas.length / POR_PAGINA));
   const pagina = Math.min(Math.max(1, parseInt(sp.pagina ?? "1", 10) || 1), totalPaginas);
   const normas = filtradas.slice((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA);
+  const coincidenciasTexto = new Map(normas.map((r) => [r.norma.id, r.coincidenciasTexto]));
 
   // Recién ahora se trae el texto, solo de las normas de esta página, para los extractos
   const extractos = new Map<string, ReturnType<typeof armarExtracto>>();
   if (palabras.length > 0 && normas.length > 0) {
     const conTexto = await prisma.norma.findMany({
-      where: { id: { in: normas.map((n) => n.id) }, texto: { not: null } },
+      where: { id: { in: normas.map((r) => r.norma.id) }, texto: { not: null } },
       select: { id: true, texto: true },
     });
     for (const t of conTexto) extractos.set(t.id, armarExtracto(t.texto ?? "", palabras));
   }
+
+  // Link a la ficha conservando la búsqueda para resaltar el texto
+  const hrefFicha = (id: string) =>
+    `/admin/normativa/${id}${sp.q ? `?q=${encodeURIComponent(sp.q)}` : ""}`;
 
   // Link a otra página conservando los filtros
   const hrefPagina = (n: number) => {
@@ -267,7 +218,7 @@ export default async function NormativaPage({
         </div>
       ) : (
         <ul className="flex flex-col gap-3">
-          {normas.map((n) => {
+          {normas.map(({ norma: n }) => {
             const derogada = n.estado === "DEROGADA";
             return (
               <li
@@ -316,6 +267,28 @@ export default async function NormativaPage({
                   )}
                 </div>
 
+                {n.resumen && (
+                  <p className="text-sm text-navy/90 leading-relaxed line-clamp-3">
+                    {n.resumen}{" "}
+                    <Link href={hrefFicha(n.id)} className="font-semibold underline underline-offset-2">
+                      Ver ficha
+                    </Link>
+                  </p>
+                )}
+
+                {n.temas.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {n.temas.map((t) => (
+                      <span
+                        key={t}
+                        className="px-1.5 py-0.5 rounded bg-svc-blue/15 text-[10px] font-semibold text-navy"
+                      >
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
                 {n.notas && <p className="text-xs text-muted">{n.notas}</p>}
 
                 {extractos.get(n.id) && (
@@ -339,12 +312,18 @@ export default async function NormativaPage({
                 )}
 
                 <div className="flex flex-wrap gap-2 pt-1">
+                  <Link
+                    href={hrefFicha(n.id)}
+                    className="inline-flex items-center justify-center px-3 py-2 rounded-lg bg-navy-2 text-white text-sm font-bold"
+                  >
+                    Ver ficha y texto
+                  </Link>
                   {n.urlPdf ? (
                     <a
                       href={n.urlPdf}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center px-3 py-2 rounded-lg bg-svc-red text-white text-sm font-bold"
+                      className="inline-flex items-center justify-center px-3 py-2 rounded-lg border border-line-strong text-sm text-navy font-semibold"
                     >
                       Abrir PDF oficial
                     </a>
@@ -353,6 +332,16 @@ export default async function NormativaPage({
                       Sin PDF del Digesto
                     </span>
                   )}
+                  {n.urlPdf && (
+                    <a
+                      href={`/admin/normativa/${n.id}/pdf`}
+                      className="inline-flex items-center justify-center px-3 py-2 rounded-lg bg-svc-red text-white text-sm font-bold"
+                    >
+                      Descargar PDF
+                    </a>
+                  )}
+                  <CopiarBoton urlRelativa={`/admin/normativa/${n.id}`}>Copiar enlace</CopiarBoton>
+                  {n.urlPdf && <CopiarBoton texto={n.urlPdf}>Copiar enlace oficial</CopiarBoton>}
                   {n.urlFicha && (
                     <a
                       href={n.urlFicha}
