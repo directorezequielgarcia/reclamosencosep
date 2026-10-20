@@ -504,9 +504,73 @@ export default async function AreaFiscalizadaPage({
           </Link>
         </section>
 
+        {/* ELEGÍ CÓMO MOVERTE (solo Transporte): Colectivos o Taxi */}
+        {svc === "transporte" && (
+          <section aria-label="Elegí cómo moverte" className="grid gap-4 sm:grid-cols-2">
+            <a
+              href="#lineas"
+              className="group rounded-2xl overflow-hidden border border-line bg-paper shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition"
+            >
+              <div className="bg-[#7e57c2] px-6 pt-6">
+                <svg viewBox="0 0 320 120" className="w-full h-28" role="img" aria-label="Colectivo">
+                  <rect x="30" y="20" width="260" height="70" rx="14" fill="#ffffff" />
+                  <rect x="30" y="62" width="260" height="14" fill="#d9ccf0" />
+                  <rect x="44" y="32" width="46" height="26" rx="4" fill="#7e57c2" opacity=".35" />
+                  <rect x="98" y="32" width="46" height="26" rx="4" fill="#7e57c2" opacity=".35" />
+                  <rect x="152" y="32" width="46" height="26" rx="4" fill="#7e57c2" opacity=".35" />
+                  <rect x="206" y="32" width="46" height="26" rx="4" fill="#7e57c2" opacity=".35" />
+                  <rect x="260" y="32" width="22" height="40" rx="4" fill="#7e57c2" opacity=".5" />
+                  <circle cx="80" cy="92" r="14" fill="#2b2b3a" />
+                  <circle cx="80" cy="92" r="6" fill="#d9ccf0" />
+                  <circle cx="240" cy="92" r="14" fill="#2b2b3a" />
+                  <circle cx="240" cy="92" r="6" fill="#d9ccf0" />
+                  <rect x="0" y="105" width="320" height="15" fill="#5e3fa3" opacity=".5" />
+                </svg>
+              </div>
+              <div className="p-5">
+                <h2 className="text-xl font-extrabold text-navy">🚌 Colectivos</h2>
+                <p className="text-sm text-muted mt-1 leading-relaxed">
+                  Mapa de líneas, horarios, boleto combinado y tu guía para llegar.
+                </p>
+                <span className="inline-block mt-3 text-sm font-bold text-[#7e57c2] group-hover:underline">
+                  Ver colectivos →
+                </span>
+              </div>
+            </a>
+            <a
+              href="#taxi-comodoro"
+              className="group rounded-2xl overflow-hidden border border-line bg-paper shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition"
+            >
+              <div className="bg-[#f7c600] px-6 pt-6">
+                <svg viewBox="0 0 320 120" className="w-full h-28" role="img" aria-label="Taxi">
+                  <rect x="130" y="24" width="60" height="18" rx="4" fill="#1b1b1b" />
+                  <text x="160" y="37" textAnchor="middle" fontSize="12" fontWeight="800" fill="#f7c600">TAXI</text>
+                  <path d="M70 90 L84 52 Q88 40 102 40 L218 40 Q232 40 236 52 L250 90 Z" fill="#ffffff" />
+                  <path d="M96 52 L222 52 L232 78 L88 78 Z" fill="#cfe3f5" />
+                  <rect x="30" y="76" width="260" height="26" rx="10" fill="#ffffff" stroke="#1b1b1b" strokeWidth="3" />
+                  <rect x="30" y="86" width="260" height="6" fill="#1b1b1b" opacity=".85" />
+                  <circle cx="86" cy="102" r="14" fill="#1b1b1b" />
+                  <circle cx="86" cy="102" r="6" fill="#d0d0d0" />
+                  <circle cx="234" cy="102" r="14" fill="#1b1b1b" />
+                  <circle cx="234" cy="102" r="6" fill="#d0d0d0" />
+                </svg>
+              </div>
+              <div className="p-5">
+                <h2 className="text-xl font-extrabold text-navy">🚕 Taxi</h2>
+                <p className="text-sm text-muted mt-1 leading-relaxed">
+                  Pedí tu taxi desde el celular, ahora o programado, con la app o la web.
+                </p>
+                <span className="inline-block mt-3 text-sm font-bold text-navy-2 group-hover:underline">
+                  Ver taxi →
+                </span>
+              </div>
+            </a>
+          </section>
+        )}
+
         {/* LINEAS Y RECORRIDOS (solo Transporte) */}
         {area.lineas && (
-          <section id="lineas">
+          <section id="lineas" className="scroll-mt-24">
             <div className="text-xs font-bold tracking-widest uppercase text-muted">
               Sol Bus
             </div>
@@ -594,7 +658,7 @@ export default async function AreaFiscalizadaPage({
             </div>
 
             {svc === "transporte" && (
-              <div id="taxi-comodoro" className="mt-6 rounded-2xl border border-line bg-paper p-5">
+              <div id="taxi-comodoro" className="mt-6 scroll-mt-24 rounded-2xl border border-line bg-paper p-5">
                 <div className="flex items-start gap-3">
                   <div className="text-3xl" aria-hidden>🚕</div>
                   <div className="flex-1">
