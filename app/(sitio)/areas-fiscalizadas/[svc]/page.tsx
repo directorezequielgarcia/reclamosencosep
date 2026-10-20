@@ -517,52 +517,77 @@ export default async function AreaFiscalizadaPage({
               <p className="text-sm text-muted mt-2 max-w-2xl">{area.lineasNota}</p>
             )}
 
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-4">
-              {area.mapaSolBusUrl && (
-                <a
-                  href={area.mapaSolBusUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[#7e57c2] text-white font-bold text-sm shadow-lg shadow-[#7e57c2]/30 hover:scale-105 transition"
-                >
-                  🚌 Mapa en vivo según Sol Bus →
-                </a>
-              )}
-              {area.mapaMcrUrl && (
-                <a
-                  href={area.mapaMcrUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm font-semibold text-navy-2 underline underline-offset-4 hover:text-navy"
-                >
-                  🗺️ Mapa oficial de la MCR
-                </a>
-              )}
-              {svc === "transporte" && (
-                <>
+            {svc === "transporte" ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+                {area.mapaSolBusUrl && (
                   <a
-                    href="#horarios"
-                    className="text-sm font-semibold text-navy-2 underline underline-offset-4 hover:text-navy"
+                    href={area.mapaSolBusUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 px-5 py-4 rounded-xl bg-[#7e57c2] text-white font-extrabold text-sm text-center shadow-lg shadow-[#7e57c2]/30 hover:scale-[1.02] transition"
                   >
-                    🕒 Horarios de tu línea
+                    🚌 Mapa de colectivos y líneas Sol Bus
                   </a>
+                )}
+                {area.mapaMcrUrl && (
                   <a
-                    href="/horarios-lineas-sol-bus.pdf"
+                    href={area.mapaMcrUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 px-5 py-4 rounded-xl bg-navy-2 text-white font-extrabold text-sm text-center shadow-lg hover:scale-[1.02] transition"
+                  >
+                    🗺️ Mapa interactivo de la MCR
+                  </a>
+                )}
+                <a
+                  href="/boleto-combinado"
+                  className="flex items-center justify-center gap-2 px-5 py-4 rounded-xl bg-[#f28c28] text-white font-extrabold text-sm text-center shadow-lg shadow-[#f28c28]/30 hover:scale-[1.02] transition"
+                >
+                  🎟️ Consultá tu boleto combinado
+                </a>
+                <a
+                  href="/horarios-lineas-sol-bus.pdf"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  download
+                  className="flex items-center justify-center gap-2 px-5 py-4 rounded-xl bg-white border-2 border-navy-2 text-navy font-extrabold text-sm text-center hover:scale-[1.02] transition"
+                >
+                  📄 Descargá los horarios
+                </a>
+              </div>
+            ) : (
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-4">
+                {area.mapaSolBusUrl && (
+                  <a
+                    href={area.mapaSolBusUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[#7e57c2] text-white font-bold text-sm shadow-lg shadow-[#7e57c2]/30 hover:scale-105 transition"
+                  >
+                    🚌 Mapa en vivo según Sol Bus →
+                  </a>
+                )}
+                {area.mapaMcrUrl && (
+                  <a
+                    href={area.mapaMcrUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-sm font-semibold text-navy-2 underline underline-offset-4 hover:text-navy"
                   >
-                    📄 Horarios en PDF
+                    🗺️ Mapa oficial de la MCR
                   </a>
-                  <a
-                    href="/boleto-combinado"
-                    className="text-sm font-bold text-navy underline underline-offset-4 hover:text-navy-2"
-                  >
-                    🎟️ Consultá tu boleto combinado
-                  </a>
-                </>
-              )}
-            </div>
+                )}
+              </div>
+            )}
+            {svc === "transporte" && (
+              <p className="mt-3 text-xs text-muted">
+                También podés ver los{" "}
+                <a href="#horarios" className="font-semibold text-navy-2 underline underline-offset-4">
+                  horarios de tu línea
+                </a>{" "}
+                más abajo en esta página.
+              </p>
+            )}
 
             <div id="zorrito-guia-widget" className="mt-4">
               <ZorritoGuia />
