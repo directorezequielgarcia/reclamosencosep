@@ -504,6 +504,24 @@ export default async function AreaFiscalizadaPage({
           </Link>
         </section>
 
+        {/* HERRAMIENTAS DE FACTURA (solo Agua y Energía) */}
+        {(svc === "agua" || svc === "energia") && (
+          <section aria-label="Herramientas para tu factura" className="grid gap-3 sm:grid-cols-2">
+            <Link
+              href="/tarifas/controlar"
+              className="flex items-center justify-center gap-2 px-5 py-4 rounded-xl bg-navy-2 text-white font-extrabold text-sm text-center shadow-lg hover:scale-[1.02] transition"
+            >
+              🧾 Chequeá tu factura
+            </Link>
+            <Link
+              href="/tarifas/comparar"
+              className="flex items-center justify-center gap-2 px-5 py-4 rounded-xl bg-white border-2 border-navy-2 text-navy font-extrabold text-sm text-center hover:scale-[1.02] transition"
+            >
+              ⚖️ Compará dos facturas
+            </Link>
+          </section>
+        )}
+
         {/* ELEGÍ CÓMO MOVERTE (solo Transporte): Colectivos o Taxi */}
         {svc === "transporte" && (
           <section aria-label="Elegí cómo moverte" className="grid gap-4 sm:grid-cols-2">

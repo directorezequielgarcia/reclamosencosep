@@ -7,24 +7,28 @@ const SERVICIOS = [
     titulo: "Agua y Saneamiento",
     archivo: "agua.png",
     prestadora: "SCPL",
+    queHacer: "Chequeá tu factura o compará dos facturas.",
   },
   {
     slug: "energia",
     titulo: "Energía Eléctrica y Alumbrado Público",
     archivo: "energia.png",
     prestadora: "SCPL",
+    queHacer: "Chequeá tu factura o compará dos facturas.",
   },
   {
     slug: "residuos",
     titulo: "Gestión de Residuos",
     archivo: "residuos.png",
     prestadora: "CLEAR URBANA S.A.",
+    queHacer: "Entrá a la página oficial de Urbana.",
   },
   {
     slug: "transporte",
     titulo: "Transporte Público Urbano y Suburbano",
     archivo: "transporte.png",
     prestadora: "SOL BUS · DIADEMA",
+    queHacer: "Líneas, horarios, boleto combinado y taxi.",
   },
 ];
 
@@ -50,6 +54,7 @@ export function BotoneraServicios() {
           <div className="text-[10px] text-muted mt-1 uppercase tracking-wider font-semibold">
             {s.prestadora}
           </div>
+          <div className="mt-2 text-xs text-navy leading-snug">{s.queHacer}</div>
           <div className="mt-3 text-[11px] font-bold text-navy-2 uppercase tracking-wider opacity-70 group-hover:opacity-100">
             Ver área →
           </div>
