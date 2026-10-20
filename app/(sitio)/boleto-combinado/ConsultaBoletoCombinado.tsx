@@ -56,6 +56,11 @@ export function ConsultaBoletoCombinado() {
             </select>
           </label>
         </div>
+        <p className="mt-4 text-xs text-muted leading-relaxed">
+          Atención: los ramales <strong>5U (Universidad)</strong> y <strong>9A</strong> todavía no figuran en la
+          planilla de combinaciones. Si viajás en alguno de ellos, el resultado de la línea 5 o la 9 puede no
+          valer para vos: consultá en la Municipalidad.
+        </p>
         <div className="mt-4 rounded-xl border-l-4 border-amber-500 bg-amber-50 p-4">
           <div className="text-sm font-bold text-navy">Recordá</div>
           <p className="text-sm text-navy mt-1 leading-relaxed">
