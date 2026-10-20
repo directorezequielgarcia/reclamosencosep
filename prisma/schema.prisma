@@ -1118,3 +1118,47 @@ model Visita {
   @@index([createdAt])
   @@index([ipHash, createdAt])
 }
+
+// ─────────────────────────────────────────────
+// Normativa (solo equipo interno)
+// Índice de ordenanzas y resoluciones municipales que rigen los servicios
+// públicos controlados, tomado del Digesto Municipal de Comodoro. v1: solo
+// metadatos y enlace al PDF oficial (sin texto completo). `numero` es String
+// porque hay normas con sufijo (ej. "6050-5"). `servicios` guarda claves:
+// marco, agua, energia, transporte, taxis, higiene, convenios_scpl.
+// ─────────────────────────────────────────────
+
+enum TipoNorma {
+  ORD
+  RES
+}
+
+enum EstadoNorma {
+  VIGENTE
+  DEROGADA
+}
+
+model Norma {
+  id                 String      @id @default(cuid())
+  tipo               TipoNorma
+  numero             String
+  anio               Int
+  fechaPublicacionBO String? // texto tal cual el Digesto (dd/mm/aaaa)
+  tema               String
+  servicios          String[]
+  estado             EstadoNorma @default(VIGENTE)
+  derogadaPor        String? // ej. "Ord. 12584/2016"
+  derogaA            String? // ej. "Ord. 10270/2011"
+  urlFicha           String? // ficha en el Digesto
+  urlPdf             String? // PDF oficial en el Digesto
+  digestoId          Int? // null = documento propio, sin ficha en el Digesto
+  archivoLocal       String? // ruta en la PC del Ente (referencia, no se sube)
+  notas              String?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+
+  @@unique([tipo, numero, anio])
+  @@index([anio])
+  @@index([estado])
+  @@index([digestoId])
+}

@@ -178,6 +178,15 @@ export function puedeVerAgenda(rol: Rol): boolean {
   );
 }
 
+/**
+ * Puede ver la Normativa (índice del Digesto Municipal): solo el equipo
+ * interno del Ente. Nunca vecinos ni roles externos (prestadoras, Autoridad
+ * de Aplicación, PEM, Concejo). Mismo criterio que la Agenda interna.
+ */
+export function puedeVerNormativa(rol: Rol): boolean {
+  return puedeVerAgenda(rol);
+}
+
 /** Puede gestionar vencimientos de documentación. */
 export function puedeGestionarVencimientos(rol: Rol): boolean {
   return esDireccion(rol) || rol === "COOPERATIVA_DOCS" || rol === "GESTOR_ENTE";

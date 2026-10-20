@@ -16,6 +16,7 @@ import {
   puedeVerAgenda,
   puedeVerDocumentos,
   puedeVerInspecciones,
+  puedeVerNormativa,
 } from "@/lib/admin";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 
@@ -69,6 +70,9 @@ export default async function AdminLayout({
             <NavLink href="/capacitacion">Capacitación</NavLink>
             {puedeVerDocumentos(rol) && (
               <NavLink href="/admin/documentacion">Documentación</NavLink>
+            )}
+            {puedeVerNormativa(rol) && (
+              <NavLink href="/admin/normativa">Normativa</NavLink>
             )}
             {puedeGestionarVencimientos(rol) && (
               <NavLink href="/admin/vencimientos">Vencimientos</NavLink>

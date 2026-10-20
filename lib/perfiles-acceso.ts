@@ -95,6 +95,7 @@ export const PERFILES_ACCESO: Record<PerfilKey, PerfilAcceso> = {
       "Expedientes e inspecciones de campo",
       "Documentación de prestadoras y vencimientos",
       "Audiencias, boletines e informes",
+      "Normativa: buscador de ordenanzas y resoluciones del Digesto",
     ],
     deberesLabel: "Tus deberes",
     deberes: [
