@@ -54,10 +54,7 @@ function motivoFoto(e: unknown): string {
 
 export async function crearBoletin(formData: FormData) {
   const session = await auth();
-  if (
-    !session ||
-    (session.user.rol !== "GESTOR_ENTE" && session.user.rol !== "SUPER_ADMIN")
-  ) {
+  if (!session || !puedeGestionarAudienciasMedios(session.user.rol)) {
     throw new Error("Sin permiso");
   }
 
@@ -116,10 +113,7 @@ export async function crearBoletin(formData: FormData) {
 
 export async function actualizarBoletin(formData: FormData) {
   const session = await auth();
-  if (
-    !session ||
-    (session.user.rol !== "GESTOR_ENTE" && session.user.rol !== "SUPER_ADMIN")
-  ) {
+  if (!session || !puedeGestionarAudienciasMedios(session.user.rol)) {
     throw new Error("Sin permiso");
   }
   const id = String(formData.get("id") ?? "");
@@ -181,10 +175,7 @@ export async function actualizarBoletin(formData: FormData) {
 
 export async function alternarPublicado(formData: FormData) {
   const session = await auth();
-  if (
-    !session ||
-    (session.user.rol !== "GESTOR_ENTE" && session.user.rol !== "SUPER_ADMIN")
-  ) {
+  if (!session || !puedeGestionarAudienciasMedios(session.user.rol)) {
     throw new Error("Sin permiso");
   }
   const id = String(formData.get("id") ?? "");
@@ -201,10 +192,7 @@ export async function alternarPublicado(formData: FormData) {
 
 export async function borrarBoletin(formData: FormData) {
   const session = await auth();
-  if (
-    !session ||
-    (session.user.rol !== "GESTOR_ENTE" && session.user.rol !== "SUPER_ADMIN")
-  ) {
+  if (!session || !puedeGestionarAudienciasMedios(session.user.rol)) {
     throw new Error("Sin permiso");
   }
   const id = String(formData.get("id") ?? "");
