@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { puedeGestionarAudienciasMedios } from "@/lib/admin";
 import { guardarFotoBoletin } from "@/lib/uploads";
 import type { TipoBoletin } from "@prisma/client";
 
