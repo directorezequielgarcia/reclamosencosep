@@ -23,6 +23,35 @@ const BoletinSchema = z.object({
   publicado: z.string().optional(),
 });
 
+
+const CAMPOS: Record<string, string> = {
+  tipo: "Tipo",
+  numero: "Número (máx. 50 caracteres)",
+  titulo: "Título (3 a 200 caracteres)",
+  resumen: "Resumen (máx. 500 caracteres)",
+  cuerpo: "Cuerpo (máx. 20.000 caracteres)",
+  videoUrl: "Video (debe ser un link completo que empiece con https://)",
+  enlaceExterno: "Enlace externo (debe ser un link completo que empiece con https://)",
+  fuente: "Fuente (máx. 120 caracteres)",
+  servicio: "Servicio",
+  fechaPublicacion: "Fecha de publicación",
+};
+
+/** Vuelve al panel mostrando el motivo, en vez de la pantalla de error genérica. */
+function volverConError(msg: string): never {
+  redirect(`/admin/boletines?error=${encodeURIComponent(msg)}`);
+}
+
+function motivoInvalido(error: z.ZodError): string {
+  const campos = [...new Set(error.issues.map((i) => CAMPOS[String(i.path[0])] ?? String(i.path[0])))];
+  return `No se guardó. Revisá: ${campos.join("; ")}.`;
+}
+
+function motivoFoto(e: unknown): string {
+  const m = e instanceof Error ? e.message : "error desconocido";
+  return `La foto no se pudo subir (${m}). Los datos del boletín sí se guardaron; probá editarlo y subir otra foto en JPG, PNG o WebP.`;
+}
+
 export async function crearBoletin(formData: FormData) {
   const session = await auth();
   if (
@@ -45,7 +74,7 @@ export async function crearBoletin(formData: FormData) {
     fechaPublicacion: formData.get("fechaPublicacion"),
     publicado: formData.get("publicado") || undefined,
   });
-  if (!parsed.success) throw new Error("Datos inválidos");
+  if (!parsed.success) volverConError(motivoInvalido(parsed.error));
   const d = parsed.data;
 
   const boletin = await prisma.boletin.create({
@@ -65,17 +94,23 @@ export async function crearBoletin(formData: FormData) {
     },
   });
 
+  let errorFoto: string | null = null;
   const foto = formData.get("foto");
   if (foto instanceof File && foto.size > 0) {
-    const subida = await guardarFotoBoletin(boletin.id, foto);
-    await prisma.boletin.update({
-      where: { id: boletin.id },
-      data: { fotoUrl: subida.url },
-    });
+    try {
+      const subida = await guardarFotoBoletin(boletin.id, foto);
+      await prisma.boletin.update({
+        where: { id: boletin.id },
+        data: { fotoUrl: subida.url },
+      });
+    } catch (e) {
+      errorFoto = motivoFoto(e);
+    }
   }
 
   revalidatePath("/admin/boletines");
   revalidatePath("/boletines");
+  if (errorFoto) volverConError(errorFoto);
   redirect("/admin/boletines");
 }
 
@@ -105,14 +140,19 @@ export async function actualizarBoletin(formData: FormData) {
     fechaPublicacion: formData.get("fechaPublicacion"),
     publicado: formData.get("publicado") || undefined,
   });
-  if (!parsed.success) throw new Error("Datos inválidos");
+  if (!parsed.success) volverConError(motivoInvalido(parsed.error));
   const d = parsed.data;
 
   let fotoUrl = existente.fotoUrl;
   const foto = formData.get("foto");
+  let errorFoto: string | null = null;
   if (foto instanceof File && foto.size > 0) {
-    const subida = await guardarFotoBoletin(id, foto);
-    fotoUrl = subida.url;
+    try {
+      const subida = await guardarFotoBoletin(id, foto);
+      fotoUrl = subida.url;
+    } catch (e) {
+      errorFoto = motivoFoto(e);
+    }
   }
 
   await prisma.boletin.update({
@@ -135,6 +175,7 @@ export async function actualizarBoletin(formData: FormData) {
 
   revalidatePath("/admin/boletines");
   revalidatePath("/boletines");
+  if (errorFoto) volverConError(errorFoto);
   redirect("/admin/boletines");
 }
 

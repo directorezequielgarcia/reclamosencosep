@@ -8,12 +8,18 @@ import {
   crearBoletin,
 } from "./actions";
 import { SubmitButton } from "@/components/ui/SubmitButton";
+import { FotoInput } from "@/components/ui/FotoInput";
 import { SVC_ORDER, SVC_META } from "@/lib/servicios";
 import type { TipoBoletin } from "@prisma/client";
 
 export const metadata = { title: "Boletines · Panel ENCOSEP" };
 
-export default async function BoletinesAdminPage() {
+export default async function BoletinesAdminPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
+  const { error } = await searchParams;
   const boletines = await prisma.boletin.findMany({
     orderBy: { fechaPublicacion: "desc" },
     include: { autor: true },
@@ -30,6 +36,12 @@ export default async function BoletinesAdminPage() {
         </p>
       </header>
 
+      {error && (
+        <div role="alert" className="rounded-xl border border-svc-red/40 bg-svc-red/10 p-4 text-sm font-bold text-svc-red">
+          {error}
+        </div>
+      )}
+
       <section className="rounded-2xl border border-line bg-paper p-5">
         <h2 className="text-base font-extrabold text-navy mb-3">Nuevo boletín</h2>
         <form action={crearBoletin} className="grid sm:grid-cols-2 gap-3">
@@ -42,25 +54,25 @@ export default async function BoletinesAdminPage() {
             </select>
           </Field>
           <Field label="Número (opcional)">
-            <input name="numero" type="text" placeholder="ej: 023/2026" className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper" />
+            <input name="numero" maxLength={50} type="text" placeholder="ej: 023/2026" className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper" />
           </Field>
           <Field label="Título *" full>
-            <input name="titulo" type="text" required className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper" />
+            <input name="titulo" maxLength={200} type="text" required className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper" />
           </Field>
           <Field label="Resumen" full>
-            <textarea name="resumen" rows={2} className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper resize-y" />
+            <textarea name="resumen" maxLength={500} rows={2} className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper resize-y" />
           </Field>
           <Field label="Cuerpo (opcional)" full>
-            <textarea name="cuerpo" rows={5} className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper resize-y" />
+            <textarea name="cuerpo" maxLength={20000} rows={5} className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper resize-y" />
           </Field>
           <Field label="Foto (opcional)">
-            <input name="foto" type="file" accept="image/jpeg,image/png,image/webp,image/heic" className="text-sm" />
+            <FotoInput />
           </Field>
           <Field label="Video (opcional, link YouTube/Vimeo o archivo)">
             <input name="videoUrl" type="url" placeholder="https://youtube.com/watch?v=…" className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper" />
           </Field>
           <Field label="Fuente (para clippings)">
-            <input name="fuente" type="text" placeholder="ej: Diario Crónica" className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper" />
+            <input name="fuente" maxLength={120} type="text" placeholder="ej: Diario Crónica" className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper" />
           </Field>
           <Field label="Enlace externo">
             <input name="enlaceExterno" type="url" placeholder="https://…" className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper" />
@@ -148,19 +160,19 @@ export default async function BoletinesAdminPage() {
                         </select>
                       </Field>
                       <Field label="Número (opcional)">
-                        <input name="numero" type="text" defaultValue={b.numero ?? ""} className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper" />
+                        <input name="numero" maxLength={50} type="text" defaultValue={b.numero ?? ""} className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper" />
                       </Field>
                       <Field label="Título *" full>
-                        <input name="titulo" type="text" required defaultValue={b.titulo} className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper" />
+                        <input name="titulo" maxLength={200} type="text" required defaultValue={b.titulo} className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper" />
                       </Field>
                       <Field label="Resumen" full>
-                        <textarea name="resumen" rows={2} defaultValue={b.resumen ?? ""} className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper resize-y" />
+                        <textarea name="resumen" maxLength={500} rows={2} defaultValue={b.resumen ?? ""} className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper resize-y" />
                       </Field>
                       <Field label="Cuerpo (opcional)" full>
-                        <textarea name="cuerpo" rows={5} defaultValue={b.cuerpo ?? ""} className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper resize-y" />
+                        <textarea name="cuerpo" maxLength={20000} rows={5} defaultValue={b.cuerpo ?? ""} className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper resize-y" />
                       </Field>
                       <Field label={b.fotoUrl ? "Reemplazar foto" : "Foto (opcional)"}>
-                        <input name="foto" type="file" accept="image/jpeg,image/png,image/webp,image/heic" className="text-sm" />
+                        <FotoInput />
                         {b.fotoUrl && (
                           <a href={b.fotoUrl} target="_blank" rel="noreferrer" className="text-xs text-navy-2 underline mt-1">
                             Ver foto actual
@@ -171,7 +183,7 @@ export default async function BoletinesAdminPage() {
                         <input name="videoUrl" type="url" defaultValue={b.videoUrl ?? ""} placeholder="https://youtube.com/watch?v=…" className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper" />
                       </Field>
                       <Field label="Fuente (para clippings)">
-                        <input name="fuente" type="text" defaultValue={b.fuente ?? ""} className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper" />
+                        <input name="fuente" maxLength={120} type="text" defaultValue={b.fuente ?? ""} className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper" />
                       </Field>
                       <Field label="Enlace externo">
                         <input name="enlaceExterno" type="url" defaultValue={b.enlaceExterno ?? ""} className="px-3 py-2 rounded-lg border border-line-strong text-sm bg-paper" />
