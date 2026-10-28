@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { SvcIcon } from "@/components/servicios/SvcIcon";
@@ -40,6 +40,7 @@ export default async function DetalleMiReclamoPage({
 }) {
   const { codigo } = await params;
   const session = await auth();
+  if (!session) redirect("/ingresar");
 
   const reclamo = await prisma.reclamo.findUnique({
     where: { codigo },
@@ -55,7 +56,7 @@ export default async function DetalleMiReclamoPage({
     },
   });
 
-  if (!reclamo || reclamo.ciudadanoId !== session!.user.id) notFound();
+  if (!reclamo || reclamo.ciudadanoId !== session.user.id) notFound();
 
   const svc = svcFromKind(reclamo.servicio.kind);
   const fotos = reclamo.adjuntos.filter((a) => a.tipo === "FOTO");

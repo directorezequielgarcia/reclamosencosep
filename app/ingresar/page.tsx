@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { AuthError } from "next-auth";
 import { auth, signIn } from "@/lib/auth";
 import { BrandStripe } from "@/components/ui/BrandStripe";
 import { LogoEncosep } from "@/components/ui/LogoEncosep";
@@ -83,11 +84,19 @@ export default async function IngresarPage({
     "use server";
     const dni = String(formData.get("dni") ?? "").replace(/[.\s]/g, "");
     const password = String(formData.get("password") ?? "");
-    await signIn("credentials", {
-      dni,
-      password,
-      redirectTo: "/inicio",
-    });
+    try {
+      await signIn("credentials", {
+        dni,
+        password,
+        redirectTo: "/inicio",
+      });
+    } catch (e) {
+      // Clave o DNI incorrectos: volver al formulario con el aviso, en vez de
+      // mostrar la pantalla de error técnico. Otros errores (incluido el
+      // redirect de un login exitoso) se relanzan.
+      if (e instanceof AuthError) redirect("/ingresar?error=1");
+      throw e;
+    }
   }
 
   return (

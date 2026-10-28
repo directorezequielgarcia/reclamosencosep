@@ -15,10 +15,11 @@ const ROLES_INSTITUCIONALES = ["PEM", "CONCEJO_DELIBERANTE", "AUTORIDAD_APLICACI
 
 export default async function InicioPage() {
   const session = await auth();
-  if (ROLES_INSTITUCIONALES.includes(session!.user.rol)) {
+  if (!session) redirect("/ingresar");
+  if (ROLES_INSTITUCIONALES.includes(session.user.rol)) {
     redirect("/institucional");
   }
-  const userId = session!.user.id;
+  const userId = session.user.id;
 
   const usuario = await prisma.usuario.findUnique({
     where: { id: userId },
@@ -33,7 +34,7 @@ export default async function InicioPage() {
     include: { servicio: true },
   });
 
-  const primerNombre = (session!.user.name ?? "Vecino/a").split(" ")[0];
+  const primerNombre = (session.user.name ?? "Vecino/a").split(" ")[0];
 
   return (
     <main className="flex flex-1 flex-col gap-5 py-4">

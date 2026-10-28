@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { TIPO_ACTO_META } from "@/lib/expedientes";
@@ -31,10 +31,11 @@ export default async function MiExpedientePage({
 }) {
   const { codigo } = await params;
   const session = await auth();
+  if (!session) redirect("/ingresar");
 
   // El vecino solo ve el expediente de SU reclamo.
   const reclamo = await prisma.reclamo.findFirst({
-    where: { codigo, ciudadanoId: session!.user.id },
+    where: { codigo, ciudadanoId: session.user.id },
     include: {
       ciudadano: true,
       expediente: {

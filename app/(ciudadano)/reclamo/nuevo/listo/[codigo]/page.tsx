@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { SvcIcon } from "@/components/servicios/SvcIcon";
@@ -15,6 +15,7 @@ export default async function ListoPage({
 }) {
   const { codigo } = await params;
   const session = await auth();
+  if (!session) redirect("/ingresar");
   const reclamo = await prisma.reclamo.findUnique({
     where: { codigo },
     include: {
@@ -25,7 +26,7 @@ export default async function ListoPage({
     },
   });
 
-  if (!reclamo || reclamo.ciudadanoId !== session!.user.id) notFound();
+  if (!reclamo || reclamo.ciudadanoId !== session.user.id) notFound();
 
   const svc = svcFromKind(reclamo.servicio.kind);
   const deadline = reclamo.slaDeadline?.toLocaleDateString("es-AR", {

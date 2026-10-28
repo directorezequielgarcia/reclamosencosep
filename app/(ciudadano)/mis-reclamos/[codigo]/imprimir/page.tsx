@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ESTADO_META } from "@/lib/admin";
@@ -17,6 +17,7 @@ export default async function ImprimirMiReclamoPage({
 }) {
   const { codigo } = await params;
   const session = await auth();
+  if (!session) redirect("/ingresar");
 
   const reclamo = await prisma.reclamo.findUnique({
     where: { codigo },
@@ -29,7 +30,7 @@ export default async function ImprimirMiReclamoPage({
       eventos: { orderBy: { createdAt: "asc" }, include: { autor: true } },
     },
   });
-  if (!reclamo || reclamo.ciudadanoId !== session!.user.id) notFound();
+  if (!reclamo || reclamo.ciudadanoId !== session.user.id) notFound();
 
   const eventosVisibles = reclamo.eventos.filter(
     (e) => TIPOS_VISIBLES.includes(e.tipo) || (e.tipo === "COMENTARIO" && e.visibleVecino),

@@ -34,7 +34,7 @@ export async function enviarEmail({
 }: EnviarEmailParams): Promise<{ ok: boolean; error?: string; via?: string }> {
   const gmailUser = process.env.GMAIL_USER;
   const gmailPass = process.env.GMAIL_APP_PASSWORD;
-  const resendKey = process.env.RESEND_API_KEY;
+  const resendKey = process.env.RESEND_API_KEY?.replace(/[^!-~]/g, ""); // quita BOM/espacios invisibles pegados al copiar
   const from =
     process.env.EMAIL_FROM ??
     (gmailUser

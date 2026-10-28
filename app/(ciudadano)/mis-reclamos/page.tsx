@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
@@ -29,8 +30,9 @@ const ESTADO_COLOR: Record<string, string> = {
 
 export default async function MisReclamosPage() {
   const session = await auth();
+  if (!session) redirect("/ingresar");
   const reclamos = await prisma.reclamo.findMany({
-    where: { ciudadanoId: session!.user.id },
+    where: { ciudadanoId: session.user.id },
     orderBy: { createdAt: "desc" },
     include: { servicio: true, prestadora: true },
   });

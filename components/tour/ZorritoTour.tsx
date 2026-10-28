@@ -39,7 +39,12 @@ export function ZorritoTour({
   } | null>(null);
 
   useEffect(() => {
-    const visto = window.localStorage.getItem(storageKey);
+    // El storage puede estar bloqueado (modo privado, navegadores internos):
+    // en ese caso se muestra el tour y no se rompe la pantalla.
+    let visto: string | null = null;
+    try {
+      visto = window.localStorage.getItem(storageKey);
+    } catch {}
     if (!visto) {
       const t = setTimeout(() => setAbierto(true), 800);
       return () => clearTimeout(t);
@@ -78,7 +83,9 @@ export function ZorritoTour({
   function cerrar() {
     setAbierto(false);
     setPaso(0);
-    window.localStorage.setItem(storageKey, "1");
+    try {
+      window.localStorage.setItem(storageKey, "1");
+    } catch {}
   }
 
   if (pasos.length === 0) return null;

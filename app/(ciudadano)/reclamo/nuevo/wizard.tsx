@@ -147,8 +147,15 @@ export function WizardReclamo({ svcInicial }: { svcInicial?: SvcKey }) {
     const params = new URLSearchParams(window.location.search);
     if (params.get("consulta") !== "control") return;
 
-    const guardado = sessionStorage.getItem(CLAVE_CONSULTA_CONTROL);
-    sessionStorage.removeItem(CLAVE_CONSULTA_CONTROL);
+    // En modo privado o en navegadores internos (WhatsApp, Facebook) el
+    // storage puede tirar error: no debe romper la carga del reclamo.
+    let guardado: string | null = null;
+    try {
+      guardado = sessionStorage.getItem(CLAVE_CONSULTA_CONTROL);
+      sessionStorage.removeItem(CLAVE_CONSULTA_CONTROL);
+    } catch {
+      return;
+    }
     if (!guardado) return;
 
     (async () => {
